@@ -12,7 +12,7 @@ jobs:
   secrets-scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: gitleaks
         run: docker run --rm -v "$PWD:/repo" -w /repo zricethezav/gitleaks:latest dir . --no-banner --redact
 
@@ -26,7 +26,7 @@ jobs:
       run:
         working-directory: terraform/${{ matrix.stack }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: hashicorp/setup-terraform@v3
       - run: terraform fmt -check
       - run: terraform init -backend=false
@@ -35,5 +35,5 @@ jobs:
   compose:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: cp .env.example .env && docker compose config -q
