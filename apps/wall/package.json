@@ -19,7 +19,7 @@
     "react-dom": "^19.0.0",
     "recharts": "^2.15.0",
     "clsx": "^2.1.1",
-    "tailwind-merge": "^2.6.0",
+    "tailwind-merge": "^2.6.1",
     "@iconify/react": "^5.2.0",
     "@prisma/client": "^6.2.0",
     "stripe": "^17.5.0",
