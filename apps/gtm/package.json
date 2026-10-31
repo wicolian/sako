@@ -35,7 +35,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@hubspot/api-client": "^13.4.0",
     "@langchain/core": "^1.1.12",
-    "@langchain/langgraph": "^1.0.14",
+    "@langchain/langgraph": "^1.5.3",
     "@langchain/openai": "^1.2.1",
     "@modelcontextprotocol/sdk": "^1.25.2",
     "@monaco-editor/react": "^4.7.0",
