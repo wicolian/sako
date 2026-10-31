@@ -668,6 +668,7 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) first. Security problems: see [SECURITY.
 | A company making **under $100K a year** | ✅ Use it, change it, run your business on it. Free |
 | An individual, student, non-profit or school | ✅ Free |
 | Anyone trying it out | ✅ Free for 30 days |
+| A company the author works for | ✅ Free, any size (see section 3a of the license) |
 | A company making **$100K a year or more** | 💼 Needs a [commercial license](#commercial-license) |
 | Anyone | ❌ Do not sell this code as it is (as a template, boilerplate or hosted product) |
 
