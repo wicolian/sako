@@ -1,5 +1,5 @@
 # Build stage
-FROM node:22-alpine AS builder
+FROM node:25-alpine AS builder
 
 WORKDIR /app
 
@@ -23,7 +23,7 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM node:22-alpine AS production
+FROM node:25-alpine AS production
 
 WORKDIR /app
 
@@ -60,7 +60,7 @@ EXPOSE 3001
 CMD ["sh", "-c", "npx prisma migrate deploy && npm run start"]
 
 # Development stage
-FROM node:22-alpine AS development
+FROM node:25-alpine AS development
 
 WORKDIR /app
 
