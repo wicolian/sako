@@ -194,7 +194,7 @@ export async function getChurnRiskAccounts(): Promise<number> {
     FROM workspaces w
     INNER JOIN subscriptions s ON s."workspaceId" = w.id
     WHERE s.status IN ('PAST_DUE', 'CANCEL_AT_PERIOD_END')
-      OR s."cancelAtPeriodEnd" = true
+      OR s."cancelAt" IS NOT NULL
   `);
 
   return result[0]?.count ? Number(result[0].count) : 0;

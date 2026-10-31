@@ -104,6 +104,8 @@ services:
     build: { context: ./apps/landing }
     restart: unless-stopped
     env_file: .env
+    environment:
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-${VITE_CLERK_PUBLISHABLE_KEY:-}}
     ports: ["3000:3000"]
 
   waitlist:
@@ -120,6 +122,11 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql://sako:${POSTGRES_PASSWORD:-sako}@postgres:5432/wall
+      # The wall reads live numbers from the other apps' databases.
+      SAKO_DATABASE_URL: postgresql://sako:${POSTGRES_PASSWORD:-sako}@postgres:5432/platform
+      COMPOSER_DATABASE_URL: ${COMPOSER_DATABASE_URL:-}   # your Supabase DB URL, for GTM numbers
+      WALL_PASSWORD: ${WALL_PASSWORD:-change-me}
+      SESSION_SECRET: ${SESSION_SECRET:-change-me-to-32-random-characters}
     ports: ["3004:3000"]
 
   n8n:
@@ -136,6 +143,8 @@ services:
       N8N_HOST: localhost
       WEBHOOK_URL: http://localhost:5678/
       N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-change-me}
+      N8N_EDITOR_BASE_URL: ${N8N_EDITOR_BASE_URL:-http://localhost:5678}
+      SAKO_IMPORT_WORKFLOWS: ${SAKO_IMPORT_WORKFLOWS:-true}
     volumes:
       - ./n8n/workflows:/workflows:ro
       - n8n-data:/home/node/.n8n

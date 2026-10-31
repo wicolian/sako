@@ -19,7 +19,7 @@ One `docker compose up`. Deploy to AWS, GCP, Azure or Vercel with Terraform.
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Sako%20Source-B6F36A" /></a>
 </p>
 
-[The story](#the-story) · [Playbooks](docs/playbooks/) · [What you get](#what-you-get) · [Screens](#screens) · [Architecture](#architecture) · [Run it](#run-it-in-one-command) · [Self-host](#self-host-with-prebuilt-images) · [Deploy](#deploy-to-any-cloud) · [Configuration](#configuration) · [Known issues](#known-issues) · [Support](#support-and-hire-me) · [License](#license)
+[The story](#the-story) · [Playbooks](docs/playbooks/) · [Product docs](docs/product/) · [What you get](#what-you-get) · [Screens](#screens) · [Architecture](#architecture) · [Run it](#run-it-in-one-command) · [Self-host](#self-host-with-prebuilt-images) · [Deploy](#deploy-to-any-cloud) · [Configuration](#configuration) · [Known issues](#known-issues) · [Support](#support-and-hire-me) · [License](#license)
 
 </div>
 
@@ -33,16 +33,22 @@ work into campaigns, outbound and PR.
 
 | | |
 |---|---|
-| **Revenue** | About **$7,000 a month, for 8 months** |
-| **Growth** | **10–40%** revenue growth |
+| **Revenue** | **$9K MRR at peak** (2 clients at $4,500 a month). About $7K a month over 8 months, with 10–40% growth |
+| **Budget** | **$500** in total: domain, Stripe, hosting, first tools |
+| **Outbound** | **700+ cold calls** in Q1 2026, 17 email campaigns to 6,000+ people (18–25% opens, 59% peak), 15 demos |
+| **Content** | 42 marketing pages and **170+ blog posts** |
+| **Delivery** | 48-hour SLA, hit about **85%** of the time |
+| **Traffic** | 2,488 visitors to the site (Jan to May 2026), 65% from cold email |
 | **The software** | Built by **one person**, with AI agents: Cursor, Claude Code, Codex, GLM and friends. No dev team |
 | **What happened** | We sold the clients (**only the clients, not the code**) |
 
+The full case study, with the numbers behind each channel: **[kelashik.com/portfolio/sako-gtm-product-system](https://www.kelashik.com/portfolio/sako-gtm-product-system)**
+
 ### Who made it
 
-**Sako = *Sa*njay + *Ko*ushik**, the two founders.
+**Sako = *Sa*njay + *Ko*ushik**, the two founders: Gowri Shankar Muthukumar (Sanjay) and Koushik Venkatesan.
 
-- **Sanjay** ran the clients and the design: delivery, quality, and a team of **4 designers**.
+- **Sanjay** (Gowri Shankar Muthukumar) ran the clients and the design: delivery, quality, and a team of **4 designers**.
 - **Koushik** ([@wicolian](https://github.com/wicolian)) was the product and GTM person. He built every
   line of this software, and ran **1 HR person and 1 growth hacker**.
 
@@ -79,7 +85,7 @@ If you want to run a design subscription, a creative agency, a productized servi
 | **Studio** | `platform/apps/studio` | 3100 | Where the design team lives: operator overview, all tasks, task workspace, calendar, clients, billing inspector, user admin | ✅ Works |
 | **Waitlist** | `apps/waitlist` | 3003 | Launch waitlist with countdown | ✅ Works |
 | **Wall** | `apps/wall` | 3004 | Live business metrics for a TV screen: Stripe, PostHog, GA4, investor mode | ✅ Works |
-| **n8n** | `n8n` | 5678 | 44 workflows: leads, content, PR, analytics, recruiting, infra | ✅ Runs (import workflows yourself) |
+| **n8n** | `n8n` | 5678 | 44 workflows: leads, content, PR, analytics, recruiting, infra | ✅ Works (workflows auto-imported; add your credentials) |
 | **GTM app (Composer)** | `apps/gtm` | 3002 | AI GTM workspace: agent, campaigns, brand DNA, claims and evidence, competitors, newsletters, landing-page playground, AI marketing team, integrations | ✅ Works (needs Supabase, opt-in) |
 
 <details>
@@ -95,7 +101,7 @@ If you want to run a design subscription, a creative agency, a productized servi
 | `infra/` | 3 | Health checks and housekeeping |
 | `recruiting/` | 3 | Designer outreach and candidate pipeline |
 
-Sheet templates for every workflow are in `n8n/templates/`. Import order is in `n8n/docs/PUBLISH_ORDER.md`.
+Sheet templates for every workflow are in `n8n/templates/`. All 44 are imported on first start. Activate them in the order in `n8n/docs/PUBLISH_ORDER.md`.
 
 </details>
 
@@ -148,7 +154,7 @@ demo data.
 ### Waitlist and wall
 
 <table>
-<tr><td width="50%" valign="top"><img src="docs/screens/waitlist.png" alt="Waitlist" width="100%"><br><sub><b>Waitlist</b></sub></td><td width="50%" valign="top"><img src="docs/screens/wall.png" alt="Wall" width="100%"><br><sub><b>Wall</b></sub></td></tr>
+<tr><td width="50%" valign="top"><img src="docs/screens/waitlist.png" alt="Waitlist" width="100%"><br><sub><b>Waitlist</b></sub></td><td width="50%" valign="top"><img src="docs/screens/wall.png" alt="Wall" width="100%"><br><sub><b>Wall: live metrics from the platform database</b></sub></td></tr>
 </table>
 
 <details>
@@ -346,57 +352,66 @@ flowchart LR
     subgraph People
         V([Visitor])
         C([Client])
-        D([Designer / operator])
+        D([Design team])
+        M([Marketer])
     end
 
-    subgraph Web["Web apps"]
-        L["Landing<br/>Next.js · :3000"]
+    subgraph Edge["Web apps"]
+        L["Landing + blog<br/>Next.js 16 · :3000"]
         W["Waitlist<br/>Vite · :3003"]
-        CP["Client portal<br/>React + Vite · :5173"]
-        ST["Studio<br/>React + Vite · :3100"]
-        G["GTM app<br/>Next.js · :3002"]
-        WL["Wall<br/>Next.js · :3004"]
+        CP["Client portal<br/>React · :5173"]
+        ST["Studio<br/>React · :3100"]
+        G["GTM app (Composer)<br/>Next.js 16 · :3002"]
+        WL["Wall (TV metrics)<br/>Next.js 15 · :3004"]
     end
 
     subgraph Core["Backend"]
-        API["API<br/>NestJS · :3001"]
-        WK["Worker + cron<br/>(in the API)"]
-        N8N["n8n<br/>44 workflows · :5678"]
+        API["API<br/>NestJS 10 · :3001<br/>tasks · SLA · credits · billing"]
+        CRON["Cron jobs<br/>day credits · SLA checks"]
+        N8N["n8n 2.x · :5678<br/>44 workflows, auto-imported"]
     end
 
-    subgraph Data
-        PG[("Postgres 16<br/>platform · gtm · wall · n8n")]
-        R[("Redis<br/>queues")]
-        S3[("S3-compatible<br/>file storage")]
+    subgraph Data["Data (docker compose)"]
+        PG[("Postgres 16<br/>platform · wall · n8n")]
+        R[("Redis")]
     end
 
-    subgraph SaaS["Outside services (your keys)"]
+    subgraph Yours["Your accounts"]
+        SB[("Supabase<br/>GTM data + auth")]
         CL[Clerk]
         SP[Stripe]
         SL[Slack]
-        RS[Resend]
-        AI[OpenAI / Anthropic]
+        EM[Resend / Brevo]
+        AI[OpenAI / Anthropic<br/>OpenRouter]
+        GS[Google Sheets]
+        S3[(S3 / R2 bucket)]
     end
 
     V --> L & W
     C --> CP
     D --> ST
-    D --> G
-    CP & ST --> API
+    M --> G
+    D --> WL
+
+    CP & ST -- REST --> API
     CP & ST -. sign in .-> CL
-    API --> PG & R & S3
-    API --> SP & SL & RS & AI
-    API -. verify JWT .-> CL
-    WK --> R
-    G --> SB[("Supabase<br/>Postgres + Auth")]
-    G --> AI
-    G -. send to Sako .-> API
     CP -. Composer link .-> G
-    WL --> PG
-    N8N --> PG
-    N8N --> SL & AI
+    G -. send to Sako .-> API
+
+    API --> PG & R & S3
+    API --> SL & EM & AI
+    API -. verify JWT .-> CL
     SP -. webhooks .-> API
-    SL -. events .-> API
+    API --> SP
+    CRON --> PG
+
+    G --> SB & AI
+    WL --> PG
+    WL -. GTM numbers .-> SB
+    WL -. revenue .-> SP
+
+    N8N --> PG
+    N8N --> GS & SL & EM & AI
 ```
 
 ### How a design request moves
@@ -468,28 +483,17 @@ Open http://localhost:3000. All URLs:
 | n8n | http://localhost:5678 |
 | GTM app (opt-in, needs Supabase) | `docker compose --profile gtm up -d --build` → http://localhost:3002 |
 
-**The minimum keys to sign in:** a free [Clerk](https://clerk.com) development instance
-(`CLERK_SECRET_KEY`, `VITE_CLERK_PUBLISHABLE_KEY`) and `ALLOWED_STUDIO_DOMAINS` set to your team's email
-domain. Add [Stripe](https://stripe.com) test keys to take payments.
+**Keys the API needs to start:** a free [Clerk](https://clerk.com) development instance
+(`CLERK_SECRET_KEY`, `VITE_CLERK_PUBLISHABLE_KEY`) and [Stripe](https://stripe.com) test keys
+(`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`). Set `ALLOWED_STUDIO_DOMAINS` to your team's email domain.
 
-<details>
-<summary><b>Give yourself a demo workspace (skip Stripe)</b></summary>
+**Demo data:** sign up once in the client portal, then
+`docker compose exec -T postgres psql -U sako -d platform < docker/seed-demo.sql`.
+You get a workspace on an active plan, a brand and 5 tasks, and you can open the studio.
 
-Sign up in the client portal once, then run:
+**n8n:** the 44 workflows are imported on first start. Add your credentials in n8n, then activate them.
 
-```bash
-docker compose exec -T postgres psql -U sako -d platform <<'SQL'
-insert into workspaces(id,name,slug,"updatedAt","hasOnboarded") values ('ws_demo','Acme Growth','acme-growth',now(),true);
-insert into workspace_members(id,"workspaceId","userId",role,"updatedAt") select 'wm_demo','ws_demo',id,'OWNER',now() from users limit 1;
-insert into subscriptions(id,"workspaceId",status,"planCode","activeTaskLimit","slaSeconds","billingPeriodStart","billingPeriodEnd","updatedAt")
-  values ('sub_demo','ws_demo','ACTIVE','OPS',2,172800,now(),now()+interval '30 days',now());
-SQL
-```
 
-To open the studio as that user: `update users set role='ADMIN';` and make sure the email domain is in
-`ALLOWED_STUDIO_DOMAINS`.
-
-</details>
 
 ## Self-host with prebuilt images
 
@@ -501,7 +505,7 @@ curl -fsSL https://raw.githubusercontent.com/wicolian/sako/main/selfhost/install
 ```
 
 The script downloads `docker-compose.yml`, makes a `.env` with random database and n8n secrets, pulls the
-images and starts everything. Pin a version with `SAKO_VERSION=<tag>`. Use your own fork's images with
+images and starts everything. Pin a version with `SAKO_VERSION=v1.0.0`. Use your own fork's images with
 `SAKO_IMAGE_OWNER=<your-github-user>`.
 
 > [!NOTE]
@@ -604,18 +608,23 @@ cd apps/gtm && bun install && bun dev
 | Workflow | When | What |
 |---|---|---|
 | `ci.yml` | Every PR and push | Secret scan (gitleaks), `terraform fmt` + `validate` for all 4 clouds, `docker compose config` |
-| `images.yml` | Push to `main` | Builds 8 images, pushes `ghcr.io/<owner>/sako/*:latest` |
+| `images.yml` | Push to `main`, or a `v*` tag | Builds 8 images, pushes `ghcr.io/<owner>/sako/*:latest` (and `:v1.0.0` for tag `v1.0.0`) |
+| Dependabot | Weekly | Opens PRs for security and version updates (npm, Docker, Actions) |
 
 ## Known issues
 
-These are tracked as [GitHub issues](https://github.com/wicolian/sako/issues). The big ones:
+All tracked as [GitHub issues](https://github.com/wicolian/sako/issues). The ones a new user will hit:
 
-- **GTM app needs Supabase**, not the shared Postgres. A few GTM pages (assets, editor, kit) give 404, and some show "No workspace found".
-- **Client pricing page is empty** until you set your own Stripe pricing table or plans.
-- **Studio "AI" page renders empty cards.**
-- **Pods page is a placeholder.**
+- **GTM needs Supabase**, not the shared Postgres. Some GTM pages give 404 or say "No workspace found" (#17).
+- **GTM "Send to Sako" is unfinished** (#20).
+- **Client pricing page shows no plans** until you add your own Stripe pricing table (#7). Use the demo data script meanwhile.
+- **Client and studio bake the Clerk key in at build time**, so rebuild them with your key (#10).
+- **Studio AI page is empty, Pods page is a placeholder** (#8, #9).
+- **Billing rules to decide:** day credits burn daily even with no open task (#22); the SLA clock after a revision (#21).
+- **Terraform is validated, not applied** on real accounts (#12).
 
-Fixes are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
+What the original specs planned versus what the code does: [docs/product](docs/product/). Fixes are welcome, see
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Support and hire me
 

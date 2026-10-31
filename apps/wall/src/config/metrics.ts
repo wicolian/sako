@@ -280,11 +280,12 @@ export const SOURCE_DEFINITIONS: Record<SourceType, { label: string; reliability
   ping: { label: 'Uptime Monitors', reliability: 0.999 },
 };
 
+// Set these to your public URLs in production. Defaults point at the docker compose services.
 export const UPTIME_MONITORS = [
-  { label: 'Landing Page', url: 'https://trysako.com' },
-  { label: 'Studio', url: 'https://studio.trysako.com' },
-  { label: 'App', url: 'https://app.trysako.com' },
-  { label: 'API Health', url: 'https://api.trysako.com/api/v1/health' },
+  { label: 'Landing Page', url: process.env.WALL_MONITOR_LANDING_URL || 'http://landing:3000' },
+  { label: 'Studio', url: process.env.WALL_MONITOR_STUDIO_URL || 'http://studio:80' },
+  { label: 'App', url: process.env.WALL_MONITOR_APP_URL || 'http://client:80' },
+  { label: 'API Health', url: process.env.WALL_MONITOR_API_URL || 'http://api:3001/api/v1/health' },
 ];
 
 export const SEGMENTS = ['all', 'paid', 'organic', 'enterprise', 'self_serve'] as const;

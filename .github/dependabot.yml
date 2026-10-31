@@ -1,0 +1,10 @@
+version: 2
+updates:
+  - { package-ecosystem: npm, directory: /platform, schedule: { interval: weekly }, open-pull-requests-limit: 5 }
+  - { package-ecosystem: npm, directory: /apps/landing, schedule: { interval: weekly }, open-pull-requests-limit: 5 }
+  - { package-ecosystem: npm, directory: /apps/waitlist, schedule: { interval: weekly }, open-pull-requests-limit: 5 }
+  - { package-ecosystem: npm, directory: /apps/wall, schedule: { interval: weekly }, open-pull-requests-limit: 5 }
+  - { package-ecosystem: bun, directory: /apps/gtm, schedule: { interval: weekly }, open-pull-requests-limit: 5 }
+  - { package-ecosystem: docker, directories: [/platform/services/api, /platform/apps/client, /platform/apps/studio, /apps/gtm, /apps/landing, /apps/waitlist, /apps/wall, /n8n], schedule: { interval: weekly } }
+  - { package-ecosystem: github-actions, directory: /, schedule: { interval: weekly } }
+  - { package-ecosystem: terraform, directories: [/terraform/aws, /terraform/gcp, /terraform/azure, /terraform/vercel-neon-railway], schedule: { interval: monthly } }

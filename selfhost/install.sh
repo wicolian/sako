@@ -17,6 +17,8 @@ chmod +x docker/init-databases.sh
 rand() { LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32; }
 grep -q '^POSTGRES_PASSWORD=sako$' .env && sed -i.bak "s/^POSTGRES_PASSWORD=sako$/POSTGRES_PASSWORD=$(rand)/" .env
 grep -q '^N8N_ENCRYPTION_KEY=change-me$' .env && sed -i.bak "s/^N8N_ENCRYPTION_KEY=change-me$/N8N_ENCRYPTION_KEY=$(rand)/" .env
+grep -q '^SESSION_SECRET=$' .env && sed -i.bak "s/^SESSION_SECRET=$/SESSION_SECRET=$(rand)/" .env
+grep -q '^WALL_PASSWORD=$' .env && sed -i.bak "s/^WALL_PASSWORD=$/WALL_PASSWORD=$(rand | head -c 12)/" .env
 rm -f .env.bak
 
 docker compose pull
