@@ -427,7 +427,7 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-    IMG["Images on GHCR<br/>ghcr.io/&lt;owner&gt;/sako-*"]
+    IMG["Images on GHCR<br/>ghcr.io/&lt;owner&gt;/sako/*"]
     IMG --> DC["docker compose<br/>(one machine)"]
     IMG --> AWS["AWS<br/>App Runner + RDS + S3"]
     IMG --> GCP["GCP<br/>Cloud Run + Cloud SQL + GCS"]
@@ -594,7 +594,7 @@ cd apps/gtm && bun install && bun dev
 | Workflow | When | What |
 |---|---|---|
 | `ci.yml` | Every PR and push | Secret scan (gitleaks), `terraform fmt` + `validate` for all 4 clouds, `docker compose config` |
-| `images.yml` | Push to `main` | Builds 8 images, pushes `ghcr.io/<owner>/sako-*:latest` |
+| `images.yml` | Push to `main` | Builds 8 images, pushes `ghcr.io/<owner>/sako/*:latest` |
 
 ## Known issues
 
