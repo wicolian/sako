@@ -1,22 +1,54 @@
-Sako Source License 1.0
+Sako License 1.1
 
-Copyright (c) 2026 Koushik Venkatesan (GitHub: wicolian). All rights reserved, except as granted below.
+Copyright (c) 2026 Koushik Venkatesan (GitHub: wicolian). All rights reserved,
+except as granted below.
 
-1. Grant. You may view, fork, copy, modify and run this software, and use it as a
-   reference, for any purpose, including to operate your own commercial business.
+This license applies to Sako version 1.1.0 and later. Version 1.0.0 stays under
+the Sako Source License 1.0 it was released with.
 
-2. Restriction. You may not sell, license, or otherwise distribute this software
-   for a fee in the form it is provided, or with only minor changes, in whole or
-   in part. This includes selling it as a template, boilerplate, starter kit,
-   theme, or hosted copy of this software.
+1. Definitions
+   "Software" means this repository and everything in it.
+   "You" means the person or organization using the Software, together with every
+   organization that controls, is controlled by, or is under common control with it.
+   "Revenue" means your total gross revenue from all sources in the most recent
+   12 months, in US dollars or the equivalent.
 
-3. Contributions. Pull requests are welcome. By submitting a contribution you
-   agree that it may be used under this license. All contributions are reviewed
-   and merged at the sole discretion of the owner.
+2. Free use
+   You may view, fork, copy, modify, run and deploy the Software, for any purpose,
+   including running your own business on it, if ONE of these is true:
+   a. Your Revenue is less than US$100,000.
+   b. You are an individual using it for personal, learning or research purposes.
+   c. You are a non-profit, school or university.
+   d. You are evaluating the Software, for up to 30 days.
 
-4. Notice. You must keep this license and the copyright notice in every copy or
-   substantial portion of the software.
+3. Commercial license
+   If none of section 2 applies to you, you need a paid commercial license from the
+   copyright holder to keep using the Software. Contact: contact@kelashik.com or
+   https://kelashik.com. If you cross the US$100,000 Revenue line while using the
+   Software, you have 30 days to get a commercial license or stop using it.
 
-5. No warranty. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-   EXPRESS OR IMPLIED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM,
-   DAMAGES OR OTHER LIABILITY ARISING FROM THE SOFTWARE OR ITS USE.
+4. No resale
+   Nobody may sell, license or otherwise distribute the Software for a fee in the
+   form it is provided, or with only minor changes, in whole or in part. This
+   includes selling it as a template, boilerplate, starter kit, theme or hosted
+   copy of the Software. A commercial license does not change this unless it says so
+   in writing.
+
+5. Contributions
+   Pull requests are welcome. By submitting a contribution you agree to the terms in
+   CONTRIBUTING.md, including that the copyright holder may use it under this
+   license and under commercial licenses.
+
+6. Notice
+   You must keep this license and the copyright notice in every copy or substantial
+   portion of the Software.
+
+7. No warranty
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY ARISING FROM THE SOFTWARE OR ITS USE, EXCEPT AS A SEPARATE WRITTEN
+   COMMERCIAL LICENSE SAYS.
+
+8. Ending
+   If you break these terms, your rights under this license end automatically. They
+   come back if you fix the problem within 30 days of being told about it.

@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Commercial license (companies over $100K revenue)
+    url: mailto:contact@kelashik.com
+    about: Run Sako in a business making $100K a year or more.
   - name: Hire the author (paid FDE / freelance sessions)
     url: https://kelashik.com
     about: Help setting up Sako, or building your product and GTM stack with AI agents.

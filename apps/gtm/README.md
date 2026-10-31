@@ -8,7 +8,7 @@
 ![LangGraph](https://img.shields.io/badge/LangGraph-1.x-green)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)
 ![Bun](https://img.shields.io/badge/Bun-1.3.6-orange)
-![License](https://img.shields.io/badge/license-Sako%20Source-B6F36A)
+![License](https://img.shields.io/badge/license-free%20under%20%24100K%20revenue-B6F36A)
 
 <p align="center">
   <img src="./public/favicon.svg" alt="Sako Composer Logo" width="120" height="120">
