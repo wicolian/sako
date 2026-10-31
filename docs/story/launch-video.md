@@ -29,7 +29,7 @@ set out to be. Transcribed and lightly cleaned.
 | September 2025 | First revenue. It starts to pick up. |
 | September 2025 to April 2026 | About **$7,000 a month**, **10–40%** revenue growth. A team of 4 designers, 1 HR person and 1 growth hacker. |
 | Around April 2026 | We sell the clients (not the code) and close. We did not love the agency work, and distribution was the hard part. |
-| October 2026 | Everything is open-sourced: the software, the automations and the playbooks. |
+| October 2026 | Everything is made public (source-available): the software, the automations and the playbooks. |
 
 The promise in the video ("no calls, no chasing, under 48 hours") is what the software in this repo
 does: the client portal, the studio queue, the SLA clock and the day credits.

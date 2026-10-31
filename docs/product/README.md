@@ -2,7 +2,7 @@
 
 These docs describe what Sako does. Sako was a design subscription for B2B SaaS teams, started by Sanjay and Koushik. It sold one monthly fee, a queue of design requests, and a 48-hour delivery time for each active slot.
 
-The company wrote product specs (PRDs) before it built the software: a client side spec, an admin side spec, a full platform spec with a data model, and a sales spec. The software then changed during the build. These docs start from those specs and are corrected to match the open-source code in this repo today.
+The company wrote product specs (PRDs) before it built the software: a client side spec, an admin side spec, a full platform spec with a data model, and a sales spec. The software then changed during the build. These docs start from those specs and are corrected to match the public code in this repo today.
 
 When a spec and the code disagree, the code wins. Each feature has a Status line:
 
