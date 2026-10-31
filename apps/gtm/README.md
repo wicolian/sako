@@ -130,7 +130,7 @@ A template library that learns and improves:
 | **Brand Context** | Auto-apply colors, fonts, voice | `lib/ai/brand-context.ts` |
 | **Template Ingestion** | Import HTML templates into vector DB | `scripts/ingest-templates.ts` |
 
-### 🎨 Aura Visual Website Editor
+### 🎨 Visual Website Editor
 
 Professional website design and publishing system:
 
@@ -653,7 +653,7 @@ sako-composer-gtm/
 │   ├── playground/                   # Page builder components
 │   ├── campaigns/                    # Campaign components
 │   ├── video/                        # Video editor
-│   ├── editor/                       # Aura visual editor
+│   ├── editor/                       # Visual editor
 │   │   ├── editor-shell.tsx          # Main editor component
 │   │   ├── preview-mode.tsx          # Live preview iframe
 │   │   ├── design-mode.tsx           # Visual editing mode
