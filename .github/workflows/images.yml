@@ -1,0 +1,43 @@
+name: Publish images
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: api, context: platform/services/api, file: platform/services/api/Dockerfile, target: production }
+          - { name: client, context: platform, file: platform/apps/client/Dockerfile, target: production }
+          - { name: studio, context: platform, file: platform/apps/studio/Dockerfile, target: production }
+          - { name: gtm, context: apps/gtm, file: apps/gtm/Dockerfile, target: "" }
+          - { name: landing, context: apps/landing, file: apps/landing/Dockerfile, target: "" }
+          - { name: waitlist, context: apps/waitlist, file: apps/waitlist/Dockerfile, target: "" }
+          - { name: wall, context: apps/wall, file: apps/wall/Dockerfile, target: "" }
+          - { name: n8n, context: n8n, file: n8n/Dockerfile, target: "" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          target: ${{ matrix.target }}
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/sako-${{ matrix.name }}:latest
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
