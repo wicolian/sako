@@ -21,7 +21,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.936.0",
     "@aws-sdk/s3-request-presigner": "^3.936.0",
-    "@clerk/backend": "^0.38.15",
+    "@clerk/backend": "^3.26.4",
     "@clerk/clerk-sdk-node": "^4.13.23",
     "@nestjs/bullmq": "^10.2.0",
     "@nestjs/common": "^10.3.0",
