@@ -27,6 +27,7 @@ import { AdminUtilsController } from './admin/admin-utils.controller';
 import { DevAdminUtilsController } from './admin/dev-admin-utils.controller';
 import { AdminWorkspaceController } from './admin/admin-workspace.controller';
 import { AdminUsersController } from './admin/admin-users.controller';
+import { AdminTasksController } from './admin/admin-tasks.controller';
 import { AdminMetricsController } from './admin/admin-metrics.controller';
 import { AuthMiddleware } from './auth/auth.middleware';
 import { ClerkAuthGuard } from './auth/clerk-auth.guard';
@@ -37,7 +38,7 @@ import { AdminGuard } from './common/guards/admin.guard';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { SentryModule } from '@sentry/nestjs/setup';
 
-const controllers: any[] = [AppController, AdminUtilsController, AdminWorkspaceController, AdminUsersController, AdminMetricsController];
+const controllers: any[] = [AppController, AdminUtilsController, AdminWorkspaceController, AdminUsersController, AdminMetricsController, AdminTasksController];
 
 if (process.env.ENABLE_DEV_ADMIN === 'true') {
   controllers.push(DevAdminUtilsController);

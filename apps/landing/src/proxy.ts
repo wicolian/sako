@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { clerkMiddleware } from "@clerk/nextjs/server";
 
-const hasClerkSecret = Boolean(process.env.CLERK_SECRET_KEY);
+// Clerk is optional for the marketing site. Turn it on only when both keys are set.
+const hasClerkSecret = Boolean(
+  process.env.CLERK_SECRET_KEY && process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+);
 
 function applyCommonHeaders(response: NextResponse) {
   response.headers.set(
