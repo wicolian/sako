@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="docs/screens/landing-home.png" alt="Sako landing page" width="100%" />
+<img src="docs/screens/tour.gif" alt="A 20-second tour of Sako: landing page, client portal, studio, GTM app and the metrics wall" width="100%" />
 
 # Sako
 
-### The open-source operating system for productized agencies.
+### The free, self-hostable operating system for productized agencies.
 
 Run your agency like a product: client portal · request queue · SLA clock · retainer billing · team studio · AI drafts · 44 automations · landing page<br/>
 One `docker compose up`. Deploy to AWS, GCP, Azure or Vercel with Terraform.
@@ -76,7 +76,7 @@ The full case study, with the numbers behind each channel: **[kelashik.com/portf
 | **Jan to Aug 2025** | Building and selling. **No revenue for 9 months** |
 | **Sep 2025** | First revenue, then about $7k a month with 10–40% growth |
 | **~Apr 2026** | Sold the clients, closed |
-| **Oct 2026** | Open-sourced: software, automations and [playbooks](docs/playbooks/) |
+| **Oct 2026** | Made public as source-available: software, automations and [playbooks](docs/playbooks/) |
 
 The software took almost 3 months to build, with no funding and no backup.
 

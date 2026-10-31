@@ -21,7 +21,7 @@ Two founders ran it.
 | January to August 2025 | No revenue |
 | September 2025 | First revenue |
 | September 2025 to about April 2026 | About $7,000 a month for about eight months, with revenue growth between 10% and 40% |
-| About April 2026 | We closed. We sold the clients (not the code) and open-sourced everything. |
+| About April 2026 | We closed. We sold the clients (not the code). In October 2026 we made everything public as source-available. |
 
 We shared everything because the hard part was distribution, not the idea or the software. We also did not love the agency model.
 
