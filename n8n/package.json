@@ -1,0 +1,12 @@
+{
+  "name": "n8n-sako",
+  "private": true,
+  "type": "module",
+  "description": "Sako n8n automations — scripts and tooling",
+  "scripts": {
+    "cleanup-db": "node scripts/cleanup-n8n-workflows.mjs"
+  },
+  "devDependencies": {
+    "pg": "^8.13.0"
+  }
+}

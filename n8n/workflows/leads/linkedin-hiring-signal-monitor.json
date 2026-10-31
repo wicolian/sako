@@ -1,0 +1,457 @@
+{
+  "id": "linkedin-hiring-signal-monitor",
+  "name": "LinkedIn Hiring Signal Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Weekly",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "actor_id": "vbartonicek/linkedin-jobs-scraper",
+            "run_input": "={{ { searchTerms: ['product designer', 'design lead', 'senior product designer', 'growth designer', 'brand designer'], location: 'United States', publishedAt: '7d', maxItems: 50 } }}",
+            "dataset_limit": 50
+          }
+        }
+      },
+      "id": "apify-linkedin-jobs",
+      "name": "Apify: LinkedIn Jobs Scraper",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.first().json.apify_items || [];\n\nconst normalizeDomain = (url) => {\n  if (!url) return '';\n  try {\n    const cleaned = url.startsWith('http') ? url : `https://${url}`;\n    const host = new URL(cleaned).hostname.replace(/^www\\./, '');\n    return host || '';\n  } catch (e) {\n    return '';\n  }\n};\n\nconst dedupe = new Set();\nconst normalized = items\n  .map((i) => {\n    const jobUrl = i.url || i.jobUrl || i.job_url || i.link || '';\n    const company = i.companyName || i.company || i.company_name || i.organization || '';\n    const companyUrl = i.companyUrl || i.company_url || i.companyWebsite || i.company_website || '';\n\n    const normalizedItem = {\n      job_title: i.title || i.jobTitle || i.position || '',\n      company,\n      location: i.location || i.jobLocation || '',\n      posted_at: i.publishedAt || i.postedAt || i.listedAt || i.datePosted || '',\n      job_url: jobUrl,\n      company_url: companyUrl,\n      company_domain: normalizeDomain(companyUrl),\n      has_domain: !!normalizeDomain(companyUrl)\n    };\n\n    return normalizedItem;\n  })\n  .filter((i) => i.company && i.job_title && i.job_url)\n  .filter((i) => {\n    if (dedupe.has(i.job_url)) return false;\n    dedupe.add(i.job_url);\n    return true;\n  });\n\nreturn normalized.map((i) => ({ json: i }));"
+      },
+      "id": "normalize-jobs",
+      "name": "Normalize Job Posts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.has_domain }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "has-domain",
+      "name": "Has Company Domain?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "actor_id": "intelecta/fast-contact-info-scraper-with-emails",
+            "run_input": "={{ { startUrls: [{ url: `https://${$json.company_domain}` }] } }}",
+            "dataset_limit": 3
+          }
+        }
+      },
+      "id": "apify-contact",
+      "name": "Apify: Contact Scraper",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const items = $json.apify_items || [];\nconst primary = items[0] || {};\n\nconst emails = new Set();\nconst names = new Set();\n\nif (primary.email) emails.add(primary.email);\nif (Array.isArray(primary.emails)) primary.emails.forEach(e => emails.add(e));\nif (primary.contactName) names.add(primary.contactName);\nif (primary.name) names.add(primary.name);\n\nconst email = Array.from(emails)[0] || '';\nconst name = Array.from(names)[0] || '';\n\nreturn {\n  json: {\n    contact_email: email,\n    contact_name: name,\n    has_contact_email: Boolean(email)\n  }\n};"
+      },
+      "id": "normalize-contact",
+      "name": "Normalize Contact Info",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: {\n    contact_email: '',\n    contact_name: '',\n    has_contact_email: false\n  }\n};"
+      },
+      "id": "empty-contact",
+      "name": "Empty Contact Info",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const job = $('Normalize Job Posts').item.json;\nconst contact = $json || {};\n\nconst [firstName, ...rest] = (contact.contact_name || '').split(' ').filter(Boolean);\n\nreturn {\n  json: {\n    job_title: job.job_title,\n    company: job.company,\n    location: job.location,\n    posted_at: job.posted_at,\n    job_url: job.job_url,\n    company_url: job.company_url,\n    company_domain: job.company_domain,\n    contact_email: contact.contact_email || '',\n    contact_name: contact.contact_name || '',\n    contact_first_name: firstName || '',\n    contact_last_name: rest.join(' '),\n    has_contact_email: contact.has_contact_email || false,\n    source: 'linkedin_hiring_signal',\n    captured_at: new Date().toISOString(),\n    reasoning: `Hiring for ${job.job_title}`,\n    green_flags: 'hiring_signal',\n    icp_score: 85,\n    status: 'qualified'\n  }\n};"
+      },
+      "id": "build-signal",
+      "name": "Build Hiring Signal Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 339358735,
+          "cachedResultName": "hiring_signals",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=339358735"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "job_title": "={{ $json.job_title }}",
+            "company": "={{ $json.company }}",
+            "location": "={{ $json.location }}",
+            "posted_at": "={{ $json.posted_at }}",
+            "job_url": "={{ $json.job_url }}",
+            "company_url": "={{ $json.company_url }}",
+            "company_domain": "={{ $json.company_domain }}",
+            "contact_name": "={{ $json.contact_name }}",
+            "contact_email": "={{ $json.contact_email }}",
+            "source": "={{ $json.source }}",
+            "captured_at": "={{ $json.captured_at }}"
+          },
+          "matchingColumns": [
+            "job_url"
+          ]
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "append-hiring-signals",
+      "name": "Append to Hiring Signals",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1780,
+        200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.has_contact_email }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "has-contact-email",
+      "name": "Has Contact Email?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 492604584,
+          "cachedResultName": "qualified_leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=492604584"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "first_name": "={{ $json.contact_first_name }}",
+            "last_name": "={{ $json.contact_last_name }}",
+            "email": "={{ $json.contact_email }}",
+            "title": "={{ $json.job_title }}",
+            "company": "={{ $json.company }}",
+            "industry": "",
+            "employees": "",
+            "linkedin_url": "",
+            "website": "={{ $json.company_url }}",
+            "icp_score": "={{ $json.icp_score }}",
+            "reasoning": "={{ $json.reasoning }}",
+            "green_flags": "={{ $json.green_flags }}",
+            "status": "={{ $json.status }}",
+            "scored_at": "={{ $json.captured_at }}",
+            "enriched": "false"
+          },
+          "matchingColumns": [
+            "email"
+          ]
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "append-qualified",
+      "name": "Append to Qualified Leads",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        2000,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "channel": "#sako-leads",
+        "text": "=🎯 *Hiring Signal Detected*\n\n• Company: {{ $json.company }}\n• Role: {{ $json.job_title }}\n• Location: {{ $json.location || 'Unknown' }}\n• Job Link: {{ $json.job_url }}\n• Contact: {{ $json.contact_email || 'Not found' }}\n\n_Add to outreach list if this fits ICP._",
+        "otherOptions": {}
+      },
+      "id": "notify-slack",
+      "name": "Notify #sako-leads",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        500
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Weekly": {
+      "main": [
+        [
+          {
+            "node": "Apify: LinkedIn Jobs Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify: LinkedIn Jobs Scraper": {
+      "main": [
+        [
+          {
+            "node": "Normalize Job Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Job Posts": {
+      "main": [
+        [
+          {
+            "node": "Has Company Domain?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Company Domain?": {
+      "main": [
+        [
+          {
+            "node": "Apify: Contact Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Empty Contact Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify: Contact Scraper": {
+      "main": [
+        [
+          {
+            "node": "Normalize Contact Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Contact Info": {
+      "main": [
+        [
+          {
+            "node": "Build Hiring Signal Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Empty Contact Info": {
+      "main": [
+        [
+          {
+            "node": "Build Hiring Signal Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Hiring Signal Row": {
+      "main": [
+        [
+          {
+            "node": "Append to Hiring Signals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to Hiring Signals": {
+      "main": [
+        [
+          {
+            "node": "Has Contact Email?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Contact Email?": {
+      "main": [
+        [
+          {
+            "node": "Append to Qualified Leads",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify #sako-leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to Qualified Leads": {
+      "main": [
+        [
+          {
+            "node": "Notify #sako-leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "sako-n8n"
+  },
+  "tags": [
+    {
+      "id": "leads",
+      "name": "leads"
+    },
+    {
+      "id": "signals",
+      "name": "signals"
+    }
+  ]
+}

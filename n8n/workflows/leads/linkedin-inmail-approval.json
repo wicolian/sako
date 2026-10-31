@@ -1,0 +1,303 @@
+{
+  "id": "linkedin-inmail-approval",
+  "name": "LinkedIn InMail Approval (Slack)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24,
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Daily 9am IST",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        200
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 100000004,
+          "cachedResultName": "inmail_outreach",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=100000004"
+        },
+        "filters": {
+          "filter": [
+            {
+              "column": "status",
+              "value": "draft"
+            }
+          ]
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "read-drafts",
+      "name": "Read Draft InMails",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        460,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "split-batches",
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "requestMethod": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"#sako-leads\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": {\n        \"type\": \"plain_text\",\n        \"text\": \"📩 InMail Ready for Review\",\n        \"emoji\": true\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*To:* {{ $json.first_name }} {{ $json.last_name }} ({{ $json.title }} @ {{ $json.company }})\\n*Subject:* {{ $json.subject }}\\n\\n*Draft:*\\n{{ $json.body }}\\n\\n*Personalization:* {{ $json.personalization_hook }}\\n*Recommended Package:* {{ $json.recommended_package }}\"\n      }\n    },\n    {\n      \"type\": \"actions\",\n      \"elements\": [\n        {\n          \"type\": \"button\",\n          \"text\": {\n            \"type\": \"plain_text\",\n            \"text\": \"✅ Approve\",\n            \"emoji\": true\n          },\n          \"action_id\": \"inmail_approve\",\n          \"value\": \"{{ $json.email }}\"\n        },\n        {\n          \"type\": \"button\",\n          \"text\": {\n            \"type\": \"plain_text\",\n            \"text\": \"✏️ Edit\",\n            \"emoji\": true\n          },\n          \"action_id\": \"inmail_edit\",\n          \"value\": \"{{ $json.email }}\"\n        },\n        {\n          \"type\": \"button\",\n          \"text\": {\n            \"type\": \"plain_text\",\n            \"text\": \"⏭️ Skip\",\n            \"emoji\": true\n          },\n          \"action_id\": \"inmail_skip\",\n          \"value\": \"{{ $json.email }}\"\n        },\n        {\n          \"type\": \"button\",\n          \"text\": {\n            \"type\": \"plain_text\",\n            \"text\": \"🗑️ Reject\",\n            \"emoji\": true\n          },\n          \"action_id\": \"inmail_reject\",\n          \"value\": \"{{ $json.email }}\"\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "post-to-slack",
+      "name": "Post Draft to Slack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        900,
+        300
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "inmail-approval",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-approval",
+      "name": "Webhook: InMail Approval",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        720
+      ],
+      "webhookId": "inmail-approval"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const query = $json.query || {};\n\nconst status = query.status || 'skipped';\nconst email = query.email || '';\n\nreturn {\n  json: {\n    email,\n    status,\n    approved_by: query.user || 'slack',\n    approved_at: new Date().toISOString()\n  }\n};"
+      },
+      "id": "parse-webhook",
+      "name": "Parse Webhook Params",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 100000004,
+          "cachedResultName": "inmail_outreach",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=100000004"
+        },
+        "columnToMatchOn": "email",
+        "valueToMatchOn": "={{ $json.email }}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "={{ $json.status }}",
+            "approved_by": "={{ $json.approved_by }}",
+            "approved_at": "={{ $json.approved_at }}"
+          }
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "update-status",
+      "name": "Update InMail Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        680,
+        720
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=✅ InMail status updated to {{ $json.status }}.\n\nYou can close this tab."
+      },
+      "id": "respond",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        900,
+        720
+      ]
+    }
+  ],
+  "connections": {
+    "Daily 9am IST": {
+      "main": [
+        [
+          {
+            "node": "Read Draft InMails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Draft InMails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Draft InMails": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [
+          {
+            "node": "Post Draft to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: InMail Approval": {
+      "main": [
+        [
+          {
+            "node": "Parse Webhook Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Webhook Params": {
+      "main": [
+        [
+          {
+            "node": "Update InMail Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update InMail Status": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "leads"
+    },
+    {
+      "name": "linkedin"
+    },
+    {
+      "name": "approval"
+    }
+  ]
+}

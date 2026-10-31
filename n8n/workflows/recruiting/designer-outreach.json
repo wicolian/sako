@@ -1,0 +1,320 @@
+{
+  "id": "designer-outreach",
+  "name": "Designer Outreach Drafts (Recruiter)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "execute-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 100000010,
+          "cachedResultName": "candidate_pipeline",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=100000010"
+        },
+        "filters": {
+          "filter": [
+            {
+              "column": "status",
+              "value": "shortlisted"
+            }
+          ]
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "read-candidates",
+      "name": "Read Shortlisted Candidates",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        460,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "split-batches",
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-5.2",
+        "options": {
+          "temperature": 0.4,
+          "maxTokens": 250
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Write a recruiting LinkedIn InMail for Sako.\n\n## Role\n- Creative & Motion Designer (remote, India)\n- Fast-paced, 48h turnarounds\n- Variety: SaaS landing pages, pitch decks, social, motion graphics\n\n## Candidate\n- Name: {{ $json.name }}\n- Title: {{ $json.title }}\n- Company: {{ $json.current_company }}\n- Skills: {{ $json.skills }}\n\n## Tone\n- Casual, startup energy\n- Highlight creative variety and growth\n- Soft CTA: 15-min chat about the role\n\nReturn ONLY valid JSON:\n{\n  \"subject\": \"...\",\n  \"body\": \"...\"\n}"
+            }
+          ]
+        }
+      },
+      "id": "generate-message",
+      "name": "AI: Generate Recruiting InMail",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "VJQjLnLDwAkI2PxY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const candidate = $('Split In Batches').item.json;\nconst responseText = $json.message?.content || $json.text || '';\n\nlet parsed = {};\ntry {\n  const match = responseText.match(/\\{[\\s\\S]*\\}/);\n  if (match) parsed = JSON.parse(match[0]);\n} catch (e) {\n  parsed = { subject: '', body: '' };\n}\n\nconst notes = `subject: ${parsed.subject || ''}\\nbody: ${parsed.body || ''}`.trim();\n\nreturn {\n  json: {\n    linkedin_url: candidate.linkedin_url,\n    notes,\n    status: 'outreach_ready'\n  }\n};"
+      },
+      "id": "prepare-update",
+      "name": "Prepare Outreach Draft",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 100000010,
+          "cachedResultName": "candidate_pipeline",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=100000010"
+        },
+        "columnToMatchOn": "linkedin_url",
+        "valueToMatchOn": "={{ $json.linkedin_url }}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "notes": "={{ $json.notes }}",
+            "status": "={{ $json.status }}"
+          }
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "update-candidate",
+      "name": "Update Candidate",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1340,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "channel": "#sako-leads",
+        "text": "=🧑‍🎨 *Recruiting InMail Draft*\n\n*Candidate:* {{ $('Split In Batches').item.json.name }} ({{ $('Split In Batches').item.json.title }})\n*Company:* {{ $('Split In Batches').item.json.current_company }}\n*LinkedIn:* {{ $('Split In Batches').item.json.linkedin_url }}\n\n*Draft:*\n{{ $json.notes }}",
+        "otherOptions": {}
+      },
+      "id": "post-to-slack",
+      "name": "Post Draft to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        300
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "seconds"
+      },
+      "id": "wait-rate-limit",
+      "name": "Wait (Rate Limit)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Shortlisted Candidates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Shortlisted Candidates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Shortlisted Candidates": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [
+          {
+            "node": "AI: Generate Recruiting InMail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Generate Recruiting InMail": {
+      "main": [
+        [
+          {
+            "node": "Prepare Outreach Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Outreach Draft": {
+      "main": [
+        [
+          {
+            "node": "Update Candidate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Candidate": {
+      "main": [
+        [
+          {
+            "node": "Post Draft to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post Draft to Slack": {
+      "main": [
+        [
+          {
+            "node": "Wait (Rate Limit)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait (Rate Limit)": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "recruiting"
+    },
+    {
+      "name": "outreach"
+    }
+  ]
+}

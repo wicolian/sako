@@ -1,0 +1,609 @@
+---
+title: "Design System"
+slug: "designsystemkela"
+published: false
+priority: 0
+seo:
+  metaTitle: "Sako Design System | Internal Reference"
+  metaDescription: "Internal design system reference showcasing all components, animations, and styling patterns."
+  keywords: ["Sako design system", "Sako components", "Sako animations", "Sako typography", "design system reference", "Sako UI components", "Sako design patterns"]
+  ogImage: "auto"
+  noindex: true
+  nofollow: true
+jsonLd:
+  type: "WebPage"
+---
+
+# Design System Showcase
+
+This page demonstrates all components and animations in the Sako design system.
+
+<Hero
+  variant="centered"
+  badge="Design System"
+  title="Sako {Design} System"
+  subtitle="Complete showcase of components, typography, animations, and styling patterns."
+  primaryCta={{ label: "View Pricing", href: "/pricing" }}
+  secondaryCta={{ label: "View Product", href: "/product" }}
+  trustText="Internal design system reference • Not indexed by search engines"
+/>
+
+## Typography & Fonts
+
+<FeatureGrid
+  variant="simple"
+  columns={3}
+  title="Typography {Hierarchy}"
+  items={[
+    {
+      icon: "Type",
+      title: "Geist Sans",
+      description: "Primary typeface for body text, UI elements, and headings. Clean, modern, highly readable. Location: `src/app/globals.css` (--font-geist-sans)"
+    },
+    {
+      icon: "Italic",
+      title: "Playfair Display",
+      description: "Serif typeface for accents, highlights, and special emphasis. Elegant and distinctive. Location: `src/app/globals.css` (--font-playfair)"
+    },
+    {
+      icon: "Code",
+      title: "Geist Mono",
+      description: "Monospace font for code snippets, data displays, and technical content. Location: `src/app/globals.css` (--font-geist-mono)"
+    }
+  ]}
+/>
+
+## Color System
+
+<FeatureGrid
+  columns={4}
+  variant="simple"
+  title="{Color} Palette"
+  items={[
+    {
+      icon: "Circle",
+      title: "Lime (#9AE83E)",
+      description: "Primary brand color. Used for accents, highlights, and CTAs."
+    },
+    {
+      icon: "Circle",
+      title: "Black (#0A0A0A)",
+      description: "Primary text color. Used for headings and body text."
+    },
+    {
+      icon: "Circle",
+      title: "Gray (#6B7280)",
+      description: "Secondary text color. Used for muted text and descriptions."
+    },
+    {
+      icon: "Circle",
+      title: "White (#FFFFFF)",
+      description: "Background color. Used for cards and light sections."
+    }
+  ]}
+/>
+
+## Component Showcase
+
+### Hero Variants
+
+<Hero
+  variant="centered"
+  title="Centered Hero"
+  subtitle="Default hero variant with centered content and badge support."
+/>
+
+<Hero
+  variant="split"
+  title="Split Hero Layout"
+  subtitle="Two-column layout with content on left, visual on right."
+  primaryCta={{ label: "Learn More", href: "#" }}
+/>
+
+### Metric Cards
+
+<MetricCards
+  style="cards"
+  variant="transparent"
+  title="Metric {Cards} Demo"
+  items={[
+    { title: "Active Projects", value: "150+", description: "Projects currently in progress" },
+    { title: "Team Members", value: "25+", description: "Design and motion specialists" },
+    { title: "Avg. Turnaround", value: "48h", description: "Standard delivery time" },
+    { title: "Client Satisfaction", value: "98%", description: "Based on post-delivery surveys" }
+  ]}
+/>
+
+### Bento Grid Animations
+
+<FeatureGrid
+  variant="bento"
+  title="Bento Grid with {Animations}"
+  subtitle="Interactive cards with hover effects and rich content animations"
+  items={[
+    {
+      icon: "Image",
+      title: "Typing Animation",
+      description: "Character-by-character text reveal, like typing a task name.",
+      bentoContent: { type: "typing", text: "Landing_Page_V2.fig" }
+    },
+    {
+      icon: "Clock",
+      title: "Countdown Timer",
+      description: "Live countdown timer with spinning clock icon.",
+      bentoContent: { type: "countdown", hours: 48 }
+    },
+    {
+      icon: "Zap",
+      title: "Progress Scanner",
+      description: "Scanning progress bar with glowing line animation.",
+      bentoContent: { type: "progress", label: "Processing" }
+    },
+    {
+      icon: "MessageSquare",
+      title: "Slack Message",
+      description: "Slack-style message notification with live indicator.",
+      bentoContent: { type: "slack-message", text: "New brief submitted" }
+    },
+    {
+      icon: "Layers",
+      title: "Stack Cards",
+      description: "Stacking card animation for queue visualization.",
+      bentoContent: { type: "stack", items: 3 }
+    },
+    {
+      icon: "Check",
+      title: "Launch Button",
+      description: "Success animation with ping effect on hover.",
+      bentoContent: { type: "launch" }
+    }
+  ]}
+/>
+
+### Cards Variants
+
+<FeatureGrid
+  variant="cards"
+  columns={3}
+  title="Cards {Layout}"
+  items={[
+    {
+      icon: "Rocket",
+      title: "Fast Delivery",
+      description: "48-hour standard SLA with guaranteed delivery times."
+    },
+    {
+      icon: "Users",
+      title: "Dedicated Team",
+      description: "Full-time design and motion specialists assigned to your projects."
+    },
+    {
+      icon: "CheckCircle",
+      title: "Quality Assured",
+      description: "Every deliverable goes through QA before shipping."
+    }
+  ]}
+/>
+
+### Simple Layout
+
+<FeatureGrid
+  variant="simple"
+  columns={2}
+  title="Simple {Layout}"
+  items={[
+    {
+      icon: "Check",
+      title: "Included Services",
+      description: "Design, motion graphics, web development, brand consistency, and quality assurance."
+    },
+    {
+      icon: "X",
+      title: "Not Included",
+      description: "Full product development, engineering work, complex CMS implementations, or third-party integrations."
+    }
+  ]}
+/>
+
+### Comparison Table
+
+<ComparisonTable
+  title="Feature {Comparison}"
+  highlightColumn={1}
+  columns={["Feature", "Core", "Pro", "Enterprise"]}
+  rows={[
+    { label: "Active Slots", values: [{ text: "1", check: true }, { text: "2", check: true }, { text: "5+", check: true }] },
+    { label: "Response Time", values: [{ text: "48h", check: true }, { text: "24h", check: true }, { text: "12h", check: true }] },
+    { label: "Dedicated PM", values: [{ text: "No", check: false }, { text: "Yes", check: true }, { text: "Yes", check: true }] },
+    { label: "Custom SLA", values: [{ text: "No", check: false }, { text: "No", check: false }, { text: "Yes", check: true }] }
+  ]}
+  ctas={{
+    primary: { label: "Start Free Trial", href: "#" },
+    secondary: { label: "Compare Plans", href: "#" }
+  }}
+/>
+
+### FAQ Accordion
+
+<FAQAccordion
+  title={{ prefix: "Frequently Asked", italic: "Questions" }}
+  items={[
+    {
+      question: "How does the 48-hour SLA work?",
+      answer: "Once a task is marked as 'Ready' with all assets and requirements provided, we begin the 48-hour countdown. This ensures predictable delivery times."
+    },
+    {
+      question: "Can I pause or cancel my subscription?",
+      answer: "Yes, you can pause or cancel at any time. We offer flexible month-to-month subscriptions with no long-term contracts."
+    },
+    {
+      question: "What file formats do you deliver?",
+      answer: "We deliver production-ready files including Figma, Sketch, Adobe Creative Suite formats, MP4 for motion, and optimized web assets."
+    }
+  ]}
+/>
+
+### CTA Sections
+
+<CTASection
+  variant="final"
+  title="Ready to {Start Shipping}?"
+  subtitle="Join hundreds of teams already using Sako to accelerate their design workflows."
+  primaryCta={{ label: "Start Free Trial", href: "#" }}
+  secondaryCta={{ label: "Book a fit check", href: "#" }}
+  trustText="No credit card required • 14-day free trial • Cancel anytime"
+/>
+
+## Button Styles
+
+<div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+  <div className="text-center">
+    <button className="px-8 py-3.5 bg-black text-white text-sm font-semibold rounded-full hover:bg-gray-800 hover:scale-105 transition-all shadow-xl shadow-lime-500/10">
+      Primary Button
+    </button>
+    <p className="text-xs text-gray-500 mt-2">Primary CTA</p>
+  </div>
+
+  <div className="text-center">
+    <button className="px-8 py-3.5 bg-white border border-gray-200 text-sm font-medium rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all">
+      Secondary Button
+    </button>
+    <p className="text-xs text-gray-500 mt-2">Secondary CTA</p>
+  </div>
+
+  <div className="text-center">
+    <button className="px-8 py-3.5 bg-[#9AE83E] text-black text-sm font-bold rounded-full hover:bg-white transition-colors">
+      Lime Button
+    </button>
+    <p className="text-xs text-gray-500 mt-2">Brand Accent</p>
+  </div>
+
+  <div className="text-center">
+    <button className="px-8 py-3.5 text-sm text-gray-500 hover:text-black transition-colors">
+      Ghost Button
+    </button>
+    <p className="text-xs text-gray-500 mt-2">Ghost Link</p>
+  </div>
+</div>
+
+## Spacing & Layout
+
+<div className="space-y-8">
+  <div className="bg-gray-50 p-6 rounded-xl">
+    <h3 className="text-lg font-semibold mb-4">Section Spacing</h3>
+    <div className="space-y-4 text-sm text-gray-600">
+      <div>• Section padding: 6rem (96px)</div>
+      <div>• Container max-width: 1200px</div>
+      <div>• Content max-width: 800px for narrow sections</div>
+      <div>• Grid gaps: 1.5rem (24px) for cards, 4rem (64px) for sections</div>
+    </div>
+  </div>
+
+  <div className="bg-gray-50 p-6 rounded-xl">
+    <h3 className="text-lg font-semibold mb-4">Border Radius</h3>
+    <div className="space-y-4 text-sm text-gray-600">
+      <div>• Cards: 1rem (16px)</div>
+      <div>• Buttons: 9999px (fully rounded)</div>
+      <div>• Large elements: 2rem (32px)</div>
+      <div>• Small elements: 0.5rem (8px)</div>
+    </div>
+  </div>
+</div>
+
+## Animations Demo
+
+<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+  <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm group hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+    <div className="w-12 h-12 rounded-xl bg-black text-white flex items-center justify-center mb-4 group-hover:bg-[#9AE83E] group-hover:text-black transition-colors">
+      ⚡
+    </div>
+    <h3 className="text-lg font-semibold mb-2">Hover Effects</h3>
+    <p className="text-sm text-gray-500">Cards lift and shadows expand on hover</p>
+  </div>
+
+  <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-shadow duration-300">
+    <div className="w-12 h-12 rounded-xl bg-[#9AE83E] text-black flex items-center justify-center mb-4 animate-pulse">
+      🎯
+    </div>
+    <h3 className="text-lg font-semibold mb-2">Pulse Animation</h3>
+    <p className="text-sm text-gray-500">Subtle pulsing for important elements</p>
+  </div>
+</div>
+
+---
+
+# Complete Component Catalog
+
+## Landing Page Components
+
+### Hero Variants
+**Location:** `src/components/landing/Hero.tsx`
+**Animations Used:** `animate-fade-in`, `PointerHighlight` component
+
+- **Centered Variant:** Full-width hero with centered content, animated gradient text eyebrow, staggered fade-in animations
+- **Split Variant:** Two-column layout with content left, visual right
+
+### SlackToShipped Component
+**Location:** `src/components/landing/SlackToShipped.tsx`
+**Animations Used:** `AnimatedGradientText`, `animate-slide-up`, `animate-spin-slow`
+
+- Animated typing effect for file names
+- Staggered card slide-up animations (0s, 0.2s, 0.4s delays)
+- Processing spinner with lime accent color
+- Progress bars with completion states
+
+### WhySako Component
+**Location:** `src/components/landing/WhySako.tsx`
+**Animations Used:** `FlipWords` component
+
+- Rotating text animation: "faster", "better", "smarter", "cheaper"
+- Hover effects on feature cards
+
+### HowItWorks Component
+**Location:** `src/components/landing/HowItWorks.tsx`
+**Animations Used:** `AnimatedGradientText`, live countdown timer, `animate-scan`, `animate-launch`
+
+- Step-by-step workflow visualization
+- Live countdown timer (48h SLA simulation)
+- Scanning progress bar animation
+- Launch button with ping effect and checkmark animation
+- Typing animation for task names
+
+### Comparison Component
+**Location:** `src/components/landing/Comparison.tsx`
+**Animations Used:** Bento grid hover effects
+
+### SakoOS Component
+**Location:** `src/components/landing/SakoOS.tsx`
+**Animations Used:** Terminal-style typing effects, code block animations
+
+### Pricing Component
+**Location:** `src/components/landing/Pricing.tsx`
+**Animations Used:** Hover effects, price highlighting
+
+### FAQ Component
+**Location:** `src/components/landing/FAQ.tsx`
+**Animations Used:** Accordion expand/collapse
+
+### FinalCTA Component
+**Location:** `src/components/landing/FinalCTA.tsx`
+**Animations Used:** Staggered fade-in animations
+
+---
+
+## Block Components
+
+### Hero Block
+**Location:** `src/components/blocks/Hero.tsx`
+**Variants:** `centered`, `split`
+**Animations:** `animate-fade-in` with staggered delays
+
+### FeatureGrid Block
+**Location:** `src/components/blocks/FeatureGrid.tsx`
+**Variants:**
+- `simple`: 2-4 column grid with basic cards
+- `cards`: Card-based layout with hover effects
+- `bento`: Bento grid with custom content types and animations
+
+**Bento Content Types:**
+- `typing`: Character-by-character text reveal
+- `countdown`: Live countdown timer with hours
+- `progress`: Scanning progress bar
+- `slack-message`: Slack-style notification
+- `stack`: Stacking card visualization
+- `launch`: Success animation with ping effect
+- `checkmarks`: Version history indicators
+- `metric`: Billing/metric display
+
+### MetricCards Block
+**Location:** `src/components/blocks/MetricCards.tsx`
+**Styles:** `cards`, `transparent`
+**Variants:** `default`, `transparent`
+
+### ComparisonTable Block
+**Location:** `src/components/blocks/ComparisonTable.tsx`
+**Features:** Highlight columns, custom rows, CTA sections
+
+### FAQAccordion Block
+**Location:** `src/components/blocks/FAQAccordion.tsx`
+**Animations:** Smooth expand/collapse transitions
+
+### CTASection Block
+**Location:** `src/components/blocks/CTASection.tsx`
+**Variants:** `default`, `final`
+
+### Timeline Block
+**Location:** `src/components/blocks/Timeline.tsx`
+
+### PageEyebrow Block
+**Location:** `src/components/blocks/PageEyebrow.tsx`
+
+### PainPoints Block
+**Location:** `src/components/blocks/PainPoints.tsx`
+
+### PricingCards Block
+**Location:** `src/components/blocks/PricingCards.tsx`
+
+### TestimonialCard Block
+**Location:** `src/components/blocks/TestimonialCard.tsx`
+
+### LegalContent Block
+**Location:** `src/components/blocks/LegalContent.tsx`
+
+---
+
+## UI Animation Components
+
+### AnimatedGradientText
+**Location:** `src/components/ui/animated-gradient-text.tsx`
+**Usage:** Animated gradient text that cycles through lime shades
+**Props:** `speed` (default: 1), `children`, `className`
+
+### PointerHighlight
+**Location:** `src/components/ui/pointer-highlight.tsx`
+**Usage:** Highlights text with pointer cursor and lime color
+**Animations:** Hover pointer effects
+
+### FlipWords
+**Location:** `src/components/ui/flip-words.tsx`
+**Usage:** Rotating text animation for dynamic content
+**Props:** `words` array, `className`
+
+### GridBackground
+**Location:** `src/components/ui/grid-background.tsx`
+**Usage:** Animated grid background with beams
+**Props:** `gridSize`, `colors`, `beams`
+
+---
+
+## Animation Patterns & CSS Classes
+
+### Custom CSS Animations (globals.css)
+- `animate-fade-in`: Staggered content reveal (0.8s ease-out)
+- `animate-float`: Floating motion (6s infinite)
+- `animate-pulse-slow`: Slow pulse (4s cubic-bezier)
+- `animate-spin-slow`: Very slow rotation (20s linear)
+- `animate-eyebrow`: Badge reveal animation
+- `animate-slide-in-right`: Right slide entrance
+- `animate-slide-up-fade`: Upward slide with fade
+- `animate-slide-up`: Simple upward slide
+- `animate-scan`: Progress bar scanning effect
+- `animate-cursor-move`: Cursor movement simulation
+- `animate-launch`: Launch/check animation
+- `animate-type`: Typing effect (3s steps)
+- `animate-blink`: Blinking cursor effect
+
+### Magic UI Animation Library
+- `animate-shiny-text`: Text shimmer effect
+- `animate-shimmer-slide`: Sliding shimmer
+- `animate-spin-around`: 3D rotation
+- `animate-rainbow`: Rainbow gradient cycle
+- `animate-marquee`: Horizontal scrolling text
+- `animate-marquee-vertical`: Vertical scrolling
+- `animate-gradient`: Background gradient shift
+- `animate-blink-cursor`: Cursor blinking
+- `animate-grid`: Grid pattern animation
+- `animate-shine`: Shine effect
+
+---
+
+## Design Tokens & Patterns
+
+### Color System
+**Location:** `src/lib/design-tokens.ts`
+
+- **Primary:** `#9AE83E` (Lime)
+- **Text:** `#0A0A0A` (Black), `#6B7280` (Gray)
+- **Backgrounds:** `#FAFAFA` (Primary), `#F5F5F5` (Secondary), `#FFFFFF` (Cards)
+- **Borders:** `#E5E5E5` (Default), `#F3F4F6` (Light)
+
+### Typography Scale
+- **H1:** `text-5xl sm:text-7xl font-semibold`
+- **H2:** `text-3xl sm:text-4xl font-medium`
+- **Body:** `text-sm text-gray-700 leading-relaxed`
+- **Caption:** `text-xs text-gray-400 uppercase font-mono`
+
+### Spacing System
+- **Section:** `py-24 px-6` (96px vertical, 24px horizontal)
+- **Container:** `max-w-[1200px] mx-auto w-full`
+- **Grid Gaps:** `gap-4` (16px), `gap-6` (24px), `gap-8` (32px)
+
+### Border Radius
+- **Cards:** `rounded-2xl` (16px)
+- **Buttons:** `rounded-full` (9999px)
+- **Large Elements:** `rounded-3xl` (24px)
+
+### Button Styles
+- **Primary:** Black background, white text, lime shadow
+- **Secondary:** White background, gray border
+- **Lime:** Lime background, black text
+- **Ghost:** Transparent with hover color change
+
+---
+
+## Content Page Usage Patterns
+
+### Standard Template Pages
+All content pages use these component patterns:
+
+1. **Hero Section:** `Hero` component with variant and copy
+2. **Metric Cards:** `MetricCards` for key statistics/highlights
+3. **Feature Grids:** `FeatureGrid` with various variants (cards, bento, simple)
+4. **Comparison Tables:** `ComparisonTable` for plan/feature comparisons
+5. **FAQs:** `FAQAccordion` for Q&A sections
+6. **CTAs:** `CTASection` for conversion actions
+
+### Animation Usage by Page Type
+
+#### Homepage (`src/app/page.tsx`)
+- Grid background with beams
+- Gradient blob overlays
+- Staggered hero animations
+- Bento grid interactions
+- Live countdown timers
+- Typing animations
+- Progress scanning effects
+
+#### Product Page (`content/pages/product.mdx`)
+- Bento grids with custom animations (typing, countdown, progress, stack, launch)
+- Feature grids with hover effects
+- Comparison tables
+
+#### About Page (`content/pages/about.mdx`)
+- Split hero layout
+- Metric cards
+- Feature grids
+- Founders section
+
+#### Other Content Pages
+- Consistent hero + feature grid patterns
+- Minimal custom animations (mostly hover effects)
+- Standard spacing and typography
+
+---
+
+## Maintenance Guidelines
+
+### Adding New Components
+1. Add to appropriate component index file (`blocks/index.ts` or `landing/index.ts`)
+2. Document in this design system page
+3. Use existing design tokens from `src/lib/design-tokens.ts`
+4. Follow established animation patterns
+
+### Animation Best Practices
+1. Use staggered delays for content reveals (100ms increments)
+2. Prefer CSS animations over JavaScript for performance
+3. Use `animate-fade-in` for initial page loads
+4. Reserve complex animations for high-impact sections only
+5. Test animations on mobile devices
+
+### Copy + Animation Integration
+- **Typing animations:** Use for technical/process content (file names, commands)
+- **Countdown timers:** Use for SLA/delivery time demonstrations
+- **Progress bars:** Use for workflow status visualization
+- **Flip words:** Use for benefit/value proposition rotation
+- **Gradient text:** Use sparingly for section headers and highlights
+
+---
+
+*This page is for internal use only. Last updated: December 2025*

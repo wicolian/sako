@@ -1,0 +1,334 @@
+{
+  "id": "call-prep-brief",
+  "name": "Call Prep Brief Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "call-prep-trigger",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Trigger: Generate Brief",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "call-prep-trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract lead data from query params (from Slack button)\nconst query = $input.first().json.query || {};\n\nconst lead = {\n  email: query.email || '',\n  name: query.name || '',\n  company: query.company || '',\n  title: query.title || '',\n  company_domain: '',\n  source: 'slack-button'\n};\n\n// Extract domain from email\nif (lead.email) {\n  const emailParts = lead.email.split('@');\n  lead.company_domain = emailParts.length > 1 ? emailParts[1] : '';\n}\n\n// Skip free email domains\nconst freeEmailDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com', 'aol.com'];\nif (freeEmailDomains.includes(lead.company_domain)) {\n  lead.company_domain = ''; // Will rely on company name for enrichment\n}\n\nreturn { json: lead };"
+      },
+      "id": "extract-lead",
+      "name": "Extract Lead Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/v1/people/match",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"email\": \"{{ $json.email }}\"\n}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "enrich-person-apollo",
+      "name": "Apollo: Enrich Person",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        680,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "XsUtKQ6O9aPU0HyZ",
+          "name": "Apollo"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/v1/organizations/enrich",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"domain\": \"{{ $('Extract Lead Data').item.json.company_domain }}\"\n}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "enrich-company-apollo",
+      "name": "Apollo: Enrich Company",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        680,
+        400
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "XsUtKQ6O9aPU0HyZ",
+          "name": "Apollo"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 1096236767,
+          "cachedResultName": "warm_opens",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=1096236767"
+        },
+        "filters": {
+          "filter": [
+            {
+              "column": "email",
+              "value": "={{ $('Extract Lead Data').item.json.email }}"
+            }
+          ]
+        },
+        "options": {
+          "outputFormatting": {
+            "values": {
+              "general": "toText"
+            }
+          }
+        }
+      },
+      "id": "lookup-warm-opens",
+      "name": "Lookup Warm Opens Data",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        680,
+        600
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Compile research data from Apollo\nconst lead = $('Extract Lead Data').item.json;\nconst personData = $('Apollo: Enrich Person').item.json || {};\nconst companyData = $('Apollo: Enrich Company').item.json || {};\nconst warmOpensData = $('Lookup Warm Opens Data').item.json || {};\n\nconst person = personData.person || {};\nconst company = companyData.organization || {};\n\n// Extract behavior signals from warm opens\nconst openCount = parseInt(warmOpensData.open_count) || 0;\nconst lastOpen = warmOpensData.last_open || '';\nconst campaigns = warmOpensData.campaigns || '';\nconst bookedAt = warmOpensData.booked_at || '';\nconst bookingUrl = warmOpensData.booking_url || '';\n\nreturn {\n  json: {\n    lead,\n    person: {\n      name: person.name || lead.name || `${person.first_name || ''} ${person.last_name || ''}`.trim(),\n      title: person.title || lead.title || 'Unknown',\n      linkedin: person.linkedin_url || null,\n      email: person.email || lead.email,\n      phone: person.phone_numbers?.[0]?.sanitized_number || null,\n      photo_url: person.photo_url || null\n    },\n    company: {\n      name: company.name || lead.company || 'Unknown Company',\n      domain: company.primary_domain || lead.company_domain,\n      description: company.short_description || company.seo_description || '',\n      industry: company.industry || 'Unknown',\n      employees: company.estimated_num_employees || 'Unknown',\n      funding: company.total_funding_printed || 'Unknown',\n      location: company.city ? `${company.city}, ${company.country}` : 'Unknown',\n      logo: company.logo_url || null,\n      tech: company.technologies || [],\n      linkedin_url: company.linkedin_url || null,\n      twitter_url: company.twitter_url || null,\n      founded_year: company.founded_year || null,\n      keywords: company.keywords || []\n    },\n    behavior: {\n      openCount,\n      lastOpen,\n      campaigns,\n      isHotLead: openCount >= 3 || (lastOpen && new Date(lastOpen) > new Date(Date.now() - 24*60*60*1000))\n    },\n    booking: {\n      hasBooking: Boolean(bookedAt),\n      bookedAt,\n      bookingUrl\n    }\n  }\n};"
+      },
+      "id": "compile-research",
+      "name": "Compile Research",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-5.2",
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a sales strategist for Sako, a design subscription service for SaaS companies.\n\nGenerate a concise pre-call brief for this warm lead:\n\n## Prospect Profile\n- Name: {{ $json.person.name }}\n- Title: {{ $json.person.title }}\n- Email: {{ $json.person.email }}\n- Phone: {{ $json.person.phone || 'Not available' }}\n- LinkedIn: {{ $json.person.linkedin || 'Not available' }}\n\n## Company Info (from Apollo)\n- Company: {{ $json.company.name }}\n- Industry: {{ $json.company.industry }}\n- Size: {{ $json.company.employees }} employees\n- Location: {{ $json.company.location }}\n- Founded: {{ $json.company.founded_year || 'Unknown' }}\n- Funding: {{ $json.company.funding }}\n- Description: {{ $json.company.description }}\n- Technologies: {{ $json.company.tech.slice(0, 8).join(', ') || 'Unknown' }}\n- Keywords: {{ $json.company.keywords.slice(0, 5).join(', ') || 'Unknown' }}\n\n## Engagement Signals\n- Email Opens: {{ $json.behavior.openCount }}\n- Last Open: {{ $json.behavior.lastOpen || 'Unknown' }}\n- Campaigns: {{ $json.behavior.campaigns || 'Unknown' }}\n- Hot Lead: {{ $json.behavior.isHotLead ? 'YES - prioritize!' : 'No' }}\n\n{{ $json.booking.hasBooking ? '## Upcoming Meeting\\n- Booked for: ' + $json.booking.bookedAt + '\\n- Booking URL: ' + ($json.booking.bookingUrl || 'Not available') + '\\n- Note: This is a confirmed meeting, not a cold call\\n' : '' }}\n\n## Sako Context\n- Sako offers unlimited design requests on a monthly subscription\n- Packages: Core ($2,500/mo), Ops ($4,500/mo), Enterprise (starts at $8,500/mo)\n- Best for: B2B SaaS companies needing ongoing design work without hiring\n- NOT for: One-off projects, agencies, enterprise procurement cycles\n\n## Instructions\nGenerate a brief with these EXACT sections:\n\n### 1. Company Snapshot (2-3 sentences)\nWho they are and what they likely need from a design perspective.\n\n### 2. Likely Pain Points (3 bullets)\nBased on company profile, what design challenges they probably face.\n\n### 3. Recommended Sako Package\nWhich tier (Core, Ops, or Enterprise) and why.\n\n### 4. Potential Objections & Responses (2-3)\nLikely pushback and how to handle it.\n\n### 5. Opening Hook\nOne strong opening line referencing their email engagement.\n\nBe specific based on the data. Reference their industry, tech stack, and engagement behavior."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 1200
+        }
+      },
+      "id": "generate-brief",
+      "name": "Generate Brief (AI)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "VJQjLnLDwAkI2PxY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "channel": "#sako-leads",
+        "text": "=📋 *Call Prep Brief: {{ $('Compile Research').item.json.person.name }}*\n\n*Company:* {{ $('Compile Research').item.json.company.name }}\n*Title:* {{ $('Compile Research').item.json.person.title }}\n*Industry:* {{ $('Compile Research').item.json.company.industry }}\n*Size:* {{ $('Compile Research').item.json.company.employees }} employees\n*Engagement:* {{ $('Compile Research').item.json.behavior.openCount }} opens {{ $('Compile Research').item.json.behavior.isHotLead ? '🔥 HOT' : '' }}\n\n---\n\n{{ $json.text || $json.message?.content }}\n\n---\n\n{{ $('Compile Research').item.json.person.linkedin ? '<' + $('Compile Research').item.json.person.linkedin + '|LinkedIn>' : '' }} {{ $('Compile Research').item.json.company.linkedin_url ? '<' + $('Compile Research').item.json.company.linkedin_url + '|Company LinkedIn>' : '' }} {{ $('Compile Research').item.json.company.domain ? '<https://' + $('Compile Research').item.json.company.domain + '|Website>' : '' }}",
+        "otherOptions": {}
+      },
+      "id": "slack-brief",
+      "name": "Post Brief to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        300
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=✅ Call prep brief generated for {{ $('Compile Research').item.json.person.name }} ({{ $('Compile Research').item.json.company.name }})\n\nCheck #sako-leads in Slack for the full brief.\n\nYou can close this tab."
+      },
+      "id": "respond",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Trigger: Generate Brief": {
+      "main": [
+        [
+          {
+            "node": "Extract Lead Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Lead Data": {
+      "main": [
+        [
+          {
+            "node": "Apollo: Enrich Person",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Apollo: Enrich Company",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Lookup Warm Opens Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo: Enrich Person": {
+      "main": [
+        [
+          {
+            "node": "Compile Research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo: Enrich Company": {
+      "main": [
+        [
+          {
+            "node": "Compile Research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup Warm Opens Data": {
+      "main": [
+        [
+          {
+            "node": "Compile Research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compile Research": {
+      "main": [
+        [
+          {
+            "node": "Generate Brief (AI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Brief (AI)": {
+      "main": [
+        [
+          {
+            "node": "Post Brief to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post Brief to Slack": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "leads"
+    },
+    {
+      "name": "call-prep"
+    }
+  ]
+}

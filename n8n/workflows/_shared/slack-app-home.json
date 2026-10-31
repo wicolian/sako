@@ -1,0 +1,457 @@
+{
+  "id": "slack-app-home",
+  "name": "Slack App Home",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "slack-events",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "webhook",
+      "name": "Slack Events Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "slack-events"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Slack Events payload (crypto disallowed in n8n 2.6+, rely on URL obscurity + payload validation)\nconst input = $input.first().json;\nconst body = input.body;\nconst payload = typeof body === 'string' ? JSON.parse(body) : body;\n\n// Handle url_verification challenge\nif (payload.type === 'url_verification') {\n  return { json: { isChallenge: true, challenge: payload.challenge } };\n}\n\n// Validate this looks like a Slack event\nif (!payload.team_id || !payload.event) {\n  throw new Error('Invalid Slack event payload');\n}\n\n// Check timestamp freshness (replay protection)\nconst timestamp = input.headers['x-slack-request-timestamp'];\nif (timestamp) {\n  const currentTime = Math.floor(Date.now() / 1000);\n  if (Math.abs(currentTime - parseInt(timestamp)) > 300) {\n    throw new Error('Slack request too old');\n  }\n}\n\nreturn {\n  json: {\n    isChallenge: false,\n    eventType: payload.event?.type,\n    userId: payload.event?.user,\n    teamId: payload.team_id\n  }\n};"
+      },
+      "id": "verify-slack",
+      "name": "Verify Slack Events",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.isChallenge }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "is-challenge",
+      "name": "Is Challenge?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        680,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.challenge }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "respond-challenge",
+      "name": "Respond Challenge",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        900,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.eventType }}",
+              "value2": "app_home_opened"
+            }
+          ]
+        }
+      },
+      "id": "is-home",
+      "name": "Is App Home?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        680,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 492604584,
+          "cachedResultName": "qualified_leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=492604584"
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "read-qualified",
+      "name": "Read Qualified Leads",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        900,
+        320
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 1620036434,
+          "cachedResultName": "content_backlog",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=1620036434"
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "read-content",
+      "name": "Read Content Backlog",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        900,
+        440
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 31482936,
+          "cachedResultName": "call_tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=31482936"
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "read-call-tracker",
+      "name": "Read Call Tracker",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        900,
+        560
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 888766463,
+          "cachedResultName": "pr_backlog",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=888766463"
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "read-pr",
+      "name": "Read PR Backlog",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        900,
+        680
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "wait"
+      },
+      "id": "merge-data",
+      "name": "Merge Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const leads = $items('Read Qualified Leads').map(i => i.json);\nconst content = $items('Read Content Backlog').map(i => i.json);\nconst calls = $items('Read Call Tracker').map(i => i.json);\nconst pr = $items('Read PR Backlog').map(i => i.json);\n\nconst now = new Date();\nconst dayAgo = new Date(now - 24 * 60 * 60 * 1000);\n\nconst leadsToday = leads.filter(l => l.scored_at && new Date(l.scored_at) >= dayAgo);\nconst pendingContent = content.filter(c => ['queued', 'draft', 'needs_review'].includes((c.status || '').toLowerCase()));\nconst callsToday = calls.filter(c => c.called_at && new Date(c.called_at) >= dayAgo);\nconst prQueued = pr.filter(p => (p.status || '').toLowerCase() === 'queued');\n\nconst view = {\n  type: 'home',\n  blocks: [\n    {\n      type: 'header',\n      text: {\n        type: 'plain_text',\n        text: 'Sako Command Center',\n        emoji: true\n      }\n    },\n    {\n      type: 'section',\n      text: {\n        type: 'mrkdwn',\n        text: `*Quick Stats*\\n• Qualified leads (24h): ${leadsToday.length}\\n• Pending content approvals: ${pendingContent.length}\\n• Calls logged (24h): ${callsToday.length}\\n• PR backlog queued: ${prQueued.length}`\n      }\n    },\n    {\n      type: 'section',\n      text: {\n        type: 'mrkdwn',\n        text: '*Quick Actions*\\n• `/sako leads today`\\n• `/sako brief <email>`\\n• `/sako content pending`\\n• `/sako metrics`'\n      }\n    }\n  ]\n};\n\nreturn {\n  json: {\n    userId: $json.userId,\n    view\n  }\n};"
+      },
+      "id": "build-home",
+      "name": "Build Home View",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "requestMethod": "POST",
+        "url": "https://slack.com/api/views.publish",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"user_id\": \"{{ $json.userId }}\",\n  \"view\": {{ $json.view }}\n}",
+        "options": {}
+      },
+      "id": "publish-home",
+      "name": "Publish Home View",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1560,
+        500
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "OK",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "respond-ok",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        500
+      ]
+    }
+  ],
+  "connections": {
+    "Slack Events Webhook": {
+      "main": [
+        [
+          {
+            "node": "Verify Slack Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Slack Events": {
+      "main": [
+        [
+          {
+            "node": "Is Challenge?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Challenge?": {
+      "main": [
+        [
+          {
+            "node": "Respond Challenge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is App Home?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is App Home?": {
+      "main": [
+        [
+          {
+            "node": "Read Qualified Leads",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Content Backlog",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Call Tracker",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read PR Backlog",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Qualified Leads": {
+      "main": [
+        [
+          {
+            "node": "Merge Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Content Backlog": {
+      "main": [
+        [
+          {
+            "node": "Merge Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Read Call Tracker": {
+      "main": [
+        [
+          {
+            "node": "Merge Data",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Read PR Backlog": {
+      "main": [
+        [
+          {
+            "node": "Merge Data",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Merge Data": {
+      "main": [
+        [
+          {
+            "node": "Build Home View",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Home View": {
+      "main": [
+        [
+          {
+            "node": "Publish Home View",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish Home View": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "slack"
+    },
+    {
+      "name": "app-home"
+    }
+  ]
+}

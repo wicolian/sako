@@ -1,0 +1,246 @@
+{
+  "id": "journalist-monitor",
+  "name": "Journalist Request Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 4
+            }
+          ]
+        }
+      },
+      "id": "cron",
+      "name": "Every 4 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.twitter.com/2/tweets/search/recent?query=%23journorequest%20(design%20OR%20SaaS%20OR%20startup%20OR%20marketing)&max_results=20",
+        "authentication": "oAuth2",
+        "options": {}
+      },
+      "id": "search-twitter",
+      "name": "Search #journorequest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        460,
+        200
+      ],
+      "credentials": {
+        "twitterOAuth2Api": {
+          "id": "twitter-oauth",
+          "name": "Twitter OAuth"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "https://api.qwoted.com/v1/requests?topics=technology,business,startup",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "fetch-qwoted",
+      "name": "Fetch Qwoted Requests",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        460,
+        400
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "qwoted-api",
+          "name": "Qwoted API"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combine and filter journalist requests\nconst twitterResults = $('Search #journorequest').item.json?.data || [];\nconst qwotedResults = $('Fetch Qwoted Requests').item.json?.requests || [];\n\nconst relevantKeywords = [\n  'design', 'saas', 'startup', 'subscription', 'agency',\n  'landing page', 'conversion', 'branding', 'visual',\n  'ai in design', 'design ops', 'freelance', 'creative'\n];\n\nconst requests = [];\n\n// Process Twitter results\ntwitterResults.forEach(tweet => {\n  const text = tweet.text?.toLowerCase() || '';\n  const isRelevant = relevantKeywords.some(kw => text.includes(kw));\n  \n  if (isRelevant) {\n    requests.push({\n      source: 'twitter',\n      id: tweet.id,\n      text: tweet.text,\n      author: tweet.author_id,\n      url: `https://twitter.com/i/web/status/${tweet.id}`,\n      deadline: null\n    });\n  }\n});\n\n// Process Qwoted results\nqwotedResults.forEach(req => {\n  const text = (req.title + ' ' + req.description)?.toLowerCase() || '';\n  const isRelevant = relevantKeywords.some(kw => text.includes(kw));\n  \n  if (isRelevant) {\n    requests.push({\n      source: 'qwoted',\n      id: req.id,\n      text: req.title + ': ' + req.description,\n      author: req.journalist_name,\n      url: req.url || '',\n      deadline: req.deadline\n    });\n  }\n});\n\nif (requests.length === 0) {\n  return { json: { no_requests: true } };\n}\n\nreturn requests.map(r => ({ json: r }));"
+      },
+      "id": "filter-relevant",
+      "name": "Filter Relevant",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.no_requests }}",
+              "value2": false
+            }
+          ]
+        }
+      },
+      "id": "has-requests",
+      "name": "Has Requests?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-5.2",
+        "messages": {
+          "values": [
+            {
+              "content": "=Draft a response to this journalist request:\n\n## Request\n{{ $json.text }}\n\n## About Sako\nSako is a design subscription service for SaaS companies. We offer 48-hour turnaround, unlimited revisions, and month-to-month contracts.\n\n## Founder Context\nYour Founder has experience scaling design operations at multiple SaaS startups.\n\n## Guidelines\n1. Keep response under 100 words\n2. Offer specific, relevant expertise\n3. Include 2-3 talking points\n4. Professional but not stiff\n5. Clear availability statement\n\n## Output Format\nSubject: Re: [topic]\n\n[response body]"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 400
+        }
+      },
+      "id": "draft-response",
+      "name": "Draft Response",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        200
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "VJQjLnLDwAkI2PxY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "requestMethod": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"#pr-requests\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": {\n        \"type\": \"plain_text\",\n        \"text\": \"📰 Journalist Request Found\",\n        \"emoji\": true\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*Source:* {{ $('Filter Relevant').item.json.source }}\\n*Request:*\\n{{ $('Filter Relevant').item.json.text.substring(0, 500) }}\"\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"{{ $('Filter Relevant').item.json.url ? '<' + $('Filter Relevant').item.json.url + '|View Original>' : '' }} {{ $('Filter Relevant').item.json.deadline ? '⏰ Deadline: ' + $('Filter Relevant').item.json.deadline : '' }}\"\n      }\n    },\n    {\n      \"type\": \"divider\"\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*Suggested Response:*\\n```{{ $json.text.substring(0, 1000) }}```\"\n      }\n    },\n    {\n      \"type\": \"actions\",\n      \"elements\": [\n        {\n          \"type\": \"button\",\n          \"text\": {\n            \"type\": \"plain_text\",\n            \"text\": \"✅ Approve & Send\",\n            \"emoji\": true\n          },\n          \"style\": \"primary\",\n          \"action_id\": \"approve_journalist_response\",\n          \"value\": \"{{ $('Filter Relevant').item.json.id }}\"\n        },\n        {\n          \"type\": \"button\",\n          \"text\": {\n            \"type\": \"plain_text\",\n            \"text\": \"✏️ Edit First\",\n            \"emoji\": true\n          },\n          \"action_id\": \"edit_journalist_response\",\n          \"value\": \"{{ $('Filter Relevant').item.json.id }}\"\n        },\n        {\n          \"type\": \"button\",\n          \"text\": {\n            \"type\": \"plain_text\",\n            \"text\": \"⏭️ Skip\",\n            \"emoji\": true\n          },\n          \"action_id\": \"skip_journalist_response\",\n          \"value\": \"{{ $('Filter Relevant').item.json.id }}\"\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "slack-approval",
+      "name": "Slack: Approval Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1340,
+        200
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Every 4 Hours": {
+      "main": [
+        [
+          {
+            "node": "Search #journorequest",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Qwoted Requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search #journorequest": {
+      "main": [
+        [
+          {
+            "node": "Filter Relevant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Qwoted Requests": {
+      "main": [
+        [
+          {
+            "node": "Filter Relevant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Relevant": {
+      "main": [
+        [
+          {
+            "node": "Has Requests?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Requests?": {
+      "main": [
+        [
+          {
+            "node": "Draft Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Draft Response": {
+      "main": [
+        [
+          {
+            "node": "Slack: Approval Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "pr"
+    },
+    {
+      "name": "journalist"
+    }
+  ]
+}

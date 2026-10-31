@@ -1,0 +1,261 @@
+---
+title: "Sako Product"
+slug: "product"
+template: "standard"
+published: true
+priority: 0
+seo:
+  metaTitle: "Sako Product | The Dashboard Behind 48h Delivery"
+  metaDescription: "Sako's delivery dashboard: active slots, SLA timers, reviews, version history, unlimited brands, and team seats."
+  keywords: ["design ops platform", "design delivery dashboard", "design SLA software", "creative workflow", "brand management", "design + motion subscription"]
+  ogImage: "auto"
+jsonLd:
+  type: "SoftwareApplication"
+---
+
+<Hero
+  eyebrow="The Product"
+  variant="split"
+  title="The dashboard that turns {requests} into shipped work"
+  subtitle="Unlimited requests. Clear capacity. Real deadlines. Sako gives you one place to run design + motion delivery with SLA timers, reviews, version history, unlimited brands, and team access."
+  primaryCta={{ label: "Start Shipping", href: "https://app.trysako.com" }}
+  secondaryCta={{ label: "See How It Works", href: "/how-it-works" }}
+  trustText="48h standard tasks once Ready • IST business days • Slack optional for notifications"
+  scene="product"
+/>
+
+<MetricCards
+  style="cards"
+  variant="transparent"
+  title="What Sako makes {predictable}"
+  subtitle="The stuff that usually falls apart in Slack threads."
+  items={[
+    { title: "Standard SLA", icon: "Timer", value: "48h", description: "Most standard tasks once Ready." },
+    { title: "Throughput", icon: "Activity", value: "Active slots", description: "Work runs in parallel, on purpose." },
+    { title: "Brands", icon: "Briefcase", value: "Unlimited", description: "Multiple products, one workspace." },
+    { title: "Team access", icon: "Users", value: "Seats", description: "Invite your team with roles." }
+  ]}
+/>
+
+<FeatureGrid
+  columns={2}
+  variant="cards"
+  title="What you do in {Sako}"
+  items={[
+    {
+      icon: "target",
+      title: "Submit a task that’s actually clear",
+      description: "Drop a brief with files, references, brand selection, and output format. We keep it structured so delivery doesn’t turn into 40 follow-ups."
+    },
+    {
+      icon: "eye",
+      title: "Track progress without chasing",
+      description: "Queued → In Progress → In Review → Completed, with timers and timestamps. You always know what’s moving and what’s blocked."
+    },
+    {
+      icon: "messageSquare",
+      title: "Review in one place",
+      description: "Feedback stays attached to the work. Threaded comments, revisions, and version history. No “where’s the latest?” nonsense."
+    },
+    {
+      icon: "checkCircle",
+      title: "Get ship-ready files",
+      description: "Exports plus source files. Clean handoff. Built for publishing, not just looking good in a preview."
+    }
+  ]}
+/>
+
+<FeatureGrid
+  variant="bento"
+  title="The {command} center"
+  subtitle="A real view of work, capacity, and delivery."
+  items={[
+    {
+      icon: "Layers",
+      title: "Active slots + queue",
+      description: "Unlimited requests, but only X are active at once. That's how quality stays consistent.",
+      bentoContent: { type: "scene", id: "slotsQueue" }
+    },
+    {
+      icon: "Clock",
+      title: "SLA timers",
+      description: "Every eligible task runs on a visible countdown once it's marked Ready.",
+      bentoContent: { type: "scene", id: "slaTimer" }
+    },
+    {
+      icon: "History",
+      title: "Versions that don't vanish",
+      description: "Every iteration is tracked so decisions don't get lost in chat history.",
+      bentoContent: { type: "scene", id: "versionsTimeline" }
+    },
+    {
+      icon: "DollarSign",
+      title: "Billing visibility",
+      description: "Plan, slots, and status visible in the same place the work happens.",
+      bentoContent: { type: "scene", id: "billingPanel" }
+    }
+  ]}
+/>
+
+<FeatureGrid
+  variant="bento"
+  title="Unlimited {brands}, same workflow"
+  subtitle="Run multiple products without rebuilding context every time."
+  items={[
+    {
+      icon: "Paintbrush",
+      title: "Unlimited brand profiles",
+      description: "Colors, fonts, tone tags, and layout preferences per brand.",
+      bentoContent: { type: "scene", id: "brandProfiles" }
+    },
+    {
+      icon: "Target",
+      title: "Brand-aware tasks",
+      description: "Pick the brand on every task. Output stays consistent without babysitting.",
+      bentoContent: { type: "scene", id: "brandAwareTask" }
+    },
+    {
+      icon: "FileText",
+      title: "Voice guidance",
+      description: "Set tone tags and writing guidance so your assets don't sound like random freelancers.",
+      bentoContent: { type: "scene", id: "voiceGuidance" }
+    },
+    {
+      icon: "Paperclip",
+      title: "Reusable references",
+      description: "Keep the right examples and files attached to the brand so briefs get faster over time.",
+      bentoContent: { type: "scene", id: "referenceLibrary" }
+    }
+  ]}
+/>
+
+<FeatureGrid
+  columns={2}
+  variant="cards"
+  title="Invite your {team}. Control access."
+  items={[
+    {
+      icon: "users",
+      title: "Team seats",
+      description: "Bring in marketing, growth, founders, and stakeholders. No forwarding files and hoping context survives."
+    },
+    {
+      icon: "shield",
+      title: "Roles and permissions",
+      description: "Owners, submitters, members, viewers. Keep approvals tight and workflows clean."
+    }
+  ]}
+/>
+
+<FeatureGrid
+  variant="bento"
+  title="The Ready rule that makes {48h} honest"
+  subtitle="The timer starts when the task is Ready. Not when someone drops a vague message."
+  items={[
+    {
+      icon: "ListChecks",
+      title: "Clear deliverable",
+      description: "What you want, where it's used, and the exact output format.",
+      bentoContent: { type: "scene", id: "readyScope" }
+    },
+    {
+      icon: "FolderOpen",
+      title: "Assets included",
+      description: "Brand kit, copy (or use existing), references, and source files if needed.",
+      bentoContent: { type: "scene", id: "readyAssets" }
+    },
+    {
+      icon: "User",
+      title: "One decision owner",
+      description: "One approver and feedback in the dashboard so revisions don't spiral.",
+      bentoContent: { type: "scene", id: "readyOwner" }
+    },
+    {
+      icon: "Repeat",
+      title: "Revision guardrail",
+      description: "Unlimited revisions until it matches the brief. New direction becomes a new task.",
+      bentoContent: { type: "scene", id: "readyRevisions" }
+    }
+  ]}
+/>
+
+<FeatureGrid
+  variant="bento"
+  title="SLA and {remedy}"
+  subtitle="Clear, boring, reliable. That's the point."
+  items={[
+    {
+      icon: "Clock",
+      title: "Standard SLA",
+      description: "Most standard tasks ship in 48 business hours once Ready.",
+      bentoContent: { type: "scene", id: "slaTimer" }
+    },
+    {
+      icon: "Shield",
+      title: "If we miss (eligible task)",
+      description: "Request a service credit via ticket. Credit applies to your next invoice.",
+      bentoContent: { type: "scene", id: "slaRemedy" }
+    },
+    {
+      icon: "Percent",
+      title: "Credit amount",
+      description: "1/30 of monthly fee per eligible miss. Capped at 20% per month.",
+      bentoContent: { type: "scene", id: "creditMeter" }
+    },
+    {
+      icon: "Layers",
+      title: "Complex work stays fair",
+      description: "Bigger work gets split into multiple tasks, each with its own timer.",
+      bentoContent: { type: "scene", id: "slotsQueue" }
+    }
+  ]}
+/>
+
+<FeatureGrid
+  columns={1}
+  variant="simple"
+  title="{Composer}"
+
+  items={[
+    {
+      icon: "Sparkles",
+      title: "Draft fast, then ship with the pod",
+      description: "Composer is our AI draft tool in testing. It will generate strong first-pass layouts for landing pages, decks, and campaign assets, then you can send the best direction to your pod for polish and delivery."
+    }
+  ]}
+/>
+
+<FAQAccordion
+  title={{ prefix: "Product", italic: "faq" }}
+  items={[
+    {
+      question: "Can we manage multiple brands in one account?",
+      answer: "Yes. You can create unlimited brands and select the right one per task so outputs stay consistent across products."
+    },
+    {
+      question: "Can my team use Sako too?",
+      answer: "Yes. Invite teammates and assign roles so submissions and approvals stay clean."
+    },
+    {
+      question: "Do we have to use Slack?",
+      answer: "No. Slack is optional for notifications. The dashboard is where briefs, files, feedback, and approvals live."
+    },
+    {
+      question: "Is Composer available today?",
+      answer: "Not yet. Composer is in testing and planned for Q1 2026."
+    },
+    {
+      question: "What makes Sako different from a request portal?",
+      answer: "Portals track requests. Sako controls delivery: active slots prevent pile-ups, Ready rules start the clock, and every task has visible timers and versioned reviews."
+    }
+  ]}
+/>
+
+<CTASection
+  variant="final"
+  title="Start {shipping} with full visibility"
+  subtitle="Submit your first task and see how predictable delivery feels when it’s built into the system."
+  primaryCta={{ label: "Start Shipping", href: "https://app.trysako.com" }}
+  secondaryCta={{ label: "Book a fit check", href: "/book-a-call" }}
+  trustText="Core + Ops: self-serve • Enterprise: book-a-call • IST business days"
+/>

@@ -1,0 +1,369 @@
+{
+  "id": "calcom-booking-handler",
+  "name": "Cal.com Booking Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "calcom-booking",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "webhook-calcom",
+      "name": "Cal.com Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "calcom-booking"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Cal.com webhook payload\nconst input = $input.first().json;\nconst body = typeof input.body === 'string' ? JSON.parse(input.body) : (input.body || input);\n\nconst payload = body.payload || body;\nconst eventType = body.triggerEvent || payload.triggerEvent || payload.eventType || '';\n\nconst attendees = payload.attendees || payload.attendeesList || [];\nconst attendee = attendees[0] || {};\n\nconst email = attendee.email || payload.email || '';\nconst name = attendee.name || payload.name || '';\nconst startTime = payload.startTime || payload.start || payload.start_time || '';\nconst endTime = payload.endTime || payload.end || payload.end_time || '';\nconst bookingUid = payload.uid || payload.bookingUid || payload.id || '';\nconst bookingUrl = payload.bookingUrl || payload.meetingUrl || payload.videoCallUrl || $env.CALCOM_BOOKING_LINK || '';\n\nreturn {\n  json: {\n    event_type: eventType,\n    email,\n    name,\n    start_time: startTime,\n    end_time: endTime,\n    booking_uid: bookingUid,\n    booking_url: bookingUrl\n  }\n};"
+      },
+      "id": "parse-calcom",
+      "name": "Parse Cal.com Booking",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 1096236767,
+          "cachedResultName": "warm_opens",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=1096236767"
+        },
+        "filters": {
+          "filter": [
+            {
+              "column": "email",
+              "value": "={{ $json.email }}"
+            }
+          ]
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "lookup-warm-opens",
+      "name": "Lookup Warm Opens",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        680,
+        200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const booking = $('Parse Cal.com Booking').item.json;\nconst warmOpen = $('Lookup Warm Opens').first()?.json || {};\n\nreturn {\n  json: {\n    email: booking.email,\n    name: booking.name || warmOpen.name || '',\n    company: warmOpen.company || '',\n    title: warmOpen.title || '',\n    phone: warmOpen.phone || '',\n    booking_uid: booking.booking_uid,\n    booking_url: booking.booking_url,\n    booked_at: booking.start_time || new Date().toISOString(),\n    event_type: booking.event_type\n  }\n};"
+      },
+      "id": "merge-booking",
+      "name": "Merge Booking + Warm Opens",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 1096236767,
+          "cachedResultName": "warm_opens",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=1096236767"
+        },
+        "filters": {
+          "filter": [
+            {
+              "column": "email",
+              "value": "={{ $json.email }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "call_status": "meeting_booked",
+            "booked_at": "={{ $json.booked_at }}",
+            "booking_url": "={{ $json.booking_url }}"
+          }
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "update-warm-opens",
+      "name": "Update Warm Opens Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1120,
+        120
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 31482936,
+          "cachedResultName": "call_tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=31482936"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "call_id": "={{ $json.booking_uid }}",
+            "phone": "={{ $json.phone }}",
+            "email": "={{ $json.email }}",
+            "name": "={{ $json.name }}",
+            "company": "={{ $json.company }}",
+            "duration": "",
+            "outcome": "meeting_booked",
+            "called_at": "={{ $json.booked_at }}",
+            "needs_followup": "false",
+            "meeting_booked": "true"
+          }
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "log-call",
+      "name": "Log Meeting in Call Tracker",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1120,
+        280
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "channel": "#sako-leads",
+        "text": "=📅 *Meeting Booked via Cal.com*\n\n• Name: {{ $json.name || $json.email }}\n• Company: {{ $json.company || 'Unknown' }}\n• Time: {{ $json.booked_at }}\n• Link: {{ $json.booking_url || $env.CALCOM_BOOKING_LINK }}",
+        "otherOptions": {}
+      },
+      "id": "notify-slack",
+      "name": "Notify #sako-leads",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        200
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.WEBHOOK_URL }}/webhook/call-prep-trigger?email={{ $json.email }}&name={{ $json.name }}&company={{ $json.company }}&title={{ $json.title }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "trigger-brief",
+      "name": "Trigger Call Prep Brief",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1560,
+        200
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'processed', email: $('Parse Cal.com Booking').item.json.email, event: $('Parse Cal.com Booking').item.json.event_type } }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "respond",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        200
+      ]
+    }
+  ],
+  "connections": {
+    "Cal.com Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse Cal.com Booking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Cal.com Booking": {
+      "main": [
+        [
+          {
+            "node": "Lookup Warm Opens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup Warm Opens": {
+      "main": [
+        [
+          {
+            "node": "Merge Booking + Warm Opens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Booking + Warm Opens": {
+      "main": [
+        [
+          {
+            "node": "Update Warm Opens Status",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Meeting in Call Tracker",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notify #sako-leads",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Trigger Call Prep Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Call Prep Brief": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify #sako-leads": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Meeting in Call Tracker": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Warm Opens Status": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "leads"
+    },
+    {
+      "name": "calcom"
+    }
+  ]
+}

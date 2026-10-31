@@ -1,0 +1,60 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "services": {
+    "client": {
+      "name": "client",
+      "root": "apps/client",
+      "watchPatterns": ["apps/client/**", "packages/**"],
+      "build": {
+        "builder": "NIXPACKS",
+        "buildCommand": "npm run build"
+      },
+      "deploy": {
+        "startCommand": "npx serve -s build",
+        "healthcheckPath": "/",
+        "restartPolicyType": "ON_FAILURE"
+      }
+    },
+    "studio": {
+      "name": "studio",
+      "root": "apps/studio",
+      "watchPatterns": ["apps/studio/**", "packages/**"],
+      "build": {
+        "builder": "NIXPACKS",
+        "buildCommand": "npm run build"
+      },
+      "deploy": {
+        "startCommand": "npx serve -s build",
+        "healthcheckPath": "/",
+        "restartPolicyType": "ON_FAILURE"
+      }
+    },
+    "api": {
+      "name": "api",
+      "root": "services/api",
+      "watchPatterns": ["services/api/**", "packages/**"],
+      "build": {
+        "builder": "NIXPACKS",
+        "buildCommand": "npm run prisma:generate && npm run build"
+      },
+      "deploy": {
+        "startCommand": "npm run start",
+        "healthcheckPath": "/health",
+        "restartPolicyType": "ON_FAILURE"
+      }
+    },
+    "worker": {
+      "name": "worker",
+      "root": "services/api",
+      "watchPatterns": ["services/api/**", "packages/**"],
+      "build": {
+        "builder": "NIXPACKS",
+        "buildCommand": "npm run prisma:generate && npm run build"
+      },
+      "deploy": {
+        "startCommand": "npm run start:worker",
+        "restartPolicyType": "ON_FAILURE"
+      }
+    }
+  }
+}

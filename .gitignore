@@ -1,0 +1,19 @@
+node_modules/
+.next/
+dist/
+build/
+.turbo/
+.vercel/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.DS_Store
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+*.tfvars
+!terraform.tfvars.example

@@ -1,0 +1,2 @@
+external_event_id,processed_at,workflow
+example_event_123,2026-01-29T00:00:00Z,lead-intake-router

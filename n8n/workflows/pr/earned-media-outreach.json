@@ -1,0 +1,738 @@
+{
+  "id": "earned-media-outreach",
+  "name": "Earned Media Outreach",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 888766463,
+          "cachedResultName": "pr_backlog",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=888766463"
+        },
+        "filters": {
+          "filter": [
+            {
+              "column": "status",
+              "value": "published"
+            }
+          ]
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "trigger-published",
+      "name": "Check for Published PR",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        240,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.length || 0 }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "has-published",
+      "name": "Has Published?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 100000005,
+          "cachedResultName": "media_targets",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=100000005"
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "fetch-targets",
+      "name": "Fetch Media Targets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        680,
+        200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Match PR hooks with relevant media targets\nconst prItems = $('Check for Published PR').all().map(i => i.json);\nconst targets = $input.all().map(i => i.json);\n\n// Get most recent published PR\nconst latestPR = prItems[0];\n\n// Filter targets by audience fit\nconst relevantTargets = targets.filter(t => {\n  const audienceFit = (t.audience_fit || '').toLowerCase();\n  const prPillar = (latestPR?.pillar || '').toLowerCase();\n  const prHook = (latestPR?.hook || '').toLowerCase();\n  \n  // Basic relevance matching\n  return audienceFit.includes('saas') || \n         audienceFit.includes('design') || \n         audienceFit.includes('startup') ||\n         audienceFit.includes(prPillar);\n}).slice(0, 10); // Limit to 10 outreach targets\n\nreturn relevantTargets.map(target => ({\n  json: {\n    pr_id: latestPR?.id,\n    pr_hook: latestPR?.hook,\n    pr_pillar: latestPR?.pillar,\n    target_outlet: target.outlet_name,\n    target_contact: target.contact,\n    target_format: target.format,\n    audience_fit: target.audience_fit,\n    target_linkedin: target.linkedin_url || target.linkedin || ''\n  }\n}));"
+      },
+      "id": "match-targets",
+      "name": "Match Relevant Targets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const target = $json;\nconst url = target.target_linkedin || '';\n\nreturn {\n  json: {\n    ...target,\n    has_linkedin: url.includes('linkedin.com')\n  }\n};"
+      },
+      "id": "prepare-linkedin",
+      "name": "Prepare LinkedIn Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1020,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.has_linkedin }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "has-linkedin",
+      "name": "Has LinkedIn URL?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1140,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "actor_id": "harvestapi/linkedin-profile-scraper",
+            "run_input": "={{ { profileUrls: [$json.target_linkedin], maxItems: 1 } }}",
+            "dataset_limit": 1
+          }
+        }
+      },
+      "id": "apify-linkedin",
+      "name": "Apify: LinkedIn Scraper",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        1300,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const items = $json.apify_items || [];\nconst profile = items[0] || {};\n\nreturn {\n  json: {\n    profile_name: profile.fullName || profile.name || '',\n    profile_headline: profile.headline || '',\n    profile_company: profile.companyName || '',\n    profile_recent: (profile.recentActivity || profile.recentPosts || []).slice(0, 3)\n  }\n};"
+      },
+      "id": "normalize-linkedin",
+      "name": "Normalize LinkedIn Profile",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1480,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: {\n    profile_name: '',\n    profile_headline: '',\n    profile_company: '',\n    profile_recent: []\n  }\n};"
+      },
+      "id": "empty-linkedin",
+      "name": "Empty LinkedIn Profile",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "options": {},
+        "combinationMode": "mergeByPosition"
+      },
+      "id": "merge-profile",
+      "name": "Merge Profile",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        1660,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-5.2",
+        "messages": {
+          "values": [
+            {
+              "content": "=Write a personalized outreach pitch for this media target:\n\n## PR Hook\n{{ $json.pr_hook }}\n\n## Target\n- Outlet: {{ $json.target_outlet }}\n- Format: {{ $json.target_format }}\n- Audience: {{ $json.audience_fit }}\n\n## Journalist Profile (if available)\n- Name: {{ $json.profile_name }}\n- Headline: {{ $json.profile_headline }}\n- Company: {{ $json.profile_company }}\n- Recent: {{ Array.isArray($json.profile_recent) ? $json.profile_recent.join('; ') : '' }}\n\n## Guidelines\n1. Keep it under 150 words\n2. Personalize to their audience\n3. Include 3 bullet talking points\n4. End with a clear CTA\n5. Don't be salesy - offer value\n\n## Output Format\nSubject: [subject line]\n\n[email body]"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 500
+        }
+      },
+      "id": "generate-pitch",
+      "name": "Generate Personalized Pitch",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        200
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "VJQjLnLDwAkI2PxY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse the generated pitch\nconst text = $input.first().json.text;\nconst target = $('Match Relevant Targets').item.json;\n\n// Extract subject and body\nconst subjectMatch = text.match(/Subject:\\s*(.+?)\\n/i);\nconst subject = subjectMatch?.[1]?.trim() || `Re: ${target.pr_hook?.substring(0, 50)}`;\nconst body = text.replace(/Subject:.+?\\n/i, '').trim();\n\nreturn {\n  json: {\n    ...target,\n    email_subject: subject,\n    email_body: body,\n    generated_at: new Date().toISOString()\n  }\n};"
+      },
+      "id": "format-email",
+      "name": "Format Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const current = $input.first().json;\nconst raw = String(current.target_contact || '').trim();\n\n// Extract first email-like token from the contact field\nconst match = raw.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/i);\nconst email = match?.[0]?.toLowerCase() || '';\n\nreturn {\n  json: {\n    email_to_verify: email\n  }\n};"
+      },
+      "id": "extract-email",
+      "name": "Extract Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.email_to_verify }}",
+              "operation": "notEmpty"
+            }
+          ]
+        }
+      },
+      "id": "has-email",
+      "name": "Has Email?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1700,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "actor_id": "overpowered/verify-email",
+            "run_input": "={{ { emails: [$json.email_to_verify] } }}",
+            "dataset_limit": 1
+          }
+        }
+      },
+      "id": "apify-email-verify",
+      "name": "Apify: Verify Email",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        1880,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const items = $json.apify_items || [];\nconst first = items[0] || {};\n\nconst status = String(first.validation_status || first.status || '').trim();\nconst analysis = String(first.validation_analysis || first.analysis || '').trim();\n\n// Conservative gating: only send if actor says it's OK\nconst deliverable = /okay to send/i.test(status);\n\nreturn {\n  json: {\n    email_to_verify: $('Extract Email').item.json.email_to_verify,\n    email_validation_status: status,\n    email_validation_analysis: analysis,\n    email_deliverable: deliverable\n  }\n};"
+      },
+      "id": "normalize-email-verify",
+      "name": "Normalize Email Verification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2060,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: {\n    email_to_verify: $json.email_to_verify,\n    email_validation_status: 'missing_email',\n    email_validation_analysis: 'No email found in target_contact',\n    email_deliverable: false\n  }\n};"
+      },
+      "id": "missing-email-verify",
+      "name": "Email Verify: Missing Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1880,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "options": {},
+        "combinationMode": "mergeByPosition"
+      },
+      "id": "merge-email-verify",
+      "name": "Merge Email Verification",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        2240,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.email_deliverable }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "email-deliverable",
+      "name": "Email Deliverable?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        2420,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "hello@example.com",
+        "toEmail": "={{ $json.email_to_verify || $json.target_contact }}",
+        "subject": "={{ $json.email_subject }}",
+        "text": "={{ $json.email_body }}",
+        "options": {}
+      },
+      "id": "send-email",
+      "name": "Send via Resend",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        2600,
+        200
+      ],
+      "credentials": {
+        "resend": {
+          "id": "resend-api",
+          "name": "Resend API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 100000005,
+          "cachedResultName": "media_targets",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=100000005"
+        },
+        "filters": {
+          "filter": [
+            {
+              "column": "outlet_name",
+              "value": "={{ $('Format Email').item.json.target_outlet }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "last_pitched_at": "={{ $now.toISO() }}"
+          }
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "log-send",
+      "name": "Log Send",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1780,
+        200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Schedule follow-up for D+3\nconst target = $('Format Email').item.json;\nconst followUpDate = new Date();\nfollowUpDate.setDate(followUpDate.getDate() + 3);\n\nreturn {\n  json: {\n    target_outlet: target.target_outlet,\n    target_contact: target.target_contact,\n    pr_hook: target.pr_hook,\n    follow_up_date: followUpDate.toISOString(),\n    follow_up_type: 'first_follow_up'\n  }\n};"
+      },
+      "id": "schedule-followup",
+      "name": "Schedule Follow-up D+3",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        200
+      ]
+    }
+  ],
+  "connections": {
+    "Check for Published PR": {
+      "main": [
+        [
+          {
+            "node": "Has Published?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Published?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Media Targets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Fetch Media Targets": {
+      "main": [
+        [
+          {
+            "node": "Match Relevant Targets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match Relevant Targets": {
+      "main": [
+        [
+          {
+            "node": "Prepare LinkedIn Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare LinkedIn Check": {
+      "main": [
+        [
+          {
+            "node": "Has LinkedIn URL?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has LinkedIn URL?": {
+      "main": [
+        [
+          {
+            "node": "Apify: LinkedIn Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Empty LinkedIn Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify: LinkedIn Scraper": {
+      "main": [
+        [
+          {
+            "node": "Normalize LinkedIn Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize LinkedIn Profile": {
+      "main": [
+        [
+          {
+            "node": "Merge Profile",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Empty LinkedIn Profile": {
+      "main": [
+        [
+          {
+            "node": "Merge Profile",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Profile": {
+      "main": [
+        [
+          {
+            "node": "Generate Personalized Pitch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Personalized Pitch": {
+      "main": [
+        [
+          {
+            "node": "Format Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Email": {
+      "main": [
+        [
+          {
+            "node": "Merge Email Verification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Extract Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Email": {
+      "main": [
+        [
+          {
+            "node": "Has Email?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Email?": {
+      "main": [
+        [
+          {
+            "node": "Apify: Verify Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email Verify: Missing Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify: Verify Email": {
+      "main": [
+        [
+          {
+            "node": "Normalize Email Verification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Email Verification": {
+      "main": [
+        [
+          {
+            "node": "Merge Email Verification",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Email Verify: Missing Email": {
+      "main": [
+        [
+          {
+            "node": "Merge Email Verification",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Email Verification": {
+      "main": [
+        [
+          {
+            "node": "Email Deliverable?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Deliverable?": {
+      "main": [
+        [
+          {
+            "node": "Send via Resend",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Send via Resend": {
+      "main": [
+        [
+          {
+            "node": "Log Send",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Send": {
+      "main": [
+        [
+          {
+            "node": "Schedule Follow-up D+3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "pr"
+    },
+    {
+      "name": "outreach"
+    }
+  ]
+}

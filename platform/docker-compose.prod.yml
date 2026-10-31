@@ -1,0 +1,125 @@
+services:
+  # API Service (NestJS) - Production Build
+  api:
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile
+      target: production
+    container_name: sako-api-prod
+    restart: always
+    ports:
+      - "${API_PORT:-3001}:3001"
+    environment:
+      # Database - use externally managed Postgres (e.g., Neon, Supabase, RDS)
+      DATABASE_URL: ${DATABASE_URL}
+      PORT: 3001
+      NODE_ENV: production
+      
+      # Required for auth
+      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
+      
+      # Required for payments
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
+      
+      # Required for CORS - set to your production domains
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      
+      # Optional - AI features
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      
+      # Optional - Slack integration
+      SLACK_CLIENT_ID: ${SLACK_CLIENT_ID:-}
+      SLACK_CLIENT_SECRET: ${SLACK_CLIENT_SECRET:-}
+      SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET:-}
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
+      SLACK_OAUTH_REDIRECT_URL: ${SLACK_OAUTH_REDIRECT_URL:-}
+      
+      # Optional - Error tracking
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      
+      # Optional - URLs for redirects/emails
+      FRONTEND_URL: ${FRONTEND_URL}
+      STUDIO_URL: ${STUDIO_URL}
+      
+      # Optional - Storage (S3/R2)
+      STORAGE_ENDPOINT: ${STORAGE_ENDPOINT:-}
+      STORAGE_REGION: ${STORAGE_REGION:-auto}
+      STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY:-}
+      STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY:-}
+      STORAGE_BUCKET: ${STORAGE_BUCKET:-sako-uploads}
+      STORAGE_PUBLIC_URL: ${STORAGE_PUBLIC_URL:-}
+    networks:
+      - sako-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Studio App (Admin Dashboard) - Production Build with Nginx
+  studio:
+    build:
+      context: .
+      dockerfile: apps/studio/Dockerfile
+      target: production
+      args:
+        # VITE_ vars must be passed as build args for production builds
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY}
+        VITE_COMPOSER_URL: ${VITE_COMPOSER_URL:-}
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
+        VITE_SENTRY_RELEASE: ${VITE_SENTRY_RELEASE:-}
+        VITE_POSTHOG_KEY: ${VITE_POSTHOG_KEY:-}
+        VITE_POSTHOG_HOST: ${VITE_POSTHOG_HOST:-}
+    container_name: sako-studio-prod
+    restart: always
+    ports:
+      - "${STUDIO_PORT:-3000}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - sako-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Client App (Customer Portal) - Production Build with Nginx
+  client:
+    build:
+      context: .
+      dockerfile: apps/client/Dockerfile
+      target: production
+      args:
+        # VITE_ vars must be passed as build args for production builds
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY}
+        VITE_COMPOSER_URL: ${VITE_COMPOSER_URL:-}
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
+        VITE_SENTRY_RELEASE: ${VITE_SENTRY_RELEASE:-}
+        VITE_POSTHOG_KEY: ${VITE_POSTHOG_KEY:-}
+        VITE_POSTHOG_HOST: ${VITE_POSTHOG_HOST:-}
+    container_name: sako-client-prod
+    restart: always
+    ports:
+      - "${CLIENT_PORT:-5173}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - sako-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  sako-network:
+    driver: bridge

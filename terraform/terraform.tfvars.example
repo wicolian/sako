@@ -1,0 +1,19 @@
+# Copy to terraform.tfvars and fill in. Never commit terraform.tfvars.
+vercel_api_token = ""
+neon_api_key     = ""
+railway_token    = ""
+github_repo      = "your-name/sako"
+project_name     = "sako"
+
+app_env = {
+  CLERK_SECRET_KEY           = ""
+  VITE_CLERK_PUBLISHABLE_KEY = ""
+  STRIPE_SECRET_KEY          = ""
+  STRIPE_WEBHOOK_SECRET      = ""
+  STRIPE_PUBLISHABLE_KEY     = ""
+  OPENAI_API_KEY             = ""
+  ANTHROPIC_API_KEY          = ""
+  RESEND_API_KEY             = ""
+  ENCRYPTION_SECRET          = "" # 32+ random chars
+  # Add anything else from the .env.example files here.
+}

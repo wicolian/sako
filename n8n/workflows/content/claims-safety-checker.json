@@ -1,0 +1,217 @@
+{
+  "id": "claims-safety-checker",
+  "name": "Claims Safety Checker",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "start",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "execute-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract content to check\nconst input = $input.first().json;\nconst content = input.content || input.text || input.draft_text || '';\n\n// Define risky claim patterns\nconst riskyPatterns = [\n  { pattern: /48\\s*h(our)?s?\\s*(sla|turnaround|delivery)/i, type: 'SLA_CLAIM', risk: 'high' },\n  { pattern: /guarantee[ds]?/i, type: 'GUARANTEE', risk: 'high' },\n  { pattern: /(100|hundred)\\s*%/i, type: 'ABSOLUTE_CLAIM', risk: 'medium' },\n  { pattern: /\\bfree\\b/i, type: 'FREE_CLAIM', risk: 'low' },\n  { pattern: /(always|never|every\\s*time)/i, type: 'ABSOLUTE_LANGUAGE', risk: 'medium' },\n  { pattern: /(complian(t|ce)|gdpr|hipaa|soc\\s*2)/i, type: 'COMPLIANCE_CLAIM', risk: 'high' },\n  { pattern: /\\d+x\\s*(faster|better|more)/i, type: 'COMPARISON_CLAIM', risk: 'medium' },\n  { pattern: /save[ds]?\\s*(\\$|\\d+%)/i, type: 'SAVINGS_CLAIM', risk: 'medium' },\n  { pattern: /roi\\s*of\\s*\\d+/i, type: 'ROI_CLAIM', risk: 'high' },\n  { pattern: /refund|money\\s*back/i, type: 'REFUND_CLAIM', risk: 'medium' }\n];\n\nconst foundClaims = [];\n\nfor (const { pattern, type, risk } of riskyPatterns) {\n  const matches = content.match(pattern);\n  if (matches) {\n    foundClaims.push({\n      type,\n      risk,\n      match: matches[0],\n      context: content.substring(\n        Math.max(0, content.indexOf(matches[0]) - 50),\n        Math.min(content.length, content.indexOf(matches[0]) + matches[0].length + 50)\n      )\n    });\n  }\n}\n\nconst hasHighRisk = foundClaims.some(c => c.risk === 'high');\nconst hasMediumRisk = foundClaims.some(c => c.risk === 'medium');\n\nreturn {\n  json: {\n    content_id: input.content_id || 'manual',\n    claims_found: foundClaims,\n    claim_count: foundClaims.length,\n    has_high_risk: hasHighRisk,\n    has_medium_risk: hasMediumRisk,\n    is_safe: foundClaims.length === 0,\n    needs_review: hasHighRisk || hasMediumRisk\n  }\n};"
+      },
+      "id": "extract-claims",
+      "name": "Extract Claims",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.needs_review }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "needs-review",
+      "name": "Needs Review?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "requestMethod": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"#content-review\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": {\n        \"type\": \"plain_text\",\n        \"text\": \"⚠️ Claims Review Required\",\n        \"emoji\": true\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"Content ID: *{{ $json.content_id }}* contains {{ $json.claim_count }} potentially risky claim(s).\"\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*Claims Found:*\\n{{ $json.claims_found.map(c => `• [${c.risk.toUpperCase()}] ${c.type}: _\\\"${c.match}\\\"_`).join('\\n') }}\"\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*Action Required:*\\n{{ $json.has_high_risk ? '🔴 High-risk claims need documentation/proof before publishing.' : '🟡 Medium-risk claims - verify accuracy before publishing.' }}\"\n      }\n    },\n    {\n      \"type\": \"actions\",\n      \"elements\": [\n        {\n          \"type\": \"button\",\n          \"text\": {\n            \"type\": \"plain_text\",\n            \"text\": \"✅ Claims Verified\",\n            \"emoji\": true\n          },\n          \"style\": \"primary\",\n          \"action_id\": \"claims_verified\",\n          \"value\": \"{{ $json.content_id }}\"\n        },\n        {\n          \"type\": \"button\",\n          \"text\": {\n            \"type\": \"plain_text\",\n            \"text\": \"🛑 Block Content\",\n            \"emoji\": true\n          },\n          \"style\": \"danger\",\n          \"action_id\": \"claims_blocked\",\n          \"value\": \"{{ $json.content_id }}\"\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "slack-review",
+      "name": "Slack: Claims Review",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        900,
+        200
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "values": {
+          "boolean": [
+            {
+              "name": "approved",
+              "value": false
+            }
+          ],
+          "string": [
+            {
+              "name": "status",
+              "value": "pending_claims_review"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-pending",
+      "name": "Set Pending Review",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        1120,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "boolean": [
+            {
+              "name": "approved",
+              "value": true
+            }
+          ],
+          "string": [
+            {
+              "name": "status",
+              "value": "claims_safe"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-safe",
+      "name": "Set Safe",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        900,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Extract Claims",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract Claims",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Claims": {
+      "main": [
+        [
+          {
+            "node": "Needs Review?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Review?": {
+      "main": [
+        [
+          {
+            "node": "Slack: Claims Review",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Safe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: Claims Review": {
+      "main": [
+        [
+          {
+            "node": "Set Pending Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "content"
+    },
+    {
+      "name": "compliance"
+    }
+  ]
+}

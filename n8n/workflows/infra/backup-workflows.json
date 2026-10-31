@@ -1,0 +1,286 @@
+{
+  "id": "backup-workflows",
+  "name": "Backup Workflows (Daily)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2 * * *"
+            }
+          ]
+        }
+      },
+      "id": "cron",
+      "name": "Daily 2am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ ($env.N8N_API_BASE_URL || $env.N8N_EDITOR_BASE_URL || $env.WEBHOOK_URL || 'http://localhost:5678').replace(/\\/$/, '') + '/api/v1/workflows' }}",
+        "authentication": "none",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-API-KEY",
+              "value": "={{ $env.N8N_API_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "export-workflows",
+      "name": "Export Workflows",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        460,
+        200
+      ],
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "url": "={{ ($env.N8N_API_BASE_URL || $env.N8N_EDITOR_BASE_URL || $env.WEBHOOK_URL || 'http://localhost:5678').replace(/\\/$/, '') + '/api/v1/credentials' }}",
+        "authentication": "none",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-API-KEY",
+              "value": "={{ $env.N8N_API_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "export-creds",
+      "name": "Export Credentials Metadata",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        460,
+        400
+      ],
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 1620036434,
+          "cachedResultName": "content_backlog",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=1620036434"
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "snapshot-content",
+      "name": "Snapshot Content Backlog",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        460,
+        600
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Bundle all backups with timestamp\nconst timestamp = new Date().toISOString().split('T')[0];\nconst workflows = $('Export Workflows').item.json;\nconst credentials = $('Export Credentials Metadata').item.json;\nconst contentBacklog = $('Snapshot Content Backlog').all().map(i => i.json);\n\nconst bundle = {\n  timestamp,\n  workflows: workflows.data || [],\n  credentialsMetadata: (credentials.data || []).map(c => ({\n    id: c.id,\n    name: c.name,\n    type: c.type,\n    createdAt: c.createdAt,\n    updatedAt: c.updatedAt\n    // Note: No secrets exported\n  })),\n  sheets: {\n    content_backlog: contentBacklog\n  }\n};\n\nreturn {\n  json: bundle,\n  binary: {\n    data: Buffer.from(JSON.stringify(bundle, null, 2)).toString('base64')\n  }\n};"
+      },
+      "id": "bundle",
+      "name": "Bundle Backup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "={{ $env.S3_BUCKET }}",
+        "fileName": "=backups/n8n-backup-{{ $now.format('yyyy-MM-dd') }}.json",
+        "binaryPropertyName": "data",
+        "options": {}
+      },
+      "id": "upload-s3",
+      "name": "Upload to S3/R2",
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        900,
+        400
+      ],
+      "credentials": {
+        "s3": {
+          "id": "s3-backup",
+          "name": "S3/R2 Backup"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "requestMethod": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"#n8n-ops\",\n  \"text\": \"✅ Daily backup completed: {{ $('Bundle Backup').item.json.workflows.length }} workflows, {{ $('Bundle Backup').item.json.sheets.content_backlog.length }} content items\"\n}",
+        "options": {}
+      },
+      "id": "slack-success",
+      "name": "Slack Success",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1120,
+        300
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "requestMethod": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"#n8n-errors\",\n  \"text\": \"❌ Daily backup FAILED. Check execution logs.\"\n}",
+        "options": {}
+      },
+      "id": "slack-fail",
+      "name": "Slack Failure",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1120,
+        500
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      },
+      "continueOnFail": true
+    }
+  ],
+  "connections": {
+    "Daily 2am": {
+      "main": [
+        [
+          {
+            "node": "Export Workflows",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Export Credentials Metadata",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Snapshot Content Backlog",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Export Workflows": {
+      "main": [
+        [
+          {
+            "node": "Bundle Backup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Export Credentials Metadata": {
+      "main": [
+        [
+          {
+            "node": "Bundle Backup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Snapshot Content Backlog": {
+      "main": [
+        [
+          {
+            "node": "Bundle Backup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bundle Backup": {
+      "main": [
+        [
+          {
+            "node": "Upload to S3/R2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to S3/R2": {
+      "main": [
+        [
+          {
+            "node": "Slack Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "infra"
+    },
+    {
+      "name": "backup"
+    }
+  ]
+}

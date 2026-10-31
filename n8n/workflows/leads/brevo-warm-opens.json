@@ -1,0 +1,416 @@
+{
+  "id": "brevo-warm-opens",
+  "name": "Brevo Warm Opens → Slack",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24,
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Daily 8am IST",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.brevo.com/v3/smtp/statistics/events",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "event",
+              "value": "opened"
+            },
+            {
+              "name": "startDate",
+              "value": "={{ $now.minus({days: 7}).toFormat('yyyy-MM-dd') }}"
+            },
+            {
+              "name": "endDate",
+              "value": "={{ $now.toFormat('yyyy-MM-dd') }}"
+            },
+            {
+              "name": "limit",
+              "value": "500"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "get-brevo-opens",
+      "name": "Brevo: Get Email Opens",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        460,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "bAJ8LsgwGI2XHllf",
+          "name": "Brevo account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const events = $input.first().json.events || [];\n\n// Group opens by email\nconst opensByEmail = {};\n\nevents.forEach(event => {\n  const email = event.email;\n  if (!opensByEmail[email]) {\n    opensByEmail[email] = {\n      email: email,\n      open_count: 0,\n      opens: [],\n      campaigns: new Set()\n    };\n  }\n  opensByEmail[email].open_count++;\n  opensByEmail[email].opens.push({\n    date: event.date,\n    campaign: event.tag || event.subject || 'Unknown'\n  });\n  if (event.tag) opensByEmail[email].campaigns.add(event.tag);\n});\n\n// Filter for warm opens: 2+ opens OR opened in last 48h\nconst now = new Date();\nconst fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);\n\nconst warmOpens = Object.values(opensByEmail).filter(contact => {\n  const recentOpen = contact.opens.some(o => new Date(o.date) > fortyEightHoursAgo);\n  return contact.open_count >= 2 || recentOpen;\n});\n\n// Sort by open count descending\nwarmOpens.sort((a, b) => b.open_count - a.open_count);\n\n// Return as array of items\nreturn warmOpens.map(contact => ({\n  json: {\n    email: contact.email,\n    open_count: contact.open_count,\n    last_open: contact.opens[0]?.date || '',\n    campaigns: Array.from(contact.campaigns).join(', '),\n    is_hot: contact.open_count >= 3\n  }\n}));"
+      },
+      "id": "filter-warm-opens",
+      "name": "Filter Warm Opens",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 1096236767,
+          "cachedResultName": "warm_opens",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=1096236767"
+        },
+        "options": {}
+      },
+      "id": "get-already-called",
+      "name": "Get Already Called",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        900,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const warmOpens = $('Filter Warm Opens').all();\nconst alreadyCalled = $('Get Already Called').all();\n\n// Get list of already called emails\nconst calledEmails = new Set(\n  alreadyCalled\n    .filter(i => i.json.call_status === 'called' || i.json.call_status === 'meeting_booked')\n    .map(i => i.json.email?.toLowerCase())\n);\n\n// Filter out already called\nconst newWarmOpens = warmOpens.filter(contact => \n  !calledEmails.has(contact.json.email?.toLowerCase())\n);\n\nreturn newWarmOpens;"
+      },
+      "id": "filter-not-called",
+      "name": "Filter Not Yet Called",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/v1/people/match",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"email\": \"{{ $json.email }}\"\n}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "enrich-apollo",
+      "name": "Apollo: Enrich Contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1340,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "XsUtKQ6O9aPU0HyZ",
+          "name": "Apollo"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const warmOpen = $('Filter Not Yet Called').item.json;\nconst apollo = $input.first().json.person || {};\n\nreturn {\n  json: {\n    // Contact info\n    email: warmOpen.email,\n    name: apollo.name || warmOpen.email.split('@')[0],\n    first_name: apollo.first_name || '',\n    last_name: apollo.last_name || '',\n    title: apollo.title || '',\n    company: apollo.organization?.name || '',\n    linkedin_url: apollo.linkedin_url || '',\n    phone: apollo.phone_numbers?.[0]?.raw_number || '',\n    \n    // Open stats\n    open_count: warmOpen.open_count,\n    last_open: warmOpen.last_open,\n    campaigns: warmOpen.campaigns,\n    is_hot: warmOpen.is_hot,\n    \n    // Status\n    call_status: 'pending',\n    flagged_at: new Date().toISOString()\n  }\n};"
+      },
+      "id": "merge-data",
+      "name": "Merge Open + Apollo Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 1096236767,
+          "cachedResultName": "warm_opens",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=1096236767"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "email": "={{ $json.email }}",
+            "name": "={{ $json.name }}",
+            "title": "={{ $json.title }}",
+            "company": "={{ $json.company }}",
+            "phone": "={{ $json.phone }}",
+            "linkedin_url": "={{ $json.linkedin_url }}",
+            "open_count": "={{ $json.open_count }}",
+            "last_open": "={{ $json.last_open }}",
+            "campaigns": "={{ $json.campaigns }}",
+            "call_status": "pending",
+            "flagged_at": "={{ $json.flagged_at }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "save-warm-open",
+      "name": "Save to Warm Opens Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1780,
+        200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gpt-5.2",
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 200
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Generate a brief, friendly call opener for a cold call to a warm lead.\n\nContext:\n- Name: {{ $json.name }}\n- Title: {{ $json.title }}\n- Company: {{ $json.company }}\n- They opened our email {{ $json.open_count }} times\n- Campaign: {{ $json.campaigns }}\n- We sell design subscriptions for B2B SaaS companies\n\nGenerate a 2-3 sentence opener that:\n1. Acknowledges they've been looking at our emails\n2. Asks a qualifying question about their design needs\n3. Is conversational, not salesy\n\nJust the opener text, nothing else."
+            }
+          ]
+        }
+      },
+      "id": "generate-opener",
+      "name": "AI: Generate Call Opener",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        400
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "VJQjLnLDwAkI2PxY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "channel": "#sako-leads",
+        "text": "={{ $json.is_hot ? '🔥🔥🔥' : '🔥' }} *WARM OPEN: Call within 48h*\n\n*Contact:*\n• Name: {{ $('Merge Open + Apollo Data').item.json.name }}\n• Title: {{ $('Merge Open + Apollo Data').item.json.title || 'Unknown' }}\n• Company: {{ $('Merge Open + Apollo Data').item.json.company || 'Unknown' }}\n• Email: {{ $('Merge Open + Apollo Data').item.json.email }}\n• Phone: {{ $('Merge Open + Apollo Data').item.json.phone || 'Not available' }}\n{{ $('Merge Open + Apollo Data').item.json.linkedin_url ? '• LinkedIn: ' + $('Merge Open + Apollo Data').item.json.linkedin_url : '' }}\n\n*Engagement:*\n• Opens: {{ $('Merge Open + Apollo Data').item.json.open_count }} (last: {{ $('Merge Open + Apollo Data').item.json.last_open }})\n• Campaign: {{ $('Merge Open + Apollo Data').item.json.campaigns }}\n\n*Suggested Opener:*\n_{{ $json.message?.content || $json.text || 'Hey [Name], noticed you\\'ve been checking out our emails. Quick question - are you handling design in-house or working with external partners?' }}_",
+        "attachments": [
+          {
+            "fallback": "Call actions",
+            "actions": [
+              {
+                "type": "button",
+                "text": "📋 Generate Full Brief",
+                "url": "={{ $env.WEBHOOK_URL }}/webhook/call-prep-trigger?email={{ $('Merge Open + Apollo Data').item.json.email }}"
+              },
+              {
+                "type": "button",
+                "text": "📅 Send Cal Link",
+                "url": "={{ $env.CALCOM_BOOKING_LINK }}?email={{ $('Merge Open + Apollo Data').item.json.email }}&name={{ $('Merge Open + Apollo Data').item.json.name }}"
+              },
+              {
+                "type": "button",
+                "text": "✅ Mark as Called",
+                "url": "={{ $env.WEBHOOK_URL }}/webhook/mark-called?email={{ $('Merge Open + Apollo Data').item.json.email }}&status=called"
+              },
+              {
+                "type": "button",
+                "text": "📅 Meeting Booked",
+                "url": "={{ $env.WEBHOOK_URL }}/webhook/mark-called?email={{ $('Merge Open + Apollo Data').item.json.email }}&status=meeting_booked"
+              },
+              {
+                "type": "button",
+                "text": "⏭️ Skip",
+                "url": "={{ $env.WEBHOOK_URL }}/webhook/mark-called?email={{ $('Merge Open + Apollo Data').item.json.email }}&status=skipped"
+              }
+            ]
+          }
+        ],
+        "otherOptions": {}
+      },
+      "id": "post-to-slack",
+      "name": "Post to #sako-leads",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        300
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily 8am IST": {
+      "main": [
+        [
+          {
+            "node": "Brevo: Get Email Opens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brevo: Get Email Opens": {
+      "main": [
+        [
+          {
+            "node": "Filter Warm Opens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Warm Opens": {
+      "main": [
+        [
+          {
+            "node": "Get Already Called",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Already Called": {
+      "main": [
+        [
+          {
+            "node": "Filter Not Yet Called",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Not Yet Called": {
+      "main": [
+        [
+          {
+            "node": "Apollo: Enrich Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo: Enrich Contact": {
+      "main": [
+        [
+          {
+            "node": "Merge Open + Apollo Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Open + Apollo Data": {
+      "main": [
+        [
+          {
+            "node": "Save to Warm Opens Sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AI: Generate Call Opener",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Generate Call Opener": {
+      "main": [
+        [
+          {
+            "node": "Post to #sako-leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "sako-n8n"
+  },
+  "tags": [
+    {
+      "id": "leads",
+      "name": "leads"
+    }
+  ]
+}

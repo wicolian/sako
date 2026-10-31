@@ -1,0 +1,303 @@
+{
+  "id": "media-kit-generator",
+  "name": "Media Kit Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 1 * *"
+            }
+          ]
+        }
+      },
+      "id": "cron",
+      "name": "Monthly 1st 9am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "media-kit-generate",
+        "options": {}
+      },
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        500
+      ],
+      "webhookId": "media-kit-generate"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Company boilerplate content\nconst boilerplate = {\n  short_50: \"Sako is a design subscription service for SaaS companies. Ship design work in 48h without the hiring overhead.\",\n  \n  medium_100: \"Sako is a design subscription service built for SaaS companies who need quality design work without the overhead of hiring. Our 48-hour turnaround and unlimited revisions model helps startups and scale-ups move faster than their competition.\",\n  \n  long_250: `Sako is a design subscription service built specifically for SaaS companies who need consistent, high-quality design work without the overhead of hiring full-time designers or managing freelancers.\n\nOur model is simple: unlimited design requests, delivered in 48 hours, with unlimited revisions included. No contracts, no hiring headaches, no back-and-forth with unreliable contractors.\n\nWe serve SaaS founders, product teams, and marketing leaders who need to ship fast. Our clients include early-stage startups moving quickly to product-market fit and growth-stage companies scaling their design operations.\n\nFounded in 2024, Sako operates as a distributed team of senior designers who specialize in SaaS design systems, landing pages, marketing collateral, and motion graphics.`\n};\n\nreturn { json: { boilerplate } };"
+      },
+      "id": "fetch-boilerplate",
+      "name": "Fetch Boilerplate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Founder bio content\nconst founderBio = {\n  short_50: \"Your Founder is the founder of Sako, a design subscription service for SaaS companies.\",\n  \n  long_150: `Your Founder is the founder of Sako, a design subscription service for SaaS companies. Before Sako, he built and scaled design operations at multiple SaaS startups, experiencing firsthand the pain of hiring and managing design talent.\n\nKoushik started Sako to solve the problem he kept encountering: SaaS companies need great design but can't justify (or wait for) full-time hires. His background in both design and product makes him uniquely positioned to understand what SaaS teams actually need.`\n};\n\nreturn { json: { founderBio } };"
+      },
+      "id": "fetch-founder-bio",
+      "name": "Fetch Founder Bio",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 100000012,
+          "cachedResultName": "case_studies",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=100000012"
+        },
+        "options": {
+          "range": "A:E"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "fetch-proof-points",
+      "name": "Fetch Proof Points",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        460,
+        200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Compile media kit\nconst boilerplate = $('Fetch Boilerplate').item.json.boilerplate;\nconst founderBio = $('Fetch Founder Bio').item.json.founderBio;\nconst proofPoints = ($('Fetch Proof Points').all() || []).slice(0, 3).map(p => p.json);\n\nconst mediaKit = {\n  generated_at: new Date().toISOString(),\n  \n  company: {\n    name: 'Sako',\n    website: 'https://trysako.com',\n    founded: '2024',\n    boilerplate\n  },\n  \n  founder: {\n    name: 'Your Founder',\n    title: 'Founder',\n    email: 'hello@example.com',\n    linkedin: 'https://linkedin.com/in/koushikvenkatesan',\n    bio: founderBio\n  },\n  \n  assets: {\n    logo_svg: 'https://trysako.com/assets/logo.svg',\n    logo_png_dark: 'https://trysako.com/assets/logo-dark.png',\n    logo_png_light: 'https://trysako.com/assets/logo-light.png',\n    founder_headshot: 'https://trysako.com/assets/koushik-headshot.jpg',\n    product_screenshots: [\n      'https://trysako.com/assets/screenshot-dashboard.png',\n      'https://trysako.com/assets/screenshot-task.png',\n      'https://trysako.com/assets/screenshot-review.png'\n    ]\n  },\n  \n  proof_points: proofPoints.map(p => ({\n    client: p.client || 'Client',\n    result: p.result || p.headline,\n    metric: p.metric || ''\n  })),\n  \n  fact_sheet: {\n    model: 'Design subscription',\n    pricing: 'Starting at $X/month',\n    turnaround: '48 hours',\n    revisions: 'Unlimited',\n    contract: 'Month-to-month'\n  }\n};\n\nreturn { json: mediaKit };"
+      },
+      "id": "compile-kit",
+      "name": "Compile Media Kit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate markdown files for media kit\nconst kit = $input.first().json;\n\nconst boilerplateMd = `# Sako Company Boilerplate\n\n## 50 Words\n${kit.company.boilerplate.short_50}\n\n## 100 Words\n${kit.company.boilerplate.medium_100}\n\n## 250 Words\n${kit.company.boilerplate.long_250}\n`;\n\nconst founderBioMd = `# Founder Bio - Your Founder\n\n## 50 Words\n${kit.founder.bio.short_50}\n\n## 150 Words\n${kit.founder.bio.long_150}\n\n## Contact\n- Email: ${kit.founder.email}\n- LinkedIn: ${kit.founder.linkedin}\n`;\n\nconst proofPointsMd = `# Proof Points\n\n${kit.proof_points.map((p, i) => `## ${i + 1}. ${p.client}\\n${p.result}\\n${p.metric ? `*Metric: ${p.metric}*` : ''}`).join('\\n\\n')}\n`;\n\nconst factSheetMd = `# Sako Fact Sheet\n\n| Attribute | Value |\n|-----------|-------|\n| Model | ${kit.fact_sheet.model} |\n| Pricing | ${kit.fact_sheet.pricing} |\n| Turnaround | ${kit.fact_sheet.turnaround} |\n| Revisions | ${kit.fact_sheet.revisions} |\n| Contract | ${kit.fact_sheet.contract} |\n\n## Assets\n- Logo (SVG): ${kit.assets.logo_svg}\n- Logo (PNG Dark): ${kit.assets.logo_png_dark}\n- Logo (PNG Light): ${kit.assets.logo_png_light}\n- Founder Headshot: ${kit.assets.founder_headshot}\n`;\n\nreturn {\n  json: {\n    ...kit,\n    files: {\n      'boilerplate.md': boilerplateMd,\n      'founder-bio.md': founderBioMd,\n      'proof-points.md': proofPointsMd,\n      'fact-sheet.md': factSheetMd\n    }\n  }\n};"
+      },
+      "id": "generate-files",
+      "name": "Generate MD Files",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "={{ $env.S3_BUCKET }}",
+        "fileName": "=media-kit/media-kit-{{ $now.format('yyyy-MM') }}.json",
+        "binaryPropertyName": "data",
+        "options": {}
+      },
+      "id": "upload-s3",
+      "name": "Upload to S3",
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        400
+      ],
+      "credentials": {
+        "s3": {
+          "id": "s3-backup",
+          "name": "S3/R2 Backup"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "requestMethod": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"#pr-coverage\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": {\n        \"type\": \"plain_text\",\n        \"text\": \"📦 Media Kit Updated\",\n        \"emoji\": true\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"Monthly media kit regenerated with latest proof points and assets.\\n\\nFiles included:\\n• boilerplate.md (50/100/250 word versions)\\n• founder-bio.md\\n• proof-points.md ({{ $('Compile Media Kit').item.json.proof_points.length }} case studies)\\n• fact-sheet.md\"\n      }\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "slack-notify",
+      "name": "Slack Notify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1340,
+        400
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Monthly 1st 9am": {
+      "main": [
+        [
+          {
+            "node": "Fetch Proof Points",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Boilerplate",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Founder Bio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Proof Points",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Boilerplate",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Founder Bio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Proof Points": {
+      "main": [
+        [
+          {
+            "node": "Compile Media Kit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Boilerplate": {
+      "main": [
+        [
+          {
+            "node": "Compile Media Kit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Founder Bio": {
+      "main": [
+        [
+          {
+            "node": "Compile Media Kit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compile Media Kit": {
+      "main": [
+        [
+          {
+            "node": "Generate MD Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate MD Files": {
+      "main": [
+        [
+          {
+            "node": "Upload to S3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to S3": {
+      "main": [
+        [
+          {
+            "node": "Slack Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "pr"
+    },
+    {
+      "name": "media-kit"
+    }
+  ]
+}

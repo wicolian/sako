@@ -1,0 +1,260 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsOptional, IsNotEmpty, IsEnum } from 'class-validator';
+
+// ========================================
+// Response DTOs
+// ========================================
+
+/**
+ * Composer credits information
+ */
+export class ComposerCreditsDto {
+  @ApiProperty({ 
+    description: 'Credit type: METERED for Composer Free/Pro, UNLIMITED for Studio plans',
+    enum: ['METERED', 'UNLIMITED'],
+  })
+  type: 'METERED' | 'UNLIMITED';
+
+  @ApiPropertyOptional({ 
+    description: 'Credit limit per period (only for METERED type)',
+    type: Number,
+  })
+  limit?: number;
+
+  @ApiProperty({ description: 'Credits used in current period' })
+  used: number;
+
+  @ApiProperty({ description: 'ISO 8601 date when credits reset' })
+  resets_at: string;
+}
+
+/**
+ * Day credits information (Studio plans only)
+ */
+export class DayCreditsDto {
+  @ApiProperty({ description: 'Available day credits' })
+  available: number;
+
+  @ApiProperty({ description: 'Used day credits' })
+  used: number;
+
+  @ApiProperty({ description: 'Number of months credits can roll over' })
+  rollover_months: number;
+}
+
+/**
+ * GET /composer/capabilities response
+ * Returns workspace context, plan info, and capability flags for the Composer app
+ * 
+ * This is the primary endpoint for the external Composer app to determine
+ * what features are available for a given workspace/user.
+ */
+export class ComposerCapabilitiesResponseDto {
+  // ---- Plan identification ----
+  @ApiProperty({ 
+    description: 'Plan code',
+    enum: ['COMPOSER_FREE', 'COMPOSER_PRO', 'CORE', 'OPS', 'ENTERPRISE'],
+  })
+  plan_code: string;
+
+  @ApiProperty({ description: 'Human-readable plan name (e.g., "Composer Free", "Core", "Ops Base")' })
+  plan_display_name: string;
+
+  // ---- Composer credits ----
+  @ApiProperty({ description: 'Composer AI credit information', type: ComposerCreditsDto })
+  composer_credits: ComposerCreditsDto;
+
+  // ---- Studio access ----
+  @ApiProperty({ description: 'Whether the plan includes Studio access (Core/Ops/Enterprise)' })
+  has_studio_access: boolean;
+
+  @ApiProperty({ description: 'Whether user can send Composer drafts to Studio ("Send to Sako")' })
+  can_send_to_studio: boolean;
+
+  @ApiProperty({ description: 'Maximum parallel Studio tasks (0 for Composer-only plans)' })
+  max_parallel_studio_tasks: number;
+
+  // ---- Pro-tier features ----
+  @ApiProperty({ description: 'Whether Figma export is available (Pro and Studio plans)' })
+  can_copy_to_figma: boolean;
+
+  @ApiProperty({ description: 'Whether publish to domain is available (Pro and Studio plans)' })
+  can_publish_domain: boolean;
+
+  // ---- Studio-specific (Composer may ignore) ----
+  @ApiProperty({ description: 'Whether plan includes motion/video work (Studio plans only)' })
+  has_motion: boolean;
+
+  @ApiProperty({ description: 'Whether plan includes strategy work (Enterprise only)' })
+  has_strategy: boolean;
+
+  @ApiProperty({ description: 'Number of team seats included in plan' })
+  seats: number;
+
+  @ApiPropertyOptional({ description: 'Day credits info (Studio plans only)', type: DayCreditsDto })
+  day_credits?: DayCreditsDto;
+
+  // ---- Internal / backward compat ----
+  @ApiProperty({ description: 'The resolved workspace ID' })
+  workspace_id: string;
+}
+
+/**
+ * Brand item in GET /composer/brands response
+ */
+export class ComposerBrandItemDto {
+  @ApiProperty({ description: 'Brand ID' })
+  id: string;
+
+  @ApiProperty({ description: 'Brand name' })
+  name: string;
+
+  @ApiPropertyOptional({ description: 'Colors configuration (JSON object)', type: Object })
+  colors?: any;
+
+  @ApiPropertyOptional({ description: 'Typography configuration (JSON object)', type: Object })
+  typography?: any;
+
+  @ApiPropertyOptional({ description: 'Logo URL', nullable: true })
+  logoUrl?: string | null;
+
+  @ApiPropertyOptional({ description: 'Primary color hex code', nullable: true })
+  primaryColor?: string | null;
+
+  @ApiPropertyOptional({ description: 'Secondary color hex code', nullable: true })
+  secondaryColor?: string | null;
+
+  @ApiPropertyOptional({ description: 'Accent color hex code', nullable: true })
+  accentColor?: string | null;
+
+  @ApiPropertyOptional({ description: 'Brand voice/tone guidelines', nullable: true })
+  brandVoice?: string | null;
+
+  @ApiPropertyOptional({ description: 'Tone tags for the brand', type: [String] })
+  toneTags?: string[];
+}
+
+// ========================================
+// Request DTOs
+// ========================================
+
+/**
+ * POST /composer/tasks/from-draft request body
+ * Creates a Studio task from a Composer draft (Send to Sako)
+ */
+export class CreateComposerTaskFromDraftDto {
+  @ApiProperty({ description: 'Title for the task (required)' })
+  @IsString()
+  @IsNotEmpty()
+  title: string;
+
+  @ApiProperty({ description: 'HTML content generated by Composer (required)' })
+  @IsString()
+  @IsNotEmpty()
+  html: string;
+
+  @ApiPropertyOptional({ description: 'Design JSON snapshot from Composer', type: Object })
+  @IsOptional()
+  designJson?: any;
+
+  @ApiPropertyOptional({ description: 'Brand ID to link the task to (must belong to workspace)' })
+  @IsString()
+  @IsOptional()
+  brandId?: string;
+
+  @ApiPropertyOptional({ description: 'User notes about the task' })
+  @IsString()
+  @IsOptional()
+  notes?: string;
+
+  @ApiPropertyOptional({ 
+    description: 'Asset type (e.g., LANDING_PAGE, DECK, SOCIAL)',
+    example: 'LANDING_PAGE',
+  })
+  @IsString()
+  @IsOptional()
+  assetType?: string;
+}
+
+/**
+ * POST /composer/tasks/from-draft response
+ */
+export class CreateComposerTaskFromDraftResponseDto {
+  @ApiProperty({ description: 'Created task ID' })
+  taskId: string;
+
+  @ApiProperty({ description: 'Created AiDraft ID' })
+  aiDraftId: string;
+
+  @ApiProperty({ description: 'Workspace ID' })
+  workspaceId: string;
+
+  @ApiPropertyOptional({ description: 'Relative URL to the task in Sako OS' })
+  redirectUrl?: string;
+}
+
+// ========================================
+// Checkout DTOs
+// ========================================
+
+/**
+ * POST /composer/create-checkout-session request body
+ * Creates a Stripe checkout session for upgrading plan
+ */
+export class CreateComposerCheckoutSessionDto {
+  @ApiProperty({ 
+    description: 'Target plan code',
+    enum: ['COMPOSER_PRO', 'CORE', 'OPS', 'ENTERPRISE'],
+  })
+  @IsString()
+  @IsNotEmpty()
+  plan_code: 'COMPOSER_PRO' | 'CORE' | 'OPS' | 'ENTERPRISE';
+
+  @ApiProperty({ 
+    description: 'Billing interval',
+    enum: ['MONTHLY', 'YEARLY'],
+  })
+  @IsString()
+  @IsNotEmpty()
+  billing_interval: 'MONTHLY' | 'YEARLY';
+}
+
+/**
+ * POST /composer/create-checkout-session response
+ */
+export class CreateComposerCheckoutSessionResponseDto {
+  @ApiProperty({ description: 'Stripe checkout session ID' })
+  session_id: string;
+
+  @ApiProperty({ description: 'Checkout URL to redirect user to' })
+  checkout_url: string;
+}
+
+// ========================================
+// SSO Token DTOs
+// ========================================
+
+/**
+ * GET /composer/sso-token response
+ * Returns HMAC-signed token for Composer SSO
+ */
+export class ComposerSsoTokenResponseDto {
+  @ApiProperty({ description: 'HMAC-signed SSO token (base64.signature format)' })
+  token: string;
+
+  @ApiProperty({ description: 'Full redirect URL with token included' })
+  redirect_url: string;
+}
+
+// ========================================
+// Error DTOs
+// ========================================
+
+export class ComposerGatewayErrorDto {
+  @ApiProperty({ description: 'Error code for programmatic handling' })
+  error: string;
+
+  @ApiProperty({ description: 'Human-readable error message' })
+  message: string;
+}
+

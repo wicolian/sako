@@ -1,0 +1,140 @@
+---
+title: "Sako Enterprise"
+slug: "enterprise"
+template: "standard"
+published: true
+priority: 2
+seo:
+  metaTitle: "Sako Enterprise | 3+ Pipelines for GTM Teams"
+  metaDescription: "Sako Enterprise delivers unlimited design, Webflow, and motion production with 3+ parallel pipelines, dedicated Slack channel, and procurement-friendly onboarding. Starting at $8,500/mo."
+  keywords: ["Sako enterprise", "Sako enterprise design", "enterprise design subscription", "enterprise GTM design", "enterprise creative ops", "enterprise design team", "procurement friendly design", "enterprise SaaS design", "large team design ops"]
+  ogImage: "auto"
+jsonLd:
+  type: "SoftwareApplication"
+---
+
+<Hero
+  variant="centered"
+  badge="Enterprise"
+  title="GTM execution at enterprise scale. Without turning into an agency."
+  subtitle="3+ parallel pipelines, dedicated Slack channel, priority response, and faster SLAs on request. Built for teams running multiple launches at once."
+  primaryCta={{ label: "Book a fit check", href: "/book-a-call" }}
+  secondaryCta={{ label: "See pricing", href: "/pricing" }}
+/>
+
+<MetricCards
+  style="cards"
+  variant="transparent"
+  title="Enterprise plan"
+  subtitle="How it’s different"
+  items={[
+    { title: "Starting price", icon: "coin", value: "$8.5k/mo", description: "Custom scope during onboarding" },
+    { title: "Parallel pipelines", icon: "layers", value: "3+", description: "Marketing, Sales, Product can move at once" },
+    { title: "Faster SLAs", icon: "clock", value: "Available", description: "For critical GTM work" },
+    { title: "Workflow", icon: "messageSquare", value: "Dedicated Slack", description: "Plus the dashboard for tracking" }
+  ]}
+/>
+
+<FeatureGrid
+  columns={3}
+  variant="cards"
+  title="What Enterprise unlocks"
+  items={[
+    {
+      icon: "GitBranch",
+      title: "3+ parallel pipelines",
+      description: "Stop the internal fight for design time. Marketing doesn’t block Sales. Sales doesn’t block Product launches."
+    },
+    {
+      icon: "Zap",
+      title: "Faster SLAs on request",
+      description: "48h baseline for standard work. If you need faster for critical assets, we’ll define it clearly during onboarding."
+    },
+    {
+      icon: "Shield",
+      title: "Procurement-friendly onboarding",
+      description: "Not self-serve. We’ll align on invoice flow, legal basics, and what your team needs before rollout."
+    },
+    {
+      icon: "MessageCircle",
+      title: "Dedicated Slack channel",
+      description: "Slack is for collaboration and updates. The dashboard is the source of truth for submissions, tracking, review, and approvals."
+    },
+    {
+      icon: "Users",
+      title: "Primary pod + backup coverage",
+      description: "You get a primary pod that learns your context. If someone is out, coverage exists so you’re not stuck."
+    },
+    {
+      icon: "Target",
+      title: "GTM-first output",
+      description: "Landing pages, decks, ads, motion cutdowns, launch kits. Execution that ships, not a bunch of meetings."
+    }
+  ]}
+/>
+
+<FeatureGrid
+  columns={2}
+  variant="simple"
+  title="Enterprise ops"
+  items={[
+    {
+      icon: "FileText",
+      title: "Billing and paperwork",
+      description: "Invoices through Stripe. Net-30/60 supported. If your team needs an MSA or NDA, we can handle it during onboarding."
+    },
+    {
+      icon: "ClipboardList",
+      title: "Security reviews",
+      description: "We’ll share subprocessors, data flow, and what controls exist today. We won’t pretend we have SOC 2 or pen test reports when we don’t."
+    }
+  ]}
+/>
+
+<ComparisonTable
+  title="Which plan fits your reality?"
+  highlightColumn={3}
+  columns={["Feature", "Core", "Ops Base", "Enterprise"]}
+  rows={[
+    { label: "Parallel pipelines", values: [{ text: "1", check: true }, { text: "2", check: true }, { text: "3+", check: true }] },
+    { label: "Priority response", values: [{ text: "Standard", check: true }, { text: "Priority", check: true }, { text: "Priority", check: true }] },
+    { label: "Faster SLA options", values: [{ text: "-", check: false }, { text: "Sometimes", check: true }, { text: "Defined on request", check: true }] },
+    { label: "Slack channel", values: [{ text: "Shared", check: true }, { text: "Dedicated", check: true }, { text: "Dedicated", check: true }] },
+    { label: "Procurement support", values: [{ text: "-", check: false }, { text: "Light", check: true }, { text: "Yes", check: true }] }
+  ]}
+  ctas={{
+    primary: { label: "Book a fit check", href: "/book-a-call" },
+    secondary: { label: "See pricing", href: "/pricing" }
+  }}
+/>
+
+<FAQAccordion
+  title={{ prefix: "Enterprise", italic: "faq" }}
+  items={[
+    {
+      question: "What does Enterprise start at?",
+      answer: "Starting at $8,500/mo. Final scope depends on pipeline count, velocity, and any faster SLA requirements."
+    },
+    {
+      question: "Do we get a dedicated CSM?",
+      answer: "Not a separate person by default. You’ll have a primary pod and priority response. Calls are available on request and booked as needed."
+    },
+    {
+      question: "Can you do faster than 48 hours?",
+      answer: "Yes for the right work. We’ll define what qualifies, what doesn’t, and what happens if it slips. No vague promises."
+    },
+    {
+      question: "Do you support NDAs and MSAs?",
+      answer: "Yes. NDA on request. MSA during onboarding if your team requires it."
+    }
+  ]}
+/>
+
+<CTASection
+  variant="final"
+  title="Run multiple launches without the internal queue fight."
+  subtitle="If you’re serious about throughput, Enterprise is the cleanest way to scale."
+  primaryCta={{ label: "Book a fit check", href: "/book-a-call" }}
+  secondaryCta={{ label: "Contact us", href: "/contact" }}
+  trustText="3+ pipelines • Dedicated Slack • Faster SLAs on request • Starts at $8.5k/mo"
+/>

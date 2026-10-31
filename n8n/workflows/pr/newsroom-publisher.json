@@ -1,0 +1,290 @@
+{
+  "id": "newsroom-publisher",
+  "name": "Newsroom Publisher",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "newsroom-publish",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Trigger: Publish",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "newsroom-publish"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare newsroom content\nconst input = $input.first().json;\n\nconst content = {\n  type: input.type || 'release', // release, coverage, interview\n  title: input.title,\n  slug: input.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 50),\n  body: input.body || input.content,\n  date: new Date().toISOString(),\n  source_url: input.url || null,\n  outlet: input.outlet || null,\n  tags: input.tags || []\n};\n\nreturn { json: content };"
+      },
+      "id": "prepare-content",
+      "name": "Prepare Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-5.2",
+        "messages": {
+          "values": [
+            {
+              "content": "=Generate social snippets for this newsroom post:\n\n## Content\nTitle: {{ $json.title }}\nType: {{ $json.type }}\nBody: {{ $json.body?.substring(0, 500) }}\n\n## Generate\n1. LinkedIn post (150 words, professional tone)\n2. X/Twitter post (280 chars max, punchy)\n3. Meta description for SEO (155 chars max)\n\n## Output Format (JSON)\n{\n  \"linkedin\": \"...\",\n  \"twitter\": \"...\",\n  \"meta_description\": \"...\"\n}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 600
+        }
+      },
+      "id": "generate-snippets",
+      "name": "Generate Social Snippets",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        680,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "VJQjLnLDwAkI2PxY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse snippets and prepare for publishing\nconst content = $('Prepare Content').item.json;\nconst snippetText = $input.first().json.text;\n\nlet snippets;\ntry {\n  const jsonMatch = snippetText.match(/\\{[\\s\\S]*\\}/);\n  snippets = jsonMatch ? JSON.parse(jsonMatch[0]) : {};\n} catch (e) {\n  snippets = {\n    linkedin: content.title,\n    twitter: content.title.substring(0, 250),\n    meta_description: content.title\n  };\n}\n\nreturn {\n  json: {\n    ...content,\n    snippets,\n    publish_url: `https://trysako.com/press/${content.type}s/${content.slug}`\n  }\n};"
+      },
+      "id": "format-publish",
+      "name": "Format for Publish",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SAKO_MKT_API_URL }}/api/press/create",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"type\": \"{{ $json.type }}\",\n  \"title\": \"{{ $json.title }}\",\n  \"slug\": \"{{ $json.slug }}\",\n  \"body\": \"{{ $json.body }}\",\n  \"date\": \"{{ $json.date }}\",\n  \"source_url\": \"{{ $json.source_url }}\",\n  \"outlet\": \"{{ $json.outlet }}\",\n  \"meta_description\": \"{{ $json.snippets.meta_description }}\"\n}",
+        "options": {}
+      },
+      "id": "create-press-page",
+      "name": "Create Press Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1120,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "sako-mkt-api",
+          "name": "Sako Marketing API"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "https://api.indexnow.org/indexnow",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"host\": \"trysako.com\",\n  \"key\": \"{{ $env.INDEXNOW_KEY }}\",\n  \"urlList\": [\n    \"{{ $('Format for Publish').item.json.publish_url }}\",\n    \"https://trysako.com/press\"\n  ]\n}",
+        "options": {}
+      },
+      "id": "submit-indexnow",
+      "name": "Submit to IndexNow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1340,
+        200
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 1620036434,
+          "cachedResultName": "content_backlog",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=1620036434"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "=social_{{ $('Format for Publish').item.json.slug }}",
+            "pillar": "pr",
+            "hook": "={{ $('Format for Publish').item.json.title }}",
+            "format": "LI",
+            "draft_text": "={{ $('Format for Publish').item.json.snippets.linkedin }}",
+            "status": "needs_approval",
+            "created_at": "={{ $now.toISO() }}"
+          }
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "queue-social",
+      "name": "Queue Social Posts",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1120,
+        400
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "requestMethod": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"#pr-coverage\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": {\n        \"type\": \"plain_text\",\n        \"text\": \"📢 Newsroom Updated\",\n        \"emoji\": true\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*{{ $('Format for Publish').item.json.title }}*\\n\\nPublished to: <{{ $('Format for Publish').item.json.publish_url }}|/press>\\nSocial posts queued for approval.\"\n      }\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "slack-notify",
+      "name": "Slack Notify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1560,
+        300
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Trigger: Publish": {
+      "main": [
+        [
+          {
+            "node": "Prepare Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Content": {
+      "main": [
+        [
+          {
+            "node": "Generate Social Snippets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Social Snippets": {
+      "main": [
+        [
+          {
+            "node": "Format for Publish",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format for Publish": {
+      "main": [
+        [
+          {
+            "node": "Create Press Page",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Queue Social Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Press Page": {
+      "main": [
+        [
+          {
+            "node": "Submit to IndexNow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit to IndexNow": {
+      "main": [
+        [
+          {
+            "node": "Slack Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queue Social Posts": {
+      "main": [
+        [
+          {
+            "node": "Slack Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "pr"
+    },
+    {
+      "name": "newsroom"
+    }
+  ]
+}

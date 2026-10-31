@@ -1,0 +1,156 @@
+{
+  "id": "webhook-auth",
+  "name": "Webhook Auth (Shared)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "start",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {},
+      "id": "execute-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [240, 120]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Webhook Signature Verification (DISABLED)\n// NOTE: crypto module is disallowed in n8n 2.6+\n// This workflow now performs basic payload validation only.\n// Signature verification cannot be done in Code nodes.\n// Rely on URL obscurity and payload structure validation.\n\nconst input = $input.first().json;\nconst service = input.service;\nconst payload = input.payload;\n\nlet isValid = true;\nlet error = null;\n\n// Basic payload validation per service\nswitch (service) {\n  case 'calcom':\n    isValid = !!(payload?.triggerEvent && payload?.payload);\n    if (!isValid) error = 'Invalid Cal.com payload structure';\n    break;\n  case 'calendly':\n    isValid = !!(payload?.event && payload?.payload);\n    if (!isValid) error = 'Invalid Calendly payload structure';\n    break;\n  case 'slack':\n    isValid = !!(payload?.type || payload?.event || payload?.command);\n    if (!isValid) error = 'Invalid Slack payload structure';\n    break;\n  case 'stripe':\n    isValid = !!(payload?.type && payload?.data?.object);\n    if (!isValid) error = 'Invalid Stripe payload structure';\n    break;\n  case 'resend':\n    isValid = !!(payload?.type && payload?.data);\n    if (!isValid) error = 'Invalid Resend payload structure';\n    break;\n  default:\n    isValid = true; // Allow unknown services through with warning\n    error = `Unknown service: ${service} - no validation applied`;\n}\n\nreturn {\n  json: {\n    isValid,\n    service,\n    error,\n    note: 'Signature verification disabled (crypto not available in n8n 2.6+)',\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "verify",
+      "name": "Verify Signature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.isValid }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check",
+      "name": "Is Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "values": {
+          "boolean": [
+            {
+              "name": "authorized",
+              "value": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "success",
+      "name": "Authorized",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "values": {
+          "boolean": [
+            {
+              "name": "authorized",
+              "value": false
+            }
+          ],
+          "string": [
+            {
+              "name": "error",
+              "value": "={{ $json.error || 'Invalid webhook signature' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fail",
+      "name": "Unauthorized",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [900, 400]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Verify Signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Verify Signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Signature": {
+      "main": [
+        [
+          {
+            "node": "Is Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid?": {
+      "main": [
+        [
+          {
+            "node": "Authorized",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Unauthorized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "shared"
+    },
+    {
+      "name": "security"
+    }
+  ]
+}

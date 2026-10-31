@@ -1,0 +1,638 @@
+{
+  "id": "pr-hook-generator",
+  "name": "PR Hook Generator (Weekly)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 10 * * 1"
+            }
+          ]
+        }
+      },
+      "id": "cron",
+      "name": "Monday 10am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SAKO_API_URL }}/admin/tasks?status=completed&limit=20",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "fetch-shipped",
+      "name": "Fetch Shipped Tasks",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        460,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "sako-api",
+          "name": "Sako API"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.POSTHOG_API_URL }}/api/projects/{{ $env.POSTHOG_PROJECT_ID }}/insights/trend/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"events\": [\n    { \"id\": \"feature_used\", \"name\": \"Feature Used\" },\n    { \"id\": \"pricing_viewed\", \"name\": \"Pricing Viewed\" },\n    { \"id\": \"booking_completed\", \"name\": \"Booking\" }\n  ],\n  \"date_from\": \"-7d\"\n}",
+        "options": {}
+      },
+      "id": "fetch-posthog",
+      "name": "Fetch PostHog Events",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        460,
+        400
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "posthog-api",
+          "name": "PostHog API"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 100000011,
+          "cachedResultName": "sales_objections",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=100000011"
+        },
+        "options": {
+          "range": "A:C"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "fetch-objections",
+      "name": "Fetch CRM Objections",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        460,
+        600
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: { actor_id: 'apify/google-trends-scraper', run_input: { searchTerms: ['saas design'], geo: 'US', timeRange: 'now 7-d' }, dataset_limit: 10 } }];"
+      },
+      "id": "apify-gt-input",
+      "name": "Apify GT Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 700]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.apify.com/v2/acts/{{ $json.actor_id }}/runs?wait=60&memory=1024",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.run_input }}",
+        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "=Bearer {{ $env.APIFY_API_TOKEN }}" }] },
+        "options": {}
+      },
+      "id": "apify-gt-run",
+      "name": "Apify GT Run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [580, 700],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const run = $json?.data || {};\nconst first = $('Apify GT Input').item.json;\nreturn { json: { datasetId: run.defaultDatasetId || '', runId: run.id || '', datasetLimit: first.dataset_limit || 50 } };"
+      },
+      "id": "apify-gt-extract",
+      "name": "Apify GT Extract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 700]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.apify.com/v2/datasets/{{ $json.datasetId }}/items?clean=1&format=json&limit={{ $json.datasetLimit }}",
+        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "=Bearer {{ $env.APIFY_API_TOKEN }}" }] },
+        "options": {}
+      },
+      "id": "apify-gt-fetch",
+      "name": "Apify GT Fetch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [820, 700],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const items = Array.isArray($json) ? $json : [];\nconst meta = $('Apify GT Extract').item.json;\nreturn { json: { apify_items: items, apify_run_id: meta.runId, apify_dataset_id: meta.datasetId } };"
+      },
+      "id": "apify-gt-format",
+      "name": "Apify GT Format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [940, 700]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: { actor_id: 'epctex/google-news-scraper', run_input: { query: ['saas design', 'product design', 'design ops', 'landing page conversion'], language: 'US:en', date: '7d', maxItems: 20, decodeArticleUrls: true, proxy: { useApifyProxy: true } }, dataset_limit: 20 } }];"
+      },
+      "id": "apify-news-input",
+      "name": "Apify News Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 820]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.apify.com/v2/acts/{{ $json.actor_id }}/runs?wait=60&memory=1024",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.run_input }}",
+        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "=Bearer {{ $env.APIFY_API_TOKEN }}" }] },
+        "options": {}
+      },
+      "id": "apify-news-run",
+      "name": "Apify News Run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [580, 820],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const run = $json?.data || {};\nconst first = $('Apify News Input').item.json;\nreturn { json: { datasetId: run.defaultDatasetId || '', runId: run.id || '', datasetLimit: first.dataset_limit || 50 } };"
+      },
+      "id": "apify-news-extract",
+      "name": "Apify News Extract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 820]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.apify.com/v2/datasets/{{ $json.datasetId }}/items?clean=1&format=json&limit={{ $json.datasetLimit }}",
+        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "=Bearer {{ $env.APIFY_API_TOKEN }}" }] },
+        "options": {}
+      },
+      "id": "apify-news-fetch",
+      "name": "Apify News Fetch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [820, 820],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const items = Array.isArray($json) ? $json : [];\nconst meta = $('Apify News Extract').item.json;\nreturn { json: { apify_items: items, apify_run_id: meta.runId, apify_dataset_id: meta.datasetId } };"
+      },
+      "id": "apify-news-format",
+      "name": "Apify News Format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [940, 820]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: { actor_id: 'fastcrawler/x-twitter-trends-scraper-2025', run_input: { country: 'united-states' }, dataset_limit: 50 } }];"
+      },
+      "id": "apify-x-input",
+      "name": "Apify X Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 940]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.apify.com/v2/acts/{{ $json.actor_id }}/runs?wait=60&memory=1024",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.run_input }}",
+        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "=Bearer {{ $env.APIFY_API_TOKEN }}" }] },
+        "options": {}
+      },
+      "id": "apify-x-run",
+      "name": "Apify X Run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [580, 940],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const run = $json?.data || {};\nconst first = $('Apify X Input').item.json;\nreturn { json: { datasetId: run.defaultDatasetId || '', runId: run.id || '', datasetLimit: first.dataset_limit || 50 } };"
+      },
+      "id": "apify-x-extract",
+      "name": "Apify X Extract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 940]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.apify.com/v2/datasets/{{ $json.datasetId }}/items?clean=1&format=json&limit={{ $json.datasetLimit }}",
+        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "=Bearer {{ $env.APIFY_API_TOKEN }}" }] },
+        "options": {}
+      },
+      "id": "apify-x-fetch",
+      "name": "Apify X Fetch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [820, 940],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const items = Array.isArray($json) ? $json : [];\nconst meta = $('Apify X Extract').item.json;\nreturn { json: { apify_items: items, apify_run_id: meta.runId, apify_dataset_id: meta.datasetId } };"
+      },
+      "id": "apify-x-format",
+      "name": "Apify X Format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [940, 940]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const items = $json.apify_items || [];\nconst trendQueries = items.map(i => i.query || i.keyword || i.title).filter(Boolean).slice(0, 5);\n\nreturn {\n  json: {\n    trends: trendQueries\n  }\n};"
+      },
+      "id": "normalize-trends",
+      "name": "Normalize Trends",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const items = $json.apify_items || [];\nconst headlines = items\n  .map(i => i.title || i.headline || i.name)\n  .filter(Boolean)\n  .slice(0, 8);\n\nreturn {\n  json: {\n    headlines\n  }\n};"
+      },
+      "id": "normalize-techcrunch",
+      "name": "Normalize Google News",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        820
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const items = $json.apify_items || [];\nconst trends = items\n  .map(i => i.trend || i.name || i.topic || i.title || i.hashtag)\n  .filter(Boolean)\n  .slice(0, 10);\n\nreturn {\n  json: {\n    x_trends: trends\n  }\n};"
+      },
+      "id": "normalize-x-trends",
+      "name": "Normalize X Trends",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        940
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Compile context for PR hook generation\nconst shippedTasks = $('Fetch Shipped Tasks').item.json?.data || [];\nconst posthogData = $('Fetch PostHog Events').item.json || {};\nconst objections = $('Fetch CRM Objections').all().map(i => i.json) || [];\nconst trendData = $('Normalize Trends').item?.json?.trends || [];\nconst newsData = $('Normalize Google News').item?.json?.headlines || [];\nconst xTrends = $('Normalize X Trends').item?.json?.x_trends || [];\n\n// Summarize shipped work\nconst shippedSummary = shippedTasks.slice(0, 10).map(t => ({\n  title: t.title,\n  category: t.category,\n  client: t.workspace?.name || 'Client'\n}));\n\n// Extract top objections\nconst topObjections = objections.slice(0, 5).map(o => o.objection || o.text);\n\nreturn {\n  json: {\n    shipped: shippedSummary,\n    shippedCount: shippedTasks.length,\n    objections: topObjections,\n    trends: trendData,\n    x_trends: xTrends,\n    news: newsData,\n    posthogHighlights: [\n      `Pricing page views trending ${ posthogData.results ? 'up' : 'stable' }`,\n      `${shippedTasks.length} tasks completed this week`\n    ]\n  }\n};"
+      },
+      "id": "compile-context",
+      "name": "Compile Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-5.2",
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a PR strategist for Sako, a design subscription service for SaaS companies.\n\nBased on this week's data, generate 10 PR hook ideas:\n\n## Recent Shipped Work\n{{ $json.shipped.map(s => `- ${s.title} (${s.category}) for ${s.client}`).join('\\n') }}\n\n## Common Sales Objections (from calls)\n{{ $json.objections.map(o => `- ${o}`).join('\\n') }}\n\n## Behavior Signals\n{{ $json.posthogHighlights.join('\\n') }}\n\n## Trends (Google Trends)\n{{ ($json.trends || []).map(t => `- ${t}`).join('\\n') }}\n\n## Trends (X/Twitter)\n{{ ($json.x_trends || []).map(t => `- ${t}`).join('\\n') }}\n\n## Industry News (Google News)\n{{ ($json.news || []).map(n => `- ${n}`).join('\\n') }}\n\n## PR Pillars\n1. **Shipping receipts** - \"Sako shipped X in 48h\" stories\n2. **Data drops** - Industry insights, benchmarks, analysis\n3. **Founder POV** - Hot takes, contrarian views on design/SaaS\n\n## Output Format\nFor each hook, provide:\n- **Hook**: One compelling sentence\n- **Pillar**: shipping/data/founder_pov\n- **Proof needed**: What evidence supports this\n- **Risk level**: low/medium/high (high = needs careful fact-checking)\n\nGenerate 10 hooks, scored by newsworthiness (most newsworthy first)."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.8,
+          "maxTokens": 2000
+        }
+      },
+      "id": "generate-hooks",
+      "name": "Generate 10 PR Hooks",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        900,
+        400
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "VJQjLnLDwAkI2PxY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse generated hooks into structured format\nconst text = $input.first().json.text;\n\n// Extract hooks (basic parsing)\nconst hookMatches = text.split(/\\d+\\.\\s*\\*\\*Hook\\*\\*:/i).filter(h => h.trim());\n\nconst hooks = hookMatches.map((hookText, i) => {\n  const pillarMatch = hookText.match(/\\*\\*Pillar\\*\\*:\\s*(\\w+)/i);\n  const proofMatch = hookText.match(/\\*\\*Proof needed\\*\\*:\\s*([^\\*]+)/i);\n  const riskMatch = hookText.match(/\\*\\*Risk level\\*\\*:\\s*(\\w+)/i);\n  \n  const hookLine = hookText.split('\\n')[0].trim();\n  \n  return {\n    id: `pr_${Date.now()}_${i}`,\n    hook: hookLine.substring(0, 200),\n    pillar: pillarMatch?.[1]?.toLowerCase() || 'shipping',\n    proof_links: '[]',\n    status: 'queued',\n    risk_level: riskMatch?.[1]?.toLowerCase() || 'low'\n  };\n}).filter(h => h.hook.length > 10);\n\nreturn hooks.map(h => ({ json: h }));"
+      },
+      "id": "parse-hooks",
+      "name": "Parse Hooks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 888766463,
+          "cachedResultName": "pr_backlog",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=888766463"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "save-hooks",
+      "name": "Save to PR Backlog",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1340,
+        400
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "requestMethod": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"#pr-ideas\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": {\n        \"type\": \"plain_text\",\n        \"text\": \"📰 Weekly PR Hook Ideas\",\n        \"emoji\": true\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"Generated {{ $('Parse Hooks').all().length }} new PR hooks based on this week's shipped work and sales objections.\"\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*Top 3 Hooks:*\\n{{ $('Parse Hooks').all().slice(0,3).map((h, i) => `${i+1}. ${h.json.hook}`).join('\\n') }}\"\n      }\n    },\n    {\n      \"type\": \"actions\",\n      \"elements\": [\n        {\n          \"type\": \"button\",\n          \"text\": {\n            \"type\": \"plain_text\",\n            \"text\": \"📋 View All in Sheet\",\n            \"emoji\": true\n          },\n          \"url\": \"https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID\"\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "slack-notify",
+      "name": "Slack: Weekly PR Ideas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1560,
+        400
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Monday 10am": {
+      "main": [
+        [
+          {
+            "node": "Fetch Shipped Tasks",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch PostHog Events",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch CRM Objections",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Apify GT Input",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Apify News Input",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Apify X Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify GT Input": { "main": [[{ "node": "Apify GT Run", "type": "main", "index": 0 }]] },
+    "Apify GT Run": { "main": [[{ "node": "Apify GT Extract", "type": "main", "index": 0 }]] },
+    "Apify GT Extract": { "main": [[{ "node": "Apify GT Fetch", "type": "main", "index": 0 }]] },
+    "Apify GT Fetch": { "main": [[{ "node": "Apify GT Format", "type": "main", "index": 0 }]] },
+    "Apify GT Format": { "main": [[{ "node": "Normalize Trends", "type": "main", "index": 0 }]] },
+    "Apify News Input": { "main": [[{ "node": "Apify News Run", "type": "main", "index": 0 }]] },
+    "Apify News Run": { "main": [[{ "node": "Apify News Extract", "type": "main", "index": 0 }]] },
+    "Apify News Extract": { "main": [[{ "node": "Apify News Fetch", "type": "main", "index": 0 }]] },
+    "Apify News Fetch": { "main": [[{ "node": "Apify News Format", "type": "main", "index": 0 }]] },
+    "Apify News Format": { "main": [[{ "node": "Normalize Google News", "type": "main", "index": 0 }]] },
+    "Apify X Input": { "main": [[{ "node": "Apify X Run", "type": "main", "index": 0 }]] },
+    "Apify X Run": { "main": [[{ "node": "Apify X Extract", "type": "main", "index": 0 }]] },
+    "Apify X Extract": { "main": [[{ "node": "Apify X Fetch", "type": "main", "index": 0 }]] },
+    "Apify X Fetch": { "main": [[{ "node": "Apify X Format", "type": "main", "index": 0 }]] },
+    "Apify X Format": { "main": [[{ "node": "Normalize X Trends", "type": "main", "index": 0 }]] },
+    "Fetch Shipped Tasks": {
+      "main": [
+        [
+          {
+            "node": "Compile Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch PostHog Events": {
+      "main": [
+        [
+          {
+            "node": "Compile Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch CRM Objections": {
+      "main": [
+        [
+          {
+            "node": "Compile Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Trends": {
+      "main": [
+        [
+          {
+            "node": "Compile Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Google News": {
+      "main": [
+        [
+          {
+            "node": "Compile Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize X Trends": {
+      "main": [
+        [
+          {
+            "node": "Compile Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compile Context": {
+      "main": [
+        [
+          {
+            "node": "Generate 10 PR Hooks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate 10 PR Hooks": {
+      "main": [
+        [
+          {
+            "node": "Parse Hooks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Hooks": {
+      "main": [
+        [
+          {
+            "node": "Save to PR Backlog",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to PR Backlog": {
+      "main": [
+        [
+          {
+            "node": "Slack: Weekly PR Ideas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "pr"
+    },
+    {
+      "name": "hooks"
+    }
+  ]
+}

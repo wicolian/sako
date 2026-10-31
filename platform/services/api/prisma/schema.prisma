@@ -1,0 +1,986 @@
+// Sako Platform - Phase 1 Prisma Schema
+// Database: PostgreSQL
+// ORM: Prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================================
+// ENUMS
+// ========================================
+
+enum PlanCode {
+  CORE
+  OPS
+  ENTERPRISE
+  COMPOSER_FREE
+  COMPOSER_PRO
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  PAUSED
+  CANCEL_AT_PERIOD_END
+}
+
+enum TaskStatus {
+  QUEUED
+  IN_PROGRESS
+  IN_REVIEW
+  COMPLETED
+  PAUSED
+}
+
+enum TaskCategory {
+  DESIGN
+  MOTION
+}
+
+enum UserRole {
+  CLIENT
+  PENDING_ADMIN
+  ADMIN
+}
+
+enum WorkspaceRole {
+  OWNER
+  SUBMITTER
+  MEMBER
+  VIEWER
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+}
+
+enum CommentKind {
+  COMMENT
+  REVISION_REQUEST
+  ADMIN_DECISION
+}
+
+enum IntegrationProvider {
+  SLACK
+  LINEAR
+  JIRA
+  ASANA
+}
+
+enum TaskScope {
+  DESIGN_ONLY
+  MOTION_ONLY
+  FULL
+}
+
+// ========================================
+// COMPOSER ENUMS
+// ========================================
+
+enum AiDraftType {
+  LANDING_PAGE
+  AD_CREATIVE
+  BANNER
+}
+
+enum AiDraftStatus {
+  NONE
+  PENDING
+  READY
+  FAILED
+}
+
+enum FigmaExportStatus {
+  NOT_REQUESTED
+  PENDING
+  READY
+  FAILED
+  FAILED_RATE_LIMIT
+}
+
+enum ComposerSource {
+  TASK
+  COMPOSER_STANDALONE
+}
+
+// ========================================
+// CORE ENTITIES
+// ========================================
+
+model User {
+  id           String   @id @default(cuid())
+  clerkUserId  String?  @unique
+  email        String   @unique
+  name         String?
+  role         UserRole @default(CLIENT)
+  isSuperAdmin Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships    WorkspaceMember[]
+  comments       TaskComment[]
+  revisions      TaskRevision[]
+  notifications  Notification[]
+  assignedTasks  Task[]            @relation("AssignedTasks")
+
+  @@map("users")
+}
+
+model Workspace {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  timezone     String   @default("UTC")
+  hasOnboarded Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Plan relationship
+  planId String?
+  plan   Plan?   @relation(fields: [planId], references: [id])
+
+  // Relations
+  subscription      Subscription?
+  planOverride      WorkspacePlanOverride?
+  members           WorkspaceMember[]
+  brands            Brand[]
+  tasks             Task[]
+  dayCredits        DayCredit[]
+  aiCredits         AICredit[]
+  integrations      WorkspaceIntegration[]
+  slackIntegrations SlackIntegration[]
+  estimateSnapshots TaskEstimateSnapshot[]
+  invites           WorkspaceInvite[]
+  checkoutAttempts  CheckoutAttempt[]
+  notifications     Notification[]
+
+  // Client drafts
+  taskDrafts TaskDraft[]
+
+  // Composer relations
+  aiDrafts AiDraft[]
+
+  @@index([name]) // Search index for global search
+  @@map("workspaces")
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceRole @default(MEMBER)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@map("workspace_members")
+}
+
+model WorkspaceInvite {
+  id          String        @id @default(cuid())
+  workspaceId String
+  email       String
+  role        WorkspaceRole
+  token       String        @unique
+  status      InviteStatus  @default(PENDING)
+  createdAt   DateTime      @default(now())
+  acceptedAt  DateTime?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("workspace_invites")
+}
+
+// ========================================
+// PLANS & SUBSCRIPTIONS
+// ========================================
+
+model Plan {
+  id                String         @id @default(cuid())
+  code              PlanCode       @unique
+  name              String
+  activeTaskLimit   Int
+  allowedCategories TaskCategory[]
+  taskScope         TaskScope      @default(FULL)
+  priceMonthly      Int // cents
+  priceAnnual       Int // cents
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  workspaces Workspace[]
+
+  @@map("plans")
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  workspaceId          String             @unique
+  status               SubscriptionStatus
+  stripeSubscriptionId String?
+  planCode             PlanCode
+  // DEPRECATED: mode field is no longer used. CORE now includes both Design + Motion.
+  // Kept for migration compatibility. Will be removed in future migration.
+  mode                 String?
+  activeTaskLimit      Int? // for ENTERPRISE override; null uses plan default
+  slaSeconds           Int? // override per subscription; null uses default (48h = 172800)
+  billingPeriodStart   DateTime?
+  billingPeriodEnd     DateTime?
+  cancelAt             DateTime?
+  lastDayCreditBurnAt  DateTime? // last time day credit was burned (for idempotency)
+
+  // Pause tracking for SLA freezing
+  pausedAt           DateTime? // When subscription was paused
+  pauseReason        String? // Reason for pause
+  totalPausedSeconds Int       @default(0) // Accumulated paused time for SLA calculations
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model CheckoutAttempt {
+  id                   String    @id @default(cuid())
+  userId               String?
+  email                String?
+  workspaceId          String?
+  planKey              String?
+  stripeSessionId      String    @unique
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  status               String?
+  createdAt            DateTime  @default(now())
+  completedAt          DateTime?
+
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, status])
+  @@map("checkout_attempts")
+}
+
+// checkout attempts for self-heal + metadata
+
+// ========================================
+// BRANDS
+// ========================================
+
+model Brand {
+  id          String @id @default(cuid())
+  workspaceId String
+  name        String
+
+  // Brand colors
+  primaryColor   String?
+  secondaryColor String?
+  accentColor    String?
+
+  // Brand assets
+  logoUrl      String?
+  guidelineUrl String?
+
+  // Extended brand system for Composer
+  colorsJson       Json? // Extended palette: { primary, secondary, accent, gradients[], neutrals[] }
+  typographyJson   Json? // Typography: { headingFont, bodyFont, scale, weights }
+  brandProfileJson Json? // Layout preferences: { heroStyle, gridPreferences, ctaStyle }
+  toneTags         String[] // tags like "playful", "serious"
+  voiceGuidelines  String?  @db.Text // Detailed voice/tone guidelines for AI generation
+  guidelines       String?  @db.Text // General brand guidelines
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  tasks     Task[]
+  aiDrafts  AiDraft[]
+
+  @@map("brands")
+}
+
+// ========================================
+// TASKS
+// ========================================
+
+model Task {
+  id             String               @id @default(cuid())
+  workspaceId    String
+  brandId        String?
+  title          String
+  description    String               @db.Text
+  category       TaskCategory
+  status         TaskStatus           @default(QUEUED)
+  createdById    String?
+  assignedToId   String?
+  assignedTo     User?                @relation("AssignedTasks", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  inProgressAt   DateTime?
+  completedAt    DateTime?
+  inReviewAt     DateTime?            // When task entered IN_REVIEW (waiting for client feedback)
+  totalClientWaitSeconds Int          @default(0) // Accumulated time spent waiting on client feedback (for SLA pause)
+  slaSeconds     Int                  @default(172800) // 48h default
+  revisionNumber Int                  @default(0)
+  externalSource IntegrationProvider? // eg LINEAR if originated from linear
+  externalId     String?
+  slackChannelId String?
+  slackThreadTs  String?
+
+  // AI / Structured Brief fields
+  structuredBriefJson Json?
+  referenceLinksJson  Json?
+  deliverablesJson    Json?
+
+  // Estimator fields
+  estimatedEffortHours Int? // clamped effort estimate (8–80)
+  displaySlaHours      Int? // clamped SLA expectation (24–standardSlaHours)
+  fits48hWindow        Boolean? // can this reasonably fit a standard SLA cycle?
+  flagForAdminReview   Boolean? // flagged by estimator for admin review
+  aiEligible           Boolean  @default(true) // can AI be used for this task
+  aiIneligibleReason   String? // reason if marked ineligible
+  useAI                Boolean  @default(false) // client opted to use AI (deducts credit)
+
+  // Composer fields
+  aiDraftRequested  Boolean        @default(false) // client requested AI draft generation
+  aiDraftStatus     AiDraftStatus  @default(NONE) // status of AI draft generation
+  aiDraftSelectedId String? // ID of selected draft (if any)
+  source            ComposerSource @default(TASK) // origin: TASK or COMPOSER_STANDALONE
+  composerExportUrl String? // Published page URL for iframe display in Studio
+
+  // SLA tracking fields
+  slaWarningNotifiedAt DateTime?  // When SLA warning notification was sent (prevents duplicates)
+  slaCreditIssuedAt    DateTime?  // When SLA credit was issued (prevents double-crediting)
+  isEscalated          Boolean    @default(false) // Whether task has been escalated to pod lead
+  escalatedAt          DateTime?  // When task was escalated
+
+  workspace         Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  brand             Brand?                 @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  comments          TaskComment[]
+  revisions         TaskRevision[]
+  attachments       Attachment[]
+  integrationLinks  TaskIntegrationLink[]
+  estimateSnapshots TaskEstimateSnapshot[]
+  lifecycleEvents   TaskLifecycleEvent[]
+  reviewAssets      ReviewAsset[]
+  aiDrafts          AiDraft[]
+
+  @@index([workspaceId, status])
+  @@index([workspaceId, createdAt])
+  @@index([title]) // Search index for global search
+  @@map("tasks")
+}
+
+model TaskComment {
+  id        String      @id @default(cuid())
+  taskId    String
+  authorId  String?
+  body      String      @db.Text
+  kind      CommentKind @default(COMMENT)
+  createdAt DateTime    @default(now())
+
+  task   Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author User? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@map("task_comments")
+}
+
+model TaskRevision {
+  id            String   @id @default(cuid())
+  taskId        String
+  authorId      String?
+  revisionIndex Int // sequential index (0,1,2,...)
+  payloadJson   Json? // snapshot or diff
+  createdAt     DateTime @default(now())
+
+  task   Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author User? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@map("task_revisions")
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  taskId    String
+  url       String
+  kind      String // "REFERENCE" | "DELIVERABLE" etc
+  createdAt DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("attachments")
+}
+
+// ========================================
+// CREDITS
+// ========================================
+
+model DayCredit {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  totalCredits Int
+  usedCredits  Int      @default(0)
+  periodStart  DateTime
+  periodEnd    DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, periodEnd])
+  @@map("day_credits")
+}
+
+model AICredit {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  totalCredits Int
+  usedCredits  Int      @default(0)
+  periodStart  DateTime
+  periodEnd    DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, periodEnd])
+  @@map("ai_credits")
+}
+
+// ========================================
+// INTEGRATIONS
+// ========================================
+
+model WorkspaceIntegration {
+  id          String              @id @default(cuid())
+  workspaceId String
+  provider    IntegrationProvider
+  configJson  Json // e.g. slack team/channel, linear api key, team id (encrypted at rest later)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, provider])
+  @@map("workspace_integrations")
+}
+
+model TaskIntegrationLink {
+  id           String              @id @default(cuid())
+  taskId       String
+  provider     IntegrationProvider
+  externalId   String // eg linear issue id
+  metadataJson Json?
+  createdAt    DateTime            @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, provider])
+  @@map("task_integration_links")
+}
+
+model SlackIntegration {
+  id                 String             @id @default(cuid())
+  workspaceId        String
+  slackTeamId        String             @unique
+  slackTeamName      String?
+  slackEnterpriseId  String?
+  slackBotUserId     String?
+  botAccessToken     String
+  defaultChannelId   String?
+  defaultChannelName String?
+  connectStatus      SlackConnectStatus @default(NOT_CONNECTED)
+  installedByUserId  String?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("slack_integrations")
+}
+
+enum SlackConnectStatus {
+  NOT_CONNECTED
+  CONNECT_PENDING
+  CONNECTED
+}
+
+// ========================================
+// ESTIMATOR & LIFECYCLE
+// ========================================
+
+model TaskEstimateSnapshot {
+  id          String    @id @default(cuid())
+  taskId      String?
+  task        Task?     @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  // prompt input snapshot
+  title               String
+  description         String       @db.Text
+  category            TaskCategory
+  tagsJson            Json?
+  structuredBriefJson Json?
+  brandId             String?
+  brandName           String?
+  planCode            PlanCode
+  subscriptionMode    String? // DESIGN_ONLY, MOTION_ONLY, or null for full access
+  activeTaskSlots     Int
+  standardSlaHours    Int
+
+  // model output (raw, before backend clamps)
+  estimatedEffortHoursRaw Int
+  displaySlaHoursRaw      Int
+  complexity              String
+  complexityScore         Int
+  isAiSupported           Boolean
+  fits48hWindow           Boolean
+  flagForAdminReview      Boolean
+  flagReason              String?
+  recommendedSplitCount   Int
+  suggestedSubtasksJson   Json?
+  missingInfoJson         Json?
+  aiHelpRecommended       Boolean
+  aiHelpReason            String
+  reasoning               String  @db.Text
+
+  // meta
+  modelName String
+  createdAt DateTime @default(now())
+
+  @@map("task_estimate_snapshots")
+}
+
+model TaskLifecycleEvent {
+  id         String      @id @default(cuid())
+  taskId     String
+  task       Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  kind       String // e.g. "STATUS_CHANGE", "REVISION_REQUEST", "COMMENT", "ADMIN_OVERRIDE"
+  fromStatus TaskStatus?
+  toStatus   TaskStatus?
+  actorRole  String // "client" | "admin"
+  metadata   Json?
+  createdAt  DateTime    @default(now())
+
+  @@index([taskId, createdAt])
+  @@map("task_lifecycle_events")
+}
+
+// ========================================
+// ENTERPRISE PLAN OVERRIDES
+// ========================================
+
+model WorkspacePlanOverride {
+  id                    String   @id @default(cuid())
+  workspaceId           String   @unique
+  basePlanCode          PlanCode
+  customActiveTaskLimit Int?
+  customTatSeconds      Int?
+  customStripePriceId   String?
+  customMetadata        Json?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("workspace_plan_overrides")
+}
+
+// ========================================
+// NOTIFICATIONS
+// ========================================
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  workspaceId String?
+  type        String // TASK_STATUS_CHANGED, REVIEW_COMMENT, TASK_IN_REVIEW, etc.
+  title       String
+  message     String   @db.Text
+  payload     Json? // Additional data like taskId, revisionId, etc.
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+// ========================================
+// REVIEW BOARD (FRAME.IO-LIKE)
+// ========================================
+
+enum ReviewAssetType {
+  IMAGE
+  PDF
+  VIDEO
+  FIGMA
+  LOTTIE
+  RIVE
+  EMBED
+}
+
+enum ReviewRevisionStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  CHANGES_REQUESTED
+}
+
+enum ReviewAnnotationKind {
+  IMAGE_PIN
+  PDF_PIN
+  VIDEO_TIME
+  LOTTIE_TIME
+  RIVE_TIME
+  EMBED_REF
+}
+
+model ReviewAsset {
+  id          String          @id @default(cuid())
+  taskId      String
+  type        ReviewAssetType
+  title       String
+  sourceUrl   String
+  createdById String
+  createdAt   DateTime        @default(now())
+
+  task      Task                  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  revisions ReviewAssetRevision[]
+
+  @@index([taskId])
+  @@map("review_assets")
+}
+
+model ReviewAssetRevision {
+  id          String               @id @default(cuid())
+  assetId     String
+  label       String // e.g. "v1", "v2", "Final"
+  isCurrent   Boolean              @default(false)
+  status      ReviewRevisionStatus @default(DRAFT)
+  reason      String? // Optional note/reason for this revision
+  fileUrl     String? // URL to revision file if different from parent asset
+  createdById String
+  createdAt   DateTime             @default(now())
+
+  asset       ReviewAsset        @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  annotations ReviewAnnotation[]
+
+  @@index([assetId, isCurrent])
+  @@map("review_asset_revisions")
+}
+
+model ReviewAnnotation {
+  id              String               @id @default(cuid())
+  taskId          String
+  assetId         String
+  assetRevisionId String
+  authorId        String
+  kind            ReviewAnnotationKind
+  text            String               @db.Text
+  payload         Json // { x, y, page } | { time } | { frameId }
+  resolved        Boolean              @default(false)
+  createdAt       DateTime             @default(now())
+  resolvedAt      DateTime?
+  resolvedById    String?
+
+  revision ReviewAssetRevision @relation(fields: [assetRevisionId], references: [id], onDelete: Cascade)
+
+  // Threading
+  parentId String?
+  parent   ReviewAnnotation?  @relation("Thread", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  ReviewAnnotation[] @relation("Thread")
+
+  // AI Source
+  source AnnotationSource @default(USER)
+
+  @@index([taskId, resolved])
+  @@index([assetRevisionId])
+  @@map("review_annotations")
+}
+
+enum AnnotationSource {
+  USER
+  AI
+}
+
+// ========================================
+// NOTIFICATION PREFERENCES
+// ========================================
+
+enum NotificationEventType {
+  // Task events
+  TASK_CREATED
+  TASK_IN_PROGRESS
+  TASK_IN_REVIEW
+  TASK_COMPLETED
+  TASK_COMMENT
+  REVISION_REQUESTED
+
+  // Review events
+  REVIEW_REVISION_UPLOADED
+  REVIEW_COMMENT_ADDED
+
+  // Billing events
+  PAYMENT_FAILED
+  SUBSCRIPTION_PAUSED
+  SUBSCRIPTION_RESUMED
+  SUBSCRIPTION_CANCELED
+
+  // Team events
+  WORKSPACE_INVITE
+  MEMBER_JOINED
+  MEMBER_REMOVED
+}
+
+model NotificationPreference {
+  id           String                @id @default(cuid())
+  userId       String
+  eventType    NotificationEventType
+  emailEnabled Boolean               @default(true)
+  slackEnabled Boolean               @default(true)
+  inAppEnabled Boolean               @default(true)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  @@unique([userId, eventType])
+  @@index([userId])
+  @@map("notification_preferences")
+}
+
+// ========================================
+// TASK DRAFTS (CLIENT)
+// ========================================
+
+model TaskDraft {
+  id          String       @id @default(cuid())
+  workspaceId String
+  title       String?
+  description String?      @db.Text
+  category    TaskCategory @default(DESIGN)
+  brandId     String?
+
+  // Structured Brief fields (same as Task)
+  structuredBriefJson Json?
+  referenceLinksJson  Json?
+  deliverablesJson    Json?
+
+  // Options
+  useAI Boolean @default(false)
+
+  // Metadata
+  lastEditedAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("task_drafts")
+}
+
+// ========================================
+// DAY CREDIT HISTORY
+// ========================================
+
+model DayCreditHistory {
+  id            String    @id @default(cuid())
+  workspaceId   String
+  action        String // "BURN", "ROLLOVER", "RESET", "REFUND"
+  amount        Int
+  balanceBefore Int
+  balanceAfter  Int
+  periodStart   DateTime?
+  periodEnd     DateTime?
+  notes         String?
+  createdAt     DateTime  @default(now())
+
+  @@index([workspaceId, createdAt])
+  @@map("day_credit_history")
+}
+
+// ========================================
+// COMPOSER (AI DESIGN ENGINE)
+// ========================================
+
+model AiDraft {
+  id          String  @id @default(cuid())
+  workspaceId String
+  taskId      String?
+  brandId     String
+
+  type   AiDraftType
+  status AiDraftStatus @default(PENDING)
+
+  // Generated content
+  previewImageUrl String? // Screenshot/thumbnail of generated design
+  html            String? @db.Text // Full HTML output
+  designJson      Json? // Structured design representation for Figma
+  reasoning       Json? // Array of reasoning strings explaining decisions
+  variantLabel    String? // e.g. "Variant A - Bold Hero"
+  primaryHeadline String? // Main headline extracted
+  mainCta         String? // Primary CTA text
+
+  // Model info
+  provider  String? // "sako-composer"
+  modelUsed String? // "gpt-4o", "claude-3.5-sonnet", etc
+
+  // Figma export
+  exportStatus FigmaExportStatus @default(NOT_REQUESTED)
+  exportMeta   Json? // { figmaUrl, exportedAt, error, ... }
+
+  // Selection
+  isSelected     Boolean   @default(false)
+  selectedAt     DateTime?
+  selectedAction String? // "USE_AS_FINAL" | "SEND_TO_DESIGNERS"
+
+  // Rating and feedback for RAG/ML
+  rating       Int? // 1-5 stars user rating
+  feedbackNote String? // User feedback on draft quality
+  embeddingId  String? // Pinecone vector ID for similarity search
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  task      Task?     @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  brand     Brand     @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([taskId])
+  @@index([brandId])
+  @@map("ai_drafts")
+}
+
+// ========================================
+// MARKETING LEADS & NURTURE EMAILS
+// ========================================
+
+enum MarketingEmailStep {
+  D0
+  D1
+  D3
+  D5
+  D10
+}
+
+enum MarketingEmailStatus {
+  SENT
+  FAILED
+  SKIPPED
+  DRY_RUN
+}
+
+enum MarketingOfferKind {
+  COUPON
+  PAYMENT_LINK
+}
+
+model MarketingLead {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  clerkUserId String?  // Not unique - handle collisions gracefully
+
+  // Source tracking
+  source       String // 'pricing_page_view', 'pricing_table_clicked', etc.
+  signupDate   DateTime @default(now())
+  lastActivity DateTime @default(now())
+
+  // Conversion tracking
+  converted   Boolean   @default(false)
+  convertedAt DateTime?
+
+  // UTM tracking
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  utmContent  String?
+  utmTerm     String?
+
+  // Per-lead controls
+  unsubscribed     Boolean   @default(false)
+  unsubscribedAt   DateTime?
+  suppressMarketing Boolean  @default(false)
+  suppressedAt     DateTime?
+  suppressedBy     String?   // Admin user ID who suppressed
+
+  // Admin notes
+  notes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  emails MarketingEmailSend[]
+  offers MarketingOffer[]
+
+  @@index([email])
+  @@index([converted, unsubscribed, suppressMarketing])
+  @@index([signupDate])
+  @@map("marketing_leads")
+}
+
+model MarketingEmailSend {
+  id     String             @id @default(cuid())
+  leadId String
+  step   MarketingEmailStep
+
+  // Email details
+  subject           String
+  provider          String             @default("resend")
+  providerMessageId String?
+  sentAt            DateTime           @default(now())
+  status            MarketingEmailStatus
+  error             String?            @db.VarChar(500) // Truncate errors
+
+  lead MarketingLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  // Idempotency: only one email per lead per step
+  @@unique([leadId, step])
+  @@index([leadId])
+  @@index([sentAt])
+  @@map("marketing_email_sends")
+}
+
+model MarketingOffer {
+  id     String             @id @default(cuid())
+  leadId String
+  kind   MarketingOfferKind
+
+  // Stripe IDs
+  stripeCouponId        String?
+  stripePromotionCodeId String?
+  code                  String? // Customer-facing code like SAKO10-AB12
+  stripePaymentLinkId   String?
+
+  // Offer details
+  planCode   String? // 'core', 'ops', etc.
+  percentOff Int?
+  expiresAt  DateTime?
+
+  createdAt DateTime @default(now())
+
+  lead MarketingLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  // One offer per lead per kind per plan
+  @@unique([leadId, kind, planCode])
+  @@index([leadId])
+  @@map("marketing_offers")
+}

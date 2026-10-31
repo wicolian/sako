@@ -1,0 +1,125 @@
+---
+title: "About Sako"
+slug: "about"
+template: "standard"
+published: true
+priority: 1
+seo:
+  metaTitle: "About Sako | Built to Make Design Throughput Predictable"
+  metaDescription: "Sako turns messy design requests into a clean pipeline with clear capacity and real deadlines. Built by Koushik and Gowri Shankar in Chennai."
+  keywords: ["about Sako", "design ops company", "creative ops", "B2B SaaS design ops", "GTM design"]
+  ogImage: "auto"
+jsonLd:
+  type: "Organization"
+---
+
+<Hero
+  variant="split"
+  eyebrow="About"
+  title="We built Sako because Slack design ops is chaos."
+  subtitle="We were shipping for multiple teams, losing context, losing files, and hearing 'what's the latest?' every day. So we built a real pipeline with capacity limits and deadlines."
+  primaryCta={{ label: "Start shipping", href: "https://app.trysako.com" }}
+  secondaryCta={{ label: "Book a fit check", href: "/book-a-call" }}
+  scene="about"
+/>
+
+<MetricCards
+  style="cards"
+  variant="transparent"
+  title="What we're building"
+  subtitle="No fluff, just the point"
+  items={[
+    { title: "Workflow", icon: "layers", value: "Dashboard-first", description: "Slack is optional for notifications" },
+    { title: "Delivery", icon: "clock", value: "48h SLA", description: "On eligible, ready briefs" },
+    { title: "Remedy", icon: "shield", value: "Service credit", description: "If we miss, it gets priority + credit" },
+    { title: "Focus", icon: "target", value: "GTM lane", description: "Landing pages, decks, ads, motion" }
+  ]}
+/>
+
+<FeatureGrid
+  columns={2}
+  variant="cards"
+  title="How Sako {works}"
+  items={[
+    {
+      icon: "ClipboardCheck",
+      title: "Capacity is real",
+      description: "Every pod has active-slot limits. No overloading. No silent backlog. If it’s in progress, it’s actually in progress."
+    },
+    {
+      icon: "Timer",
+      title: "Deadlines are enforced",
+      description: "Requests are time-stamped, tracked through states, and escalated internally as they approach SLA."
+    },
+    {
+      icon: "MessageSquare",
+      title: "Slack is not the system",
+      description: "Slack is for updates. The dashboard is where work is submitted, tracked, reviewed, and approved. That’s how you stop losing context."
+    },
+    {
+      icon: "Video",
+      title: "Motion is part of GTM",
+      description: "Cutdowns, kinetic type, simple UI motion, demo edits. Motion isn’t a separate vendor hunt."
+    }
+  ]}
+/>
+
+<FoundersSection />
+
+<FeatureGrid
+  columns={2}
+  variant="cards"
+  title="What we {do}"
+  items={[
+    {
+      icon: "Rocket",
+      title: "GTM design that ships",
+      description: "Landing pages, web sections, pricing pages, decks, one-pagers, ads, launch pages, comparison pages, brand-on-rails execution."
+    },
+    {
+      icon: "Wand2",
+      title: "Web build + motion support",
+      description: "Figma to Webflow or Framer. Video cutdowns, captions, simple motion, export formats like MP4/WebM/GIF. Lottie only if scoped and actually supported."
+    }
+  ]}
+/>
+
+<PainPoints
+  variant="marquee"
+  title="What we don’t do"
+  subtitle="So expectations don’t get weird"
+  items={[
+    { text: "Heavy 3D / VFX pipelines", type: "x" },
+    { text: "Full product UX for large apps", type: "x" },
+    { text: "Highly regulated compliance document work", type: "x" },
+    { text: "Complex print production workflows", type: "x" },
+    { text: "Brand identity from scratch (unless clearly scoped)", type: "x" }
+  ]}
+/>
+
+<FAQAccordion
+  title={{ prefix: "About", italic: "faq" }}
+  items={[
+    {
+      question: "Are you new?",
+      answer: "Yes. We’re launching now. That’s why we keep the promise tight: predictable throughput, clear rules, and fast feedback loops."
+    },
+    {
+      question: "Who is this for?",
+      answer: "B2B SaaS teams who need GTM output fast: founders, marketing leads, growth teams. If you want a brand agency process, we’re not it."
+    },
+    {
+      question: "Why the dashboard requirement?",
+      answer: "Because Slack alone turns into lost files and lost context. The dashboard is the source of truth so the work stays clean."
+    }
+  ]}
+/>
+
+<CTASection
+  variant="standard"
+  title="If you’re tired of “waiting on design”, you’ll like this."
+  subtitle="Try it, ship something real, then decide."
+  primaryCta={{ label: "Start shipping", href: "https://app.trysako.com" }}
+  secondaryCta={{ label: "Book a fit check", href: "/book-a-call" }}
+  trustText="Clear rules • Fast output • No agency theatre"
+/>

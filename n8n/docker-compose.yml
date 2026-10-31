@@ -1,0 +1,74 @@
+# n8n Marketing Automations - Local Development
+# Run with: docker-compose up -d
+# Docs: https://docs.n8n.io/hosting/installation/docker/
+
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:2.6.3
+    container_name: n8n-sako
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    env_file: .env
+    environment:
+      # Redis (local container — DB vars come from .env)
+      - QUEUE_BULL_REDIS_HOST=redis
+      - QUEUE_BULL_REDIS_PORT=6379
+      - QUEUE_HEALTH_CHECK_ACTIVE=true
+      
+      # Protocol + URLs (local dev)
+      - N8N_PROTOCOL=http
+      - N8N_HOST=localhost
+      - PORT=5678
+      - WEBHOOK_URL=http://localhost:5678/
+      - N8N_EDITOR_BASE_URL=http://localhost:5678/
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./workflows:/home/node/.n8n/workflows
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - n8n-network
+
+  # n8n Worker (for queue mode)
+  n8n-worker:
+    image: docker.n8n.io/n8nio/n8n:2.6.3
+    container_name: n8n-sako-worker
+    restart: unless-stopped
+    command: worker
+    env_file: .env
+    environment:
+      # Redis (local container — DB vars come from .env)
+      - QUEUE_BULL_REDIS_HOST=redis
+      - QUEUE_BULL_REDIS_PORT=6379
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      - n8n
+      - redis
+    networks:
+      - n8n-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: n8n-sako-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - n8n-network
+
+volumes:
+  n8n_data:
+  redis_data:
+
+networks:
+  n8n-network:
+    driver: bridge

@@ -1,0 +1,40 @@
+# Environment
+.env
+.env.local
+
+# Dependencies
+node_modules/
+
+# Build
+dist/
+build/
+
+# Prisma
+# Note: Migration files should be committed to git
+# prisma/migrations/**/migration.sql
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+
+# Production
+.env.prod*
+.env.prod.*
+.env.prod.*.*
+.env.prod.*.*.*
+.env.prod.*.*.*.*
+.env.prod.*.*.*.*.*
+.env.prod.*.*.*.*.*.*
+.env.prod.*.*.*.*.*.*.*
+.env.prod.*.*.*.*.*.*.*.*
+.env.prod.*.*.*.*.*.*.*.*.*
+.env.prod.*.*.*.*.*.*.*.*.*.*
+.env.prod.*.*.*.*.*.*.*.*.*.*.*
+.env.prod.*.*.*.*.*.*.*.*.*.*.*.*
+.env.prod.*.*.*.*.*.*.*.*.*.*.*.*.*
+.env.prod.*.*.*.*.*.*.*.*.*.*.*.*.*.*

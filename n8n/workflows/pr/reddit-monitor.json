@@ -1,0 +1,212 @@
+{
+  "id": "reddit-monitor",
+  "name": "Reddit Signal Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 12
+            }
+          ]
+        }
+      },
+      "id": "cron",
+      "name": "Every 12 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "actor_id": "harshmaur/reddit-scraper",
+            "run_input": "={{ {\n  searchTerms: [\n    'design subscription',\n    'unlimited design',\n    'hire designer',\n    'landing page design',\n    'product design agency',\n    'saas ui ux'\n  ],\n  searchPosts: true,\n  searchComments: false,\n  searchSort: 'new',\n  searchTime: 'day',\n  includeNSFW: false,\n  fastMode: true,\n  crawlCommentsPerPost: false,\n  maxPostsCount: 25,\n  proxy: { useApifyProxy: true, apifyProxyGroups: ['RESIDENTIAL'] }\n} }}",
+            "dataset_limit": 50
+          }
+        }
+      },
+      "id": "apify-reddit",
+      "name": "Apify: Reddit Scraper",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const items = $json.apify_items || [];\n\nif (!Array.isArray(items) || items.length === 0) {\n  return [{ json: { no_signals: true, signals: [] } }];\n}\n\nconst signals = items\n  .map((i) => {\n    const title = i.title || i.postTitle || i.name || '';\n    const text = i.text || i.body || i.postText || i.description || '';\n    const subreddit = i.subreddit || i.communityName || i.community || '';\n    const url = i.url || i.postUrl || i.link || '';\n    const score = i.score ?? i.upvotes ?? i.ups ?? null;\n    const comments = i.numComments ?? i.commentsCount ?? i.commentCount ?? null;\n    const createdAt = i.createdAt || i.created || i.created_utc || i.timestamp || null;\n\n    return {\n      title,\n      subreddit,\n      url,\n      score,\n      comments,\n      createdAt,\n      snippet: String(text).slice(0, 240)\n    };\n  })\n  .filter((s) => Boolean(s.title || s.snippet) && Boolean(s.url || s.subreddit))\n  .slice(0, 20);\n\nreturn [{\n  json: {\n    no_signals: signals.length === 0,\n    signals\n  }\n}];"
+      },
+      "id": "normalize-signals",
+      "name": "Normalize Reddit Signals",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.no_signals }}",
+              "value2": false
+            }
+          ]
+        }
+      },
+      "id": "has-signals",
+      "name": "Has Signals?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-5.2",
+        "messages": {
+          "values": [
+            {
+              "content": "=You are Sako's growth and PR operator.\n\nSummarize these Reddit signals into a concise action brief.\n\n## Signals (JSON)\n{{ JSON.stringify($json.signals, null, 2) }}\n\n## Output\nReturn Markdown with:\n1) Top 5 most actionable threads (title + subreddit + why it matters + suggested reply angle)\n2) 5 content ideas (LinkedIn/Twitter) inspired by the discussions\n3) 3 PR hook angles if any\n\nKeep it under 2500 characters."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.4,
+          "maxTokens": 900
+        }
+      },
+      "id": "summarize",
+      "name": "Summarize Signals (GPT-5.2)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        240
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "VJQjLnLDwAkI2PxY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "requestMethod": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"#signals\",\n  \"text\": \"Reddit Signals (last 24h)\\n\\n\" + $json.text\n}",
+        "options": {}
+      },
+      "id": "post-slack",
+      "name": "Post to Slack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1340,
+        240
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      },
+      "continueOnFail": true
+    }
+  ],
+  "connections": {
+    "Every 12 Hours": {
+      "main": [
+        [
+          {
+            "node": "Apify: Reddit Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify: Reddit Scraper": {
+      "main": [
+        [
+          {
+            "node": "Normalize Reddit Signals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Reddit Signals": {
+      "main": [
+        [
+          {
+            "node": "Has Signals?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Signals?": {
+      "main": [
+        [
+          {
+            "node": "Summarize Signals (GPT-5.2)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Summarize Signals (GPT-5.2)": {
+      "main": [
+        [
+          {
+            "node": "Post to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "pr"
+    },
+    {
+      "name": "signals"
+    }
+  ]
+}

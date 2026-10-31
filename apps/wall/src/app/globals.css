@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: rgb(250, 250, 250);
+  --foreground: rgb(26, 26, 26);
+  --card: rgb(247, 248, 248);
+  --card-foreground: rgb(26, 26, 26);
+  --popover: rgb(250, 250, 250);
+  --popover-foreground: rgb(26, 26, 26);
+  --primary: rgb(70, 58, 177);
+  --primary-foreground: rgb(250, 250, 250);
+  --secondary: rgb(35, 42, 36);
+  --secondary-foreground: rgb(250, 250, 250);
+  --muted: rgb(229, 229, 230);
+  --muted-foreground: rgb(26, 26, 26);
+  --accent: rgb(227, 236, 246);
+  --accent-foreground: rgb(70, 58, 177);
+  --destructive: rgb(244, 33, 46);
+  --destructive-foreground: rgb(250, 250, 250);
+  --border: rgb(225, 234, 239);
+  --input: rgb(229, 229, 229);
+  --ring: rgb(70, 58, 177);
+  --chart-1: rgb(55, 47, 145);
+  --chart-2: #7269C6;
+  --chart-3: rgb(160, 156, 224);
+  --chart-4: rgb(220, 217, 242);
+  --chart-5: rgb(228, 227, 246);
+  --font-sans: "Geist", "Inter", ui-sans-serif, sans-serif;
+  --font-mono: "Geist Mono", "JetBrains Mono", ui-monospace, monospace;
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: rgb(27, 27, 27);
+  --foreground: rgb(250, 250, 250);
+  --card: rgb(26, 26, 26);
+  --card-foreground: rgb(250, 250, 250);
+  --popover: rgb(0, 0, 0);
+  --popover-foreground: rgb(250, 250, 250);
+  --primary: rgb(154, 232, 62);
+  --primary-foreground: rgb(26, 26, 26);
+  --secondary: rgb(154, 232, 62);
+  --secondary-foreground: rgb(26, 26, 26);
+  --muted: rgb(45, 45, 45);
+  --muted-foreground: rgb(175, 175, 175);
+  --accent: rgb(61, 61, 61);
+  --accent-foreground: rgb(250, 250, 250);
+  --destructive: rgb(244, 33, 46);
+  --destructive-foreground: rgb(250, 250, 250);
+  --border: rgb(45, 45, 45);
+  --input: rgb(61, 61, 61);
+  --ring: rgb(184, 206, 161);
+  --chart-1: rgb(154, 232, 62);
+  --chart-2: rgb(129, 192, 57);
+  --chart-3: rgb(137, 185, 85);
+  --chart-4: rgb(124, 153, 92);
+  --chart-5: rgb(183, 208, 154);
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--background);
+  color: var(--foreground);
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar for webkit */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

@@ -1,0 +1,40 @@
+name: Wall Snapshot Collector
+
+on:
+  schedule:
+    # Run every 15 minutes
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  collect-snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Trigger Snapshot Collection
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            "${{ secrets.WALL_URL }}/api/wall/snapshot/run" \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json")
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          
+          echo "Response: $body"
+          echo "HTTP Code: $http_code"
+          
+          if [ "$http_code" != "200" ]; then
+            echo "Snapshot collection failed with HTTP $http_code"
+            exit 1
+          fi
+          
+          echo "✅ Snapshot collection completed successfully"
+        env:
+          WALL_URL: ${{ secrets.WALL_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+
+      - name: Log Result
+        run: |
+          echo "Snapshot collected at $(date -u '+%Y-%m-%d %H:%M:%S UTC')"

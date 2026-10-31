@@ -1,0 +1,12 @@
+[install]
+# Use hardlinks to save disk space and improve performance
+globalCache = true
+# Cache downloaded packages to speed up future installs
+cache = true
+
+[run]
+# Enable hot reloading for better development experience
+hot = true
+
+[test]
+preload = ["./tests/setup-fetch.ts"]

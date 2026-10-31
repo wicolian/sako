@@ -1,0 +1,336 @@
+---
+title: "Pricing"
+slug: "pricing"
+template: "pricing"
+published: true
+priority: 0
+seo:
+  metaTitle: "Sako Pricing | Design + Motion from $2,500/mo | 48h Standard Tasks"
+  metaDescription: "Unlimited requests, limited active slots. Most standard tasks shipped in 48 business hours once Ready. Design + motion included. Unlimited brands and team seats included."
+  keywords: ["design subscription pricing", "design ops pricing", "B2B SaaS design", "creative subscription", "design + motion subscription", "design team cost", "on-demand design pricing", "unlimited design subscription"]
+  ogImage: "auto"
+jsonLd:
+  type: "Product"
+---
+
+<Hero
+  variant="split"
+  eyebrow="Pricing"
+  title="Predictable pricing. {Actual} throughput."
+  subtitle="Unlimited requests, limited active slots. Most standard tasks ship in 48 business hours once Ready. No hidden backlog, no surprise scope fights."
+  primaryCta={{ label: "Start Shipping", href: "https://app.trysako.com" }}
+  secondaryCta={{ label: "Book a fit check", href: "/book-a-call" }}
+  trustText="IST business days • 48h clock starts when Ready • SLA-backed with service credits"
+  scene="pricing"
+/>
+
+<MetricCards
+  style="cards"
+  variant="transparent"
+  title="How {pricing} works"
+  subtitle="Simple model, easy to explain to your team."
+  items={[
+    { title: "Requests", icon: "inbox", value: "Unlimited", description: "Queue as many as you want." },
+    { title: "Active slots", icon: "layers", value: "Plan-based", description: "We work on X tasks at a time." },
+    { title: "Brands", icon: "palette", value: "Unlimited", description: "Multiple products, one workspace." },
+    { title: "Team seats", icon: "users", value: "Included", description: "Invite your team with roles." }
+  ]}
+/>
+
+<PricingCards
+  title={{ prefix: "Choose your", italic: "plan" }}
+  subtitle="Core and Ops are self-serve. Enterprise is a fit check."
+  plans={[
+    {
+      id: "core",
+      name: "Core",
+      price: "$2,500",
+      period: "mo",
+      description: "For one steady workstream.",
+      features: [
+        "1 active slot",
+        "Unlimited requests queued",
+        "Unlimited brands",
+        "2 team seats (roles included)",
+        "Design + motion included",
+        "Most standard tasks shipped in 48 business hours once Ready",
+        "Dashboard workflow for briefs, review, versions, approvals",
+        "Slack optional for notifications",
+        "Webflow/Framer builds supported as a separate task"
+      ],
+      cta: { label: "Start Shipping", href: "https://app.trysako.com" },
+      highlighted: false
+    },
+    {
+      id: "ops-base",
+      name: "Ops Base",
+      price: "$4,500",
+      period: "mo",
+      description: "For parallel workstreams and faster weekly output.",
+      features: [
+        "2 active slots",
+        "Everything in Core",
+        "Unlimited brands",
+        "4 team seats (roles included)",
+        "Priority handling when capacity is tight",
+        "Better for teams shipping multiple campaigns at once"
+      ],
+      cta: { label: "Start Shipping", href: "https://app.trysako.com" },
+      highlighted: true,
+      badge: "Most Popular"
+    },
+    {
+      id: "enterprise",
+      name: "Enterprise",
+      price: "Starts at $8,500",
+      period: "mo",
+      description: "For multiple teams, governance, and procurement.",
+      features: [
+        "3+ active slots (custom)",
+        "Unlimited brands",
+        "5+ team seats (roles included)",
+        "Governance and QA workflows",
+        "MSA + DPA, invoicing, Net-30, PO support",
+        "Optional custom SLA lanes (scoped)",
+        "Security package and subprocessor transparency"
+      ],
+      cta: { label: "Book a fit check", href: "/book-a-call" },
+      highlighted: false
+    }
+  ]}
+  footer="Unlimited requests. Limited active slots. Unlimited brands + team seats included. Most standard tasks ship in 48 business hours once Ready."
+/>
+
+<DemoRequestForm socialProof="We respond within 24 hours." />
+
+<FeatureGrid
+  columns={3}
+  variant="cards"
+  title="Included in {every} plan"
+  items={[
+    {
+      icon: "checkCircle",
+      title: "Ship-ready delivery",
+      description: "On-brand, QA’d, correct specs, exports + source files. Built for publishing, not presenting."
+    },
+    {
+      icon: "palette",
+      title: "Unlimited brands",
+      description: "Multiple products in one workspace. Choose the brand per task and keep output consistent."
+    },
+    {
+      icon: "users",
+      title: "Team access",
+      description: "Invite teammates, assign roles, keep approvals clean. No more forwarding files around."
+    }
+  ]}
+/>
+
+<FeatureGrid
+  variant="bento"
+  title="{48h} standard tasks"
+  subtitle="Bounded, repeatable requests we ship fast once Ready. If it's bigger, we split it into the next task."
+  items={[
+    {
+      icon: "Image",
+      title: "Ad creative set",
+      description: "One concept, delivered in a launch-ready size pack.",
+      bentoContent: { type: "scene", id: "adCreativeSet" }
+    },
+    {
+      icon: "Layout",
+      title: "Social set",
+      description: "A publish-ready batch for your next drop.",
+      bentoContent: { type: "scene", id: "socialSet" }
+    },
+    {
+      icon: "Presentation",
+      title: "Deck refresh batch",
+      description: "Cleaner hierarchy, tighter layout, export-ready slides.",
+      bentoContent: { type: "scene", id: "deckRefresh" }
+    },
+    {
+      icon: "Globe",
+      title: "Landing page design (Figma)",
+      description: "A conversion-focused page draft, designed responsively.",
+      bentoContent: { type: "scene", id: "figmaLandingPage" }
+    },
+    {
+      icon: "Video",
+      title: "Video cutdown",
+      description: "A short cutdown with captions, formatted for your channel.",
+      bentoContent: { type: "scene", id: "videoCutdown" }
+    },
+    {
+      icon: "Code",
+      title: "Webflow/Framer build",
+      description: "Built from approved Figma, responsive and published. Standard builds only.",
+      bentoContent: { type: "scene", id: "webBuild" }
+    }
+  ]}
+/>
+
+<FeatureGrid
+  variant="bento"
+  title="When the {48h} clock starts"
+  subtitle="A task is marked Ready only when these are true."
+  items={[
+    {
+      icon: "Target",
+      title: "Clear scope",
+      description: "Exact deliverable, format, sizes, platform, and page or section count.",
+      bentoContent: { type: "scene", id: "readyScope" }
+    },
+    {
+      icon: "Paperclip",
+      title: "Assets provided",
+      description: "Brand kit, copy (or 'use existing'), references, and source files if needed.",
+      bentoContent: { type: "scene", id: "readyAssets" }
+    },
+    {
+      icon: "User",
+      title: "One decision owner",
+      description: "One approver, feedback left in the dashboard.",
+      bentoContent: { type: "scene", id: "readyOwner" }
+    },
+    {
+      icon: "Repeat",
+      title: "Revisions rule",
+      description: "Unlimited revisions until it matches the brief. New direction becomes a new task.",
+      bentoContent: { type: "scene", id: "readyRevisions" }
+    }
+  ]}
+/>
+
+<FeatureGrid
+  variant="bento"
+  title="{SLA}, web builds, and risk removal"
+  subtitle="Everything buyers ask, without the fine-print vibe."
+  items={[
+    {
+      icon: "Clock",
+      title: "SLA-backed delivery",
+      description: "Most standard tasks ship in 48 business hours once Ready, tracked by workflow state changes and timestamps.",
+      bentoContent: { type: "scene", id: "slaTimer" }
+    },
+    {
+      icon: "Shield",
+      title: "If we miss (eligible task)",
+      description: "Request a service credit via ticket. Credit is applied to your next invoice.",
+      bentoContent: { type: "scene", id: "slaRemedy" }
+    },
+    {
+      icon: "Percent",
+      title: "Credit amount",
+      description: "1/30 of monthly fee per eligible miss, capped at 20% per month.",
+      bentoContent: { type: "scene", id: "creditMeter" }
+    },
+    {
+      icon: "Globe",
+      title: "Web build boundaries",
+      description: "Webflow/Framer builds are page builds from approved Figma. Clean, responsive implementation.",
+      bentoContent: { type: "scene", id: "webBoundaries" }
+    }
+  ]}
+/>
+
+<FeatureGrid
+  columns={2}
+  variant="simple"
+  title="What's {included} vs not included"
+  items={[
+    {
+      icon: "Check",
+      title: "Included (all plans)",
+      description: "Marketing design (pages, sections, decks, ads, social), motion (cutdowns, captions, simple kinetic type), web builds from approved Figma as a separate task, unlimited brands, and team seats with roles."
+    },
+    {
+      icon: "X",
+      title: "Not included (hard no)",
+      description: "Heavy 3D/VFX, character animation, full explainers from scratch, full product UX research and IA, engineering work, complex CMS builds, migrations, multi-language, memberships or auth."
+    }
+  ]}
+/>
+
+<ComparisonTable
+  title="{Pricing} comparison"
+  highlightColumn={1}
+  columns={["Cost factor", "Sako Core", "Freelancers", "Agency", "In-house"]}
+  rows={[
+    { label: "Monthly cost", values: [{ text: "$2,500", check: true }, { text: "$5–15k variable", check: false }, { text: "$10–25k retainer", check: false }, { text: "$12–20k loaded", check: false }] },
+    { label: "Turnaround", values: [{ text: "48h standard SLA", check: true }, { text: "1–3 weeks", check: false }, { text: "weeks to months", check: false }, { text: "queue dependent", check: false }] },
+    { label: "Motion included", values: [{ text: "Yes", check: true }, { text: "Often extra", check: false }, { text: "Often extra", check: false }, { text: "another hire", check: false }] },
+    { label: "Predictable throughput", values: [{ text: "Active slots", check: true }, { text: "Depends on person", check: false }, { text: "Depends on team", check: false }, { text: "Depends on bandwidth", check: false }] },
+    { label: "Cancel risk", values: [{ text: "Month-to-month", check: true }, { text: "Ghosting risk", check: false }, { text: "Locked contracts", check: false }, { text: "Mis-hire risk", check: false }] }
+  ]}
+  ctas={{
+    primary: { label: "Start Shipping", href: "https://app.trysako.com" },
+    secondary: { label: "Calculate your ROI", href: "/roi-calculator" }
+  }}
+/>
+
+<FeatureGrid
+  columns={3}
+  variant="cards"
+  title="We remove the {risk}"
+  items={[
+    {
+      icon: "Shield",
+      title: "SLA-backed",
+      description: "If an eligible standard task misses the 48h clock, you can request a credit. Clear policy, capped monthly."
+    },
+    {
+      icon: "Layers",
+      title: "No backlog surprise",
+      description: "Unlimited queue, limited active slots. You always know what’s in progress and what’s next."
+    },
+    {
+      icon: "CheckCircle",
+      title: "Ship-ready outputs",
+      description: "On-brand, QA’d, exports + source files. Built for publishing, not presenting."
+    }
+  ]}
+/>
+
+<FAQAccordion
+  title={{ prefix: "Pricing", italic: "faq" }}
+  items={[
+    {
+      question: "Do we get unlimited brands?",
+      answer: "Yes. Create as many brands as you need and pick the right one per task."
+    },
+    {
+      question: "Can my team use Sako too?",
+      answer: "Yes. Every plan includes team seats and roles so submissions and approvals stay clean."
+    },
+    {
+      question: "What am I actually buying?",
+      answer: "Throughput. You can queue unlimited requests, and we work on a fixed number at a time based on your active slots."
+    },
+    {
+      question: "Is motion included?",
+      answer: "Yes. Motion uses the same active slots as design. No separate upsell lane."
+    },
+    {
+      question: "Do you do Webflow or Framer?",
+      answer: "Yes, as a separate task from the design. Standard builds are page builds from approved Figma with basic responsiveness and publish support, no CMS or custom code."
+    },
+    {
+      question: "What qualifies for 48 hours?",
+      answer: "The standard tasks listed above, once marked Ready. Anything complex is split into multiple tasks, each with its own 48-hour timer."
+    },
+    {
+      question: "What happens if we change direction mid-task?",
+      answer: "Revisions are unlimited until it matches the brief. New direction becomes a new task."
+    }
+  ]}
+/>
+
+<CTASection
+  variant="final"
+  title="Start {shipping}. Stop chasing."
+  subtitle="Pick a plan, submit your first request, and let the queue handle the rest."
+  primaryCta={{ label: "Start Shipping", href: "https://app.trysako.com" }}
+  secondaryCta={{ label: "Book a fit check", href: "/book-a-call" }}
+  trustText="Core + Ops: self-serve • Enterprise: book-a-call • IST business days • 48h standard tasks once Ready"
+/>

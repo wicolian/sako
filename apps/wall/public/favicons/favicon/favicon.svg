@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="1000" height="1000"><style>
+    #light-icon {
+      display: inline;
+    }
+    #dark-icon {
+      display: none;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      #light-icon {
+        display: none;
+      }
+      #dark-icon {
+        display: inline;
+      }
+    }
+  </style><g id="light-icon"><svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="1000" height="1000"><g clip-path="url(#SvgjsClipPath1075)"><rect width="1000" height="1000" fill="#1a1a1a"></rect><g transform="matrix(0.68359375,0,0,0.68359375,150,150)"><svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="1024" height="1024"><svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M793.285 871.668C793.285 884.289 783.055 894.52 770.434 894.52H252.851C240.231 894.52 230 884.289 230 871.668L230 531.184V151.851C230 139.231 240.231 129 252.851 129H771.107C793.849 129 802.631 158.603 783.57 171.005L230 531.184H770.434C783.055 531.184 793.285 541.414 793.285 554.035V871.668Z" fill="#9AE83E" style="fill:#9AE83E;fill:color(display-p3 0.6027 0.9114 0.2426);fill-opacity:1;"></path>
+</svg></svg></g></g><defs><clipPath id="SvgjsClipPath1075"><rect width="1000" height="1000" x="0" y="0" rx="350" ry="350"></rect></clipPath></defs></svg></g><g id="dark-icon"><svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="1000" height="1000"><g clip-path="url(#SvgjsClipPath1076)"><rect width="1000" height="1000" fill="#1a1a1a"></rect><g transform="matrix(0.68359375,0,0,0.68359375,150,150)"><svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="1024" height="1024"><svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M793.285 871.668C793.285 884.289 783.055 894.52 770.434 894.52H252.851C240.231 894.52 230 884.289 230 871.668L230 531.184V151.851C230 139.231 240.231 129 252.851 129H771.107C793.849 129 802.631 158.603 783.57 171.005L230 531.184H770.434C783.055 531.184 793.285 541.414 793.285 554.035V871.668Z" fill="#9AE83E" style="fill:#9AE83E;fill:color(display-p3 0.6027 0.9114 0.2426);fill-opacity:1;"></path>
+</svg></svg></g></g><defs><clipPath id="SvgjsClipPath1076"><rect width="1000" height="1000" x="0" y="0" rx="350" ry="350"></rect></clipPath></defs></svg></g></svg>

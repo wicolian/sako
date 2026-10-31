@@ -1,0 +1,21 @@
+# Caddy reverse proxy — injects Origin header that Railway/Cloudflare strips.
+# Flow: Railway (:443) -> Caddy (:5678) -> n8n (:5680)
+# Task Broker uses :5679 independently (no conflict).
+
+{
+	auto_https off
+	admin off
+	persist_config off
+	log {
+		level ERROR
+	}
+}
+
+:5678 {
+	reverse_proxy localhost:5680 {
+		# Inject the correct Origin for the current custom domain.
+		# Railway/Cloudflare can strip Origin, but n8n requires it for the push endpoint.
+		header_up Origin "https://{env.N8N_HOST}"
+		header_up X-Forwarded-Proto "https"
+	}
+}

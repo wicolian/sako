@@ -1,0 +1,236 @@
+---
+title: "How It Works"
+slug: "how-it-works"
+template: "standard"
+published: true
+priority: 0
+seo:
+  metaTitle: "How Sako Works | Brief to Shipped in 48 Business Hours"
+  metaDescription: "See how Sako design ops works: set up your workspace, submit unlimited requests, and get design, Webflow, and motion deliverables in 48h. Track everything in the dashboard."
+  keywords: ["how Sako works", "Sako design workflow", "Sako 48 hour delivery", "Sako design ops workflow", "Sako creative ops", "Sako design subscription process", "Sako unlimited requests", "design SLA workflow", "on-demand design process"]
+  ogImage: "auto"
+jsonLd:
+  type: "SoftwareApplication"
+---
+
+<Hero
+  eyebrow="How It Works"
+  variant="split"
+  title="One {queue}. Known delivery times."
+  subtitle="Set up your workspace, add brands, invite your team, then submit requests. Once a task is marked Ready, the clock starts. Most standard tasks ship in 48 business hours."
+  primaryCta={{ label: "Start Shipping", href: "https://app.trysako.com" }}
+  secondaryCta={{ label: "See Pricing", href: "/pricing" }}
+  trustText="IST business days • 48h clock starts when Ready • SLA-backed with service credits"
+  scene="how-it-works"
+/>
+
+<MetricCards
+  style="cards"
+  variant="transparent"
+  title="The {Sako} workflow"
+  subtitle="Simple enough to explain. Strict enough to run."
+  items={[
+    { title: "Workspace setup", icon: "settings", value: "10 min", description: "Brands + team access." },
+    { title: "Submit", icon: "target", value: "5 min", description: "Clear scope + assets." },
+    { title: "Standard delivery", icon: "clock", value: "48h", description: "Most standard tasks, business days." },
+    { title: "Revisions", icon: "repeat", value: "∞", description: "Until it matches the brief." }
+  ]}
+/>
+
+<Timeline
+  eyebrow="The Pipeline"
+  title="How {Sako} actually works"
+  layout="vertical"
+  steps={[
+    {
+      number: "01",
+      title: "Create your workspace",
+      description: "You get a shared dashboard for requests, reviews, files, and approvals. This is the source of truth.",
+      badge: "10 min"
+    },
+    {
+      number: "02",
+      title: "Add your brands",
+      description: "Create unlimited brand profiles so each task ships with the right colors, fonts, and voice. Multiple products, one place.",
+      badge: "Unlimited"
+    },
+    {
+      number: "03",
+      title: "Invite your team",
+      description: "Add teammates and assign roles so submissions and approvals stay clean. No forwarding files and hoping context survives.",
+      badge: "Seats"
+    },
+    {
+      number: "04",
+      title: "Submit a request",
+      description: "Create a task with the goal, specs, brand selection, and references. Attach files or point us to existing assets. No meetings required.",
+      badge: "5 min"
+    },
+    {
+      number: "05",
+      title: "We mark it Ready, then it takes a slot",
+      description: "We confirm scope and assets. When it’s Ready, the timer starts. Work begins when it takes an active slot, so the queue never turns into a black hole.",
+      badge: "Ready"
+    },
+    {
+      number: "06",
+      title: "Review, iterate, ship",
+      description: "Review in the dashboard. Comments and versions stay attached. Unlimited revisions until it matches the brief. Final exports plus source files, delivered and archived.",
+      badge: "Shipped"
+    }
+  ]}
+/>
+
+<FeatureGrid
+  columns={1}
+  variant="simple"
+  title="What is a {Sako} pod?"
+  items={[
+    {
+      icon: "Users",
+      title: "A small team that ships GTM work",
+      description: "Sako is built for marketing throughput. Your pod handles design + motion for GTM deliverables using one queue and clear delivery rules. Less chasing, more shipping."
+    }
+  ]}
+/>
+
+<FeatureGrid
+  variant="bento"
+  title="The {SLA} system"
+  subtitle="Built for predictable shipping, not best-case promises."
+  items={[
+    {
+      icon: "Clock",
+      title: "Standard tasks",
+      description: "Most standard tasks ship in 48 business hours once Ready.",
+      bentoContent: { type: "scene", id: "slaTimer" }
+    },
+    {
+      icon: "Layers",
+      title: "Anything bigger gets split",
+      description: "If it's complex, we split it into multiple tasks. Each task gets its own clock.",
+      bentoContent: { type: "scene", id: "slotsQueue" }
+    },
+    {
+      icon: "Target",
+      title: "Ready starts the clock",
+      description: "Clear scope, assets provided, one decision owner, feedback in the dashboard.",
+      bentoContent: { type: "scene", id: "readyScope" }
+    },
+    {
+      icon: "Shield",
+      title: "If we miss (eligible task)",
+      description: "Request a service credit via ticket. Credit applies to your next invoice.",
+      bentoContent: { type: "scene", id: "slaRemedy" }
+    }
+  ]}
+/>
+
+<FeatureGrid
+  columns={2}
+  variant="cards"
+  title="{Speed} without trashing craft"
+  items={[
+    {
+      icon: "Clock",
+      title: "Enforced by workflow",
+      description: "State changes are timestamped. Active slots prevent silent pile-ups. You see the same timers we do."
+    },
+    {
+      icon: "Shield",
+      title: "Protected by scope rules",
+      description: "Unlimited revisions until it matches the brief. New direction becomes a new task. That’s how speed stays real without cutting corners."
+    }
+  ]}
+/>
+
+<FeatureGrid
+  columns={2}
+  variant="simple"
+  title="What you {see} vs what we see"
+  items={[
+    {
+      icon: "Eye",
+      title: "Your dashboard",
+      description: "Active tasks, what's next, delivery timers, versions, approvals, and delivered files. One place to answer: 'What's shipping this week?'"
+    },
+    {
+      icon: "Settings",
+      title: "Behind the scenes",
+      description: "Capacity management, QA checklists, brand consistency, and internal escalation when a task is nearing its SLA."
+    }
+  ]}
+/>
+
+<FeatureGrid
+  variant="bento"
+  title="What {makes} this work"
+  subtitle="It's rules + visibility. That's it."
+  items={[
+    {
+      icon: "Layers",
+      title: "Active slots",
+      description: "Work doesn't start unless it takes a slot. That's why queues don't turn into black holes.",
+      bentoContent: { type: "scene", id: "slotsQueue" }
+    },
+    {
+      icon: "Target",
+      title: "Ready rules",
+      description: "Scope and assets first. Then the timer starts. No chaos, no 'we assumed.'",
+      bentoContent: { type: "scene", id: "readyScope" }
+    },
+    {
+      icon: "MessageSquare",
+      title: "Slack notifications (optional)",
+      description: "Slack tells you what changed. The dashboard is where briefs, feedback, and approvals live.",
+      bentoContent: { type: "scene", id: "slackDashHandoff" }
+    },
+    {
+      icon: "Rocket",
+      title: "GTM focus",
+      description: "We stay in the lane: landing pages, decks, ads, social, motion cutdowns. That focus makes speed real.",
+      bentoContent: { type: "scene", id: "adCreativeSet" }
+    }
+  ]}
+/>
+
+<FAQAccordion
+  title={{ prefix: "Process", italic: "faq" }}
+  items={[
+    {
+      question: "How do we submit a request?",
+      answer: "Through the dashboard. That’s where scope, files, versions, and approvals live. Slack is optional for notifications."
+    },
+    {
+      question: "Can we manage multiple brands?",
+      answer: "Yes. Add unlimited brands and pick the right one per task."
+    },
+    {
+      question: "Can my team use Sako too?",
+      answer: "Yes. Invite teammates and assign roles so submissions and approvals stay clean."
+    },
+    {
+      question: "What makes a task 'Ready'?",
+      answer: "Clear deliverable and specs, assets provided (or 'use existing'), one decision owner, and feedback left in the dashboard. That's when the 48h clock starts."
+    },
+    {
+      question: "What if something is bigger than a standard task?",
+      answer: "We split it into multiple tasks. Each task has a clear deliverable and its own 48-hour timer once Ready."
+    },
+    {
+      question: "How do revisions work?",
+      answer: "Unlimited revisions until it matches the brief. If the direction changes, that becomes a new task."
+    }
+  ]}
+/>
+
+<DemoRequestForm socialProof="We respond within 24 hours." />
+
+<CTASection
+  variant="final"
+  title="Ready to see it in {action}?"
+  subtitle="Start shipping and feel the difference of a real queue with real delivery rules."
+  primaryCta={{ label: "Start Shipping", href: "https://app.trysako.com" }}
+  secondaryCta={{ label: "Book a fit check", href: "/book-a-call" }}
+  trustText="Core + Ops: self-serve • Enterprise: book-a-call • IST business days • SLA-backed credits"
+/>

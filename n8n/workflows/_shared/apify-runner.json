@@ -1,0 +1,178 @@
+{
+  "id": "apify-runner",
+  "name": "apify-runner",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "execute-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const input = $json || {};\n\nconst actorId = input.actor_id || input.actorId || '';\nconst runInput = input.run_input || input.input || {};\nconst datasetLimit = input.dataset_limit || 50;\n\nif (!actorId) {\n  throw new Error('apify-runner: actor_id is required');\n}\n\nreturn {\n  json: {\n    actorId,\n    runInput,\n    datasetLimit\n  }\n};"
+      },
+      "id": "prepare-input",
+      "name": "Prepare Apify Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.apify.com/v2/acts/{{ $json.actorId }}/runs?wait=60&memory=1024",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.runInput }}",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ `Bearer ${$env.APIFY_API_TOKEN}` }}"
+            }
+          ]
+        }
+      },
+      "id": "run-actor",
+      "name": "Apify: Run Actor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        680,
+        300
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const run = $json?.data || {};\nconst datasetId = run.defaultDatasetId || '';\nconst runId = run.id || '';\n\n// Http Request node doesn't preserve previous fields, so pull limit from earlier node\nconst datasetLimit = $('Prepare Apify Input').item.json.datasetLimit || 50;\n\nreturn {\n  json: {\n    datasetId,\n    runId,\n    datasetLimit\n  }\n};"
+      },
+      "id": "extract-dataset",
+      "name": "Extract Dataset",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.apify.com/v2/datasets/{{ $json.datasetId }}/items?clean=1&format=json&limit={{ $json.datasetLimit }}",
+        "options": {},
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ `Bearer ${$env.APIFY_API_TOKEN}` }}"
+            }
+          ]
+        }
+      },
+      "id": "fetch-items",
+      "name": "Apify: Fetch Dataset Items",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1120,
+        300
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const items = Array.isArray($json) ? $json : [];\nconst meta = $('Extract Dataset').item.json;\n\nreturn {\n  json: {\n    apify_items: items,\n    apify_run_id: meta.runId,\n    apify_dataset_id: meta.datasetId\n  }\n};"
+      },
+      "id": "format-output",
+      "name": "Format Apify Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare Apify Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Apify Input": {
+      "main": [
+        [
+          {
+            "node": "Apify: Run Actor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify: Run Actor": {
+      "main": [
+        [
+          {
+            "node": "Extract Dataset",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Dataset": {
+      "main": [
+        [
+          {
+            "node": "Apify: Fetch Dataset Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify: Fetch Dataset Items": {
+      "main": [
+        [
+          {
+            "node": "Format Apify Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "shared"
+    },
+    {
+      "name": "apify"
+    }
+  ]
+}

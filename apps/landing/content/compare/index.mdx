@@ -1,0 +1,257 @@
+---
+title: "Compare Sako"
+slug: "compare"
+template: "comparison"
+published: true
+priority: 1
+seo:
+  metaTitle: "Compare Sako vs Agencies, Freelancers, In-House | Design Ops"
+  metaDescription: "Compare Sako against agencies, freelancers, and in-house. See the tradeoffs in cost, speed, reliability, motion, and throughput for B2B SaaS GTM work."
+  keywords: ["design comparison", "design subscription vs agency", "in-house vs freelancer", "design alternatives", "design ops comparison"]
+  ogImage: "auto"
+jsonLd:
+  type: "FAQPage"
+---
+
+<Hero
+  eyebrow="Compare Sako"
+  variant="split"
+  title="Pick your {pain}: queues, contracts, or shipping."
+  subtitle="Agencies sell timelines. Freelancers sell availability. In-house sells control. Sako sells predictable GTM throughput: a real queue, real delivery rules, and motion included."
+  primaryCta={{ label: "Start Shipping", href: "https://app.trysako.com" }}
+  secondaryCta={{ label: "Calculate ROI", href: "/roi-calculator" }}
+  trustText="48h clock starts when Ready • Unlimited queue • Limited active slots • Motion included"
+  scene="compare"
+/>
+
+<MetricCards
+  style="cards"
+  variant="transparent"
+  title="What teams actually compare"
+  subtitle="The stuff that decides whether GTM ships or stalls."
+  items={[
+    { title: "Delivery rule", icon: "clock", value: "48h", description: "Standard tasks once Ready" },
+    { title: "Throughput model", icon: "layers", value: "Slots", description: "No hidden backlog" },
+    { title: "Motion", icon: "zap", value: "Included", description: "Not a separate upsell" },
+    { title: "Teams + brands", icon: "users", value: "Built-in", description: "Invite your team. Unlimited brands." }
+  ]}
+/>
+
+<FeatureGrid
+  columns={2}
+  variant="cards"
+  title="Compare by what you're replacing"
+  subtitle="Choose the world you’re leaving behind."
+  items={[
+    {
+      icon: "Building",
+      title: "Agencies",
+      description: "When you’re tired of retainers, timelines, and change orders.",
+      link: { label: "Sako vs Agencies", href: "/compare/agencies" }
+    },
+    {
+      icon: "User",
+      title: "Freelancers",
+      description: "When you’re done with availability roulette and inconsistent taste.",
+      link: { label: "Sako vs Freelancers", href: "/compare/freelancers" }
+    },
+    {
+      icon: "Users",
+      title: "In-house",
+      description: "When you need output now, but hiring is slow and expensive.",
+      link: { label: "Sako vs In-house", href: "/compare/in-house" },
+      wide: true
+    },
+    {
+      icon: "Palette",
+      title: "Design Pickle-style subscriptions",
+      description: "When “unlimited” becomes “wait your turn.”",
+      link: { label: "Sako vs Design Pickle", href: "/compare/design-pickle" }
+    },
+    {
+      icon: "Layers",
+      title: "Superside",
+      description: "When you want enterprise-quality delivery without enterprise overhead.",
+      link: { label: "Sako vs Superside", href: "/compare/superside" }
+    }
+  ]}
+/>
+
+<ComparisonTable
+  title="Quick comparison"
+  subtitle="A buyer-friendly view of tradeoffs, not marketing fluff."
+  highlightColumn={1}
+  columns={["What matters", "Sako", "In-house", "Freelancers", "Agencies"]}
+  rows={[
+    { 
+      label: "Time to start",
+      values: [
+        { text: "Same day", check: true },
+        { text: "3–6 months hiring", check: false },
+        { text: "Days to weeks", check: false },
+        { text: "2–4 weeks onboarding", check: false }
+      ]
+    },
+    {
+      label: "Throughput visibility",
+      values: [
+        { text: "Active slots + queue", check: true },
+        { text: "Depends on bandwidth", check: false },
+        { text: "Depends on person", check: false },
+        { text: "Depends on team + PM", check: false }
+      ]
+    },
+    {
+      label: "Turnaround",
+      values: [
+        { text: "48h standard tasks (Ready)", check: true },
+        { text: "Queue dependent", check: false },
+        { text: "Unreliable", check: false },
+        { text: "Weeks", check: false }
+      ]
+    },
+    {
+      label: "Motion included",
+      values: [
+        { text: "Yes", check: true },
+        { text: "Extra hire", check: false },
+        { text: "Extra person", check: false },
+        { text: "Usually extra", check: false }
+      ]
+    },
+    {
+      label: "Consistency",
+      values: [
+        { text: "Pod + brand system", check: true },
+        { text: "One team", check: true },
+        { text: "Varies", check: false },
+        { text: "Rotating team", check: false }
+      ]
+    },
+    {
+      label: "Cost predictability",
+      values: [
+        { text: "Flat monthly", check: true },
+        { text: "Fully-loaded costs", check: false },
+        { text: "Variable", check: false },
+        { text: "Retainer + change orders", check: false }
+      ]
+    },
+    {
+      label: "Team access",
+      values: [
+        { text: "Invite your team", check: true },
+        { text: "Yes", check: true },
+        { text: "Limited", check: false },
+        { text: "Often limited", check: false }
+      ]
+    },
+    {
+      label: "Multi-brand support",
+      values: [
+        { text: "Unlimited brands", check: true },
+        { text: "Yes", check: true },
+        { text: "Manual", check: false },
+        { text: "Extra scope", check: false }
+      ]
+    },
+    {
+      label: "AI drafts",
+      values: [
+        { text: "Composer (Coming Q1 2026)", check: true },
+        { text: "No", check: false },
+        { text: "No", check: false },
+        { text: "No", check: false }
+      ]
+    }
+  ]}
+  ctas={{
+    primary: { label: "Start Shipping", href: "https://app.trysako.com" },
+    secondary: { label: "See Pricing", href: "/pricing" }
+  }}
+/>
+
+<FeatureGrid
+  columns={1}
+  variant="simple"
+  title="The real difference: {reliability}"
+  items={[
+    {
+      icon: "Shield",
+      title: "Sako is process you can trust, with taste you actually want",
+      description: "Most options fail in one of two ways: they ship slow (queues + chaos), or they ship fast but sloppy (rushed work, inconsistent output). Sako’s system is built for GTM throughput: bounded standard tasks, clear Ready rules, active slots that prevent hidden pile-ups, and motion included so launches don’t stall at the last mile."
+    }
+  ]}
+/>
+
+<PainPoints
+  title="Sako is built for"
+  variant="positive"
+  items={[
+    { text: "GTM output: landing pages, decks, ads, socials, cutdowns", type: "check" },
+    { text: "Predictable throughput (unlimited queue, limited active slots)", type: "check" },
+    { text: "48h standard tasks once Ready (bounded + repeatable)", type: "check" },
+    { text: "Motion included (no separate lane, no surprise upsells)", type: "check" },
+    { text: "Unlimited brands + team access (one workspace, many products)", type: "check" }
+  ]}
+/>
+
+<FeatureGrid
+  columns={3}
+  variant="cards"
+  title="If you’re choosing between options, use this rule"
+  items={[
+    {
+      icon: "Users",
+      title: "Hire in-house",
+      description: "When you need designers in daily product work and you can afford slow hiring + management overhead."
+    },
+    {
+      icon: "Building",
+      title: "Use an agency",
+      description: "When you need strategy-heavy brand work, positioning, or a full rebrand with deep workshops."
+    },
+    {
+      icon: "Layers",
+      title: "Use Sako",
+      description: "When you need GTM assets shipped weekly with predictable rules, without building a creative org."
+    }
+  ]}
+/>
+
+<FAQAccordion
+  title={{ prefix: "Common", italic: "questions" }}
+  items={[
+    {
+      question: "How is Sako different from other “unlimited design” subscriptions?",
+      answer: "We don’t sell “unlimited output.” We sell predictable throughput: unlimited queue, limited active slots, and clear delivery rules. That prevents the classic black-hole backlog. Motion is included, and tasks are bounded so 48h stays real."
+    },
+    {
+      question: "When should I hire in-house instead?",
+      answer: "When you’re doing heavy product/UI work, need designers in daily standups, or you’re ready to run a design org (management, hiring, career ladders). If your problem is GTM throughput, Sako will usually get you shipping faster."
+    },
+    {
+      question: "Can I run Sako alongside my current setup?",
+      answer: "Yes. Many teams run Sako in parallel for a month to compare speed and consistency before making a clean switch."
+    },
+    {
+      question: "Do you support multiple brands or products?",
+      answer: "Yes. One workspace can manage unlimited brands (each with its own tokens, voice, and references). Pick the brand per task so outputs stay consistent."
+    },
+    {
+      question: "Is Composer live?",
+      answer: "Not yet. Composer is coming in Q1 2026. It will generate on-brand drafts you can export or send to your pod for polish."
+    }
+  ]}
+/>
+
+<DemoRequestForm socialProof="We respond within 24 hours." />
+
+<CTASection
+  variant="final"
+  title="Stop debating and {ship}."
+  subtitle="Pick a plan, submit a task, and see what predictable throughput feels like."
+  primaryCta={{ label: "Start Shipping", href: "https://app.trysako.com" }}
+  secondaryCta={{ label: "Calculate ROI", href: "/roi-calculator" }}
+  trustText="Pause anytime • Unlimited brands • Invite your team • SLA-backed delivery rules"
+/>

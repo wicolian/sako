@@ -1,0 +1,220 @@
+{
+  "id": "eod-summary",
+  "name": "EOD Summary (Daily)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 18 * * *"
+            }
+          ]
+        }
+      },
+      "id": "cron",
+      "name": "Daily 6pm",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 31482936,
+          "cachedResultName": "call_tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=31482936"
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "read-call-tracker",
+      "name": "Read Call Tracker",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        480,
+        200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 492604584,
+          "cachedResultName": "qualified_leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=492604584"
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "read-qualified",
+      "name": "Read Qualified Leads",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        480,
+        400
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "wait"
+      },
+      "id": "merge-data",
+      "name": "Merge Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const calls = $items('Read Call Tracker').map(i => i.json);\nconst leads = $items('Read Qualified Leads').map(i => i.json);\n\nconst now = new Date();\nconst dayAgo = new Date(now - 24 * 60 * 60 * 1000);\n\nconst callsToday = calls.filter(c => c.called_at && new Date(c.called_at) >= dayAgo);\nconst booked = callsToday.filter(c => String(c.meeting_booked).toLowerCase() === 'true');\n\nconst leadsToday = leads.filter(l => l.scored_at && new Date(l.scored_at) >= dayAgo);\n\nconst callList = callsToday.slice(0, 5).map(c => `• ${c.name || c.email} — ${c.outcome || 'unknown'}`).join('\\n');\nconst leadList = leadsToday.slice(0, 5).map(l => `• ${l.first_name || ''} ${l.last_name || ''} (${l.company || ''})`).join('\\n');\n\nconst textBlocks = [\n  `*Calls completed*: ${callsToday.length} (Booked: ${booked.length})`,\n  callList ? callList : 'No calls logged today.',\n  `\\n*New qualified leads*: ${leadsToday.length}`,\n  leadList ? leadList : 'No new leads today.'\n];\n\nreturn {\n  json: {\n    blocks: [\n      {\n        type: 'header',\n        text: {\n          type: 'plain_text',\n          text: '🌙 EOD Summary',\n          emoji: true\n        }\n      },\n      {\n        type: 'section',\n        text: {\n          type: 'mrkdwn',\n          text: textBlocks.join('\\n')\n        }\n      }\n    ]\n  }\n};"
+      },
+      "id": "build-summary",
+      "name": "Build Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "requestMethod": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"#sako-leads\",\n  \"blocks\": {{ $json.blocks }}\n}",
+        "options": {}
+      },
+      "id": "post-slack",
+      "name": "Post to Slack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1140,
+        300
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily 6pm": {
+      "main": [
+        [
+          {
+            "node": "Read Call Tracker",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Qualified Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Call Tracker": {
+      "main": [
+        [
+          {
+            "node": "Merge Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Qualified Leads": {
+      "main": [
+        [
+          {
+            "node": "Merge Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Data": {
+      "main": [
+        [
+          {
+            "node": "Build Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Summary": {
+      "main": [
+        [
+          {
+            "node": "Post to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "analytics"
+    },
+    {
+      "name": "slack"
+    }
+  ]
+}

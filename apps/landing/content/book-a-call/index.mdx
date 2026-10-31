@@ -1,0 +1,74 @@
+---
+title: "Book a Fit Check"
+slug: "book-a-call"
+template: "contact"
+published: true
+priority: 0
+seo:
+  metaTitle: "Book a Fit Check with Sako - 15-Min Call"
+  metaDescription: "Schedule a 15-minute fit check with a Sako founding team member. See how design ops, queue, and 48h SLAs turn weak creative into revenue. We'll tell you if we're a fit."
+  keywords: ["book Sako fit check", "Sako fit check", "Sako design ops call", "design subscription call", "Sako consultation", "book Sako call"]
+  ogImage: "auto"
+jsonLd:
+  type: "WebPage"
+---
+
+<Hero
+  variant="centered"
+  eyebrow="Book a Fit Check"
+  title="We'll tell you if Sako {fits}."
+  subtitle="Bring your current workflow, your biggest bottleneck, and one upcoming launch. We'll show how pods, queue, and delivery rules turn weak creative into pipeline. If it's not a fit, we'll say it."
+  primaryCta={{ label: "View Pricing", href: "/pricing" }}
+  secondaryCta={{ label: "Calculate ROI", href: "/roi-calculator" }}
+  trustText="Founding team call • No deck • No pressure • Practical next steps"
+/>
+
+<DemoRequestForm compact={true} socialProof="We respond within 24 hours." />
+
+<CalEmbed
+  height={760}
+  title="Or pick a time directly"
+  subtitle="Timezone-aware scheduling. You'll get a calendar invite instantly."
+/>
+
+<MetricCards
+  style="cards"
+  variant="transparent"
+  title="How the fit check works"
+  subtitle="Short, specific, useful"
+  compact={true}
+  items={[
+    { title: "Length", icon: "clock", value: "15 min", description: "No fluff" },
+    { title: "Who you meet", icon: "users", value: "Founding team", description: "Not a closer" },
+    { title: "Outcome", icon: "zap", value: "Clear next step", description: "Start, wait, or pass" },
+    { title: "After you start", icon: "trendingUp", value: "48h", description: "Standard tasks once Ready" }
+  ]}
+/>
+
+<FeatureGrid
+  columns={2}
+  variant="simple"
+  title="If you hate calls"
+  compact={true}
+  items={[
+    {
+      icon: "Zap",
+      title: "You can start without talking to us",
+      description: "Core and Ops Base are self-serve. If you already know your design is costing you deals, skip the call and start shipping."
+    },
+    {
+      icon: "Pause",
+      title: "Pause or cancel anytime",
+      description: "You're not locked into agency-style contracts. If you're between launches, pause and come back when you're shipping again."
+    }
+  ]}
+/>
+
+<CTASection
+  variant="final"
+  title="Prefer to {start} right now?"
+  subtitle="Skip the call. Core and Ops Base are self-serve."
+  primaryCta={{ label: "Start Shipping", href: "https://app.trysako.com" }}
+  secondaryCta={{ label: "See Pricing", href: "/pricing" }}
+  trustText="Month-to-month • Motion included • 48h standard tasks once Ready • Pause/cancel • Bank unused days"
+/>

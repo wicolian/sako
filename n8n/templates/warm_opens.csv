@@ -1,0 +1,2 @@
+email,name,title,company,phone,linkedin_url,open_count,last_open,campaigns,call_status,called_at,call_outcome,call_duration,flagged_at,booked_at,booking_url
+john@example.com,John Example,Head of Marketing,Example SaaS,+1234567890,https://linkedin.com/in/johnexample,3,2026-02-04T10:30:00Z,outbound-sako,pending,,,2026-02-05T08:00:00Z,,

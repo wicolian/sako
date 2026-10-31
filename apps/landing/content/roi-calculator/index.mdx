@@ -1,0 +1,140 @@
+---
+title: "ROI Calculator"
+slug: "roi-calculator"
+template: "standard"
+published: true
+priority: 1
+seo:
+  metaTitle: "Sako ROI Calculator | Compare Cost + Time Saved"
+  metaDescription: "Estimate your cost and time saved with Sako design subscription vs hiring, freelancers, or agencies. Simple inputs. Transparent assumptions. 2-minute calculation."
+  keywords: ["Sako ROI calculator", "Sako design cost calculator", "Sako subscription ROI", "Sako vs hiring cost", "Sako creative ops ROI", "design subscription calculator", "Sako cost comparison", "design ops ROI tool", "Sako pricing calculator"]
+  ogImage: "auto"
+jsonLd:
+  type: "WebPage"
+---
+
+<Hero
+  eyebrow="ROI Calculator"
+  variant="split"
+  title="Do the {math} in 2 minutes."
+  subtitle="Compare Sako to hiring, freelancers, or an agency retainer. Transparent assumptions. No fake numbers. Use it to pick the right plan."
+  primaryCta={{ label: "Start Shipping", href: "https://app.trysako.com" }}
+  secondaryCta={{ label: "See Pricing", href: "/pricing" }}
+  trustText="Assumptions are adjustable • Includes motion + management time • Shows cost + throughput"
+  scene="roi-calculator"
+/>
+
+<CalculatorWidget />
+
+<DemoRequestForm socialProof="We respond within 24 hours." />
+
+<FeatureGrid
+  variant="bento"
+  title="How to read the {result}"
+  subtitle="ROI isn't just dollars. It's throughput, time, and fewer GTM delays."
+  items={[
+    {
+      icon: "Clock",
+      title: "Time saved",
+      description: "Less chasing, fewer meetings, fewer back-and-forth loops. Your team gets hours back every week.",
+      bentoContent: { type: "scene", id: "roiTimeSaved" }
+    },
+    {
+      icon: "Layers",
+      title: "Throughput gained",
+      description: "More requests shipped because the queue is predictable and capacity is real.",
+      bentoContent: { type: "scene", id: "roiThroughput" }
+    },
+    {
+      icon: "DollarSign",
+      title: "Cost delta",
+      description: "Compare what you pay now to what it costs to run a pod with motion included.",
+      bentoContent: { type: "scene", id: "roiCostDelta" }
+    },
+    {
+      icon: "Shield",
+      title: "Risk removed",
+      description: "No hiring lag, no mis-hire risk, no agency change-order games.",
+      bentoContent: { type: "scene", id: "roiRiskRemoved" }
+    }
+  ]}
+/>
+
+<FeatureGrid
+  columns={2}
+  variant="cards"
+  title="What we count (cost + throughput)"
+  items={[
+    {
+      icon: "Check",
+      title: "Included in the calculator",
+      description: "Compensation + overhead for hires, agency/freelancer fees, and the time your team spends managing creative work. Motion is counted as a real cost, not a footnote. Throughput assumptions are user-adjustable."
+    },
+    {
+      icon: "X",
+      title: "Not included",
+      description: "Revenue impact guesses like “15% more signups”. If you want to model that, do it separately. This calculator stays boring on purpose."
+    }
+  ]}
+/>
+
+<MetricCards
+  style="cards"
+  variant="transparent"
+  title="Typical patterns we see"
+  subtitle="Not guarantees. Just the usual outcomes when teams stop waiting on design."
+  items={[
+    { title: "Time to first deliverable", icon: "clock", value: "48h", description: "Most standard tasks once Ready" },
+    { title: "Reduced coordination load", icon: "layers", value: "Lower", description: "One queue, one system" },
+    { title: "Less vendor sprawl", icon: "users", value: "1", description: "One team, not 6 people" },
+    { title: "More shipping cadence", icon: "trendingUp", value: "Higher", description: "Because work actually moves" }
+  ]}
+/>
+
+<ComparisonTable
+  title="Annual {cost} comparison (typical ranges)"
+  highlightColumn={1}
+  columns={["Option", "Annual cost", "Motion", "Time to start", "Your management time"]}
+  rows={[
+    { label: "Sako Core", values: [{ text: "$30k", check: true }, { text: "Included", check: true }, { text: "Same day", check: true }, { text: "Low", check: true }] },
+    { label: "Sako Ops Base", values: [{ text: "$54k", check: true }, { text: "Included", check: true }, { text: "Same day", check: true }, { text: "Low", check: true }] },
+    { label: "In-house (design + motion)", values: [{ text: "$180k–$320k+", check: false }, { text: "Second hire", check: false }, { text: "Months", check: false }, { text: "High", check: false }] },
+    { label: "Agency retainer", values: [{ text: "$120k–$300k+", check: false }, { text: "Often extra", check: false }, { text: "Weeks", check: false }, { text: "Medium", check: false }] },
+    { label: "Freelancers", values: [{ text: "$60k–$180k", check: false }, { text: "Often extra", check: false }, { text: "Days–weeks", check: false }, { text: "High", check: false }] }
+  ]}
+  ctas={{
+    primary: { label: "Start Shipping", href: "https://app.trysako.com" },
+    secondary: { label: "See Pricing", href: "/pricing" }
+  }}
+/>
+
+<FAQAccordion
+  title={{ prefix: "ROI", italic: "faq" }}
+  items={[
+    {
+      question: "Is this calculator accurate?",
+      answer: "It’s a directional model. It’s accurate at comparing structures (hire vs agency vs subscription). It’s not a promise about revenue impact."
+    },
+    {
+      question: "What assumptions matter most?",
+      answer: "Loaded cost (salary + overhead), how often you pay extra for motion, and how much time your team spends managing creative work. Those three swing the result."
+    },
+    {
+      question: "What if our spend is low today?",
+      answer: "If you’re shipping very little, any subscription will feel expensive. The point is throughput. If design is blocking GTM, the spend usually jumps anyway, just messier."
+    },
+    {
+      question: "Can we model multiple brands or products?",
+      answer: "Yes. If you run multiple brands, your real management time and vendor sprawl usually go up. Sako centralizes it in one workspace and one queue."
+    }
+  ]}
+/>
+
+<CTASection
+  variant="final"
+  title="Want the cleaner version of {this} in real life?"
+  subtitle="If your calculator result looks good, the next step is simple: run the workflow for a week."
+  primaryCta={{ label: "Start Shipping", href: "https://app.trysako.com" }}
+  secondaryCta={{ label: "Book a fit check", href: "/book-a-call" }}
+  trustText="SLA-backed standard tasks • Dashboard as source of truth • Motion included"
+/>

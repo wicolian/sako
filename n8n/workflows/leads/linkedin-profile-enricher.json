@@ -1,0 +1,589 @@
+{
+  "id": "linkedin-profile-enricher",
+  "name": "LinkedIn Profile Enricher (Qualified Leads)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "execute-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 492604584,
+          "cachedResultName": "qualified_leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=492604584"
+        },
+        "filters": {
+          "filter": [
+            {
+              "column": "enriched",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "read-qualified",
+      "name": "Read Qualified Leads",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        460,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const rows = $input.all();\n\nconst filtered = rows.filter((r) => {\n  const linkedin = String(r.json.linkedin_url || '').trim();\n  const companyLinkedin = String(r.json.apollo_linkedin_url || '').trim();\n  const alreadyEnriched = String(r.json.linkedin_enriched || '').toLowerCase() === 'true';\n\n  return !alreadyEnriched && (linkedin || companyLinkedin);\n});\n\nreturn filtered.length > 0 ? filtered : [{ json: { no_targets: true } }];"
+      },
+      "id": "filter-targets",
+      "name": "Filter LinkedIn Targets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.no_targets }}",
+              "value2": false
+            }
+          ]
+        }
+      },
+      "id": "has-targets",
+      "name": "Has Targets?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "split-batches",
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.linkedin_url }}",
+              "operation": "notEmpty"
+            }
+          ]
+        }
+      },
+      "id": "has-person-linkedin",
+      "name": "Has Person LinkedIn?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "actor_id": "harvestapi/linkedin-profile-scraper",
+            "run_input": "={{ { profileUrls: [$json.linkedin_url], maxItems: 1 } }}",
+            "dataset_limit": 1
+          }
+        }
+      },
+      "id": "apify-profile",
+      "name": "Apify: LinkedIn Profile Scraper",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const items = $json.apify_items || [];\nconst profile = items[0] || {};\n\nconst recent = profile.recentActivity || profile.recentPosts || [];\nconst recentPost = recent[0]?.text || recent[0]?.content || '';\n\nreturn {\n  json: {\n    profile_headline: profile.headline || '',\n    profile_company: profile.companyName || '',\n    recent_linkedin_post: recentPost,\n    profile_recent_raw: JSON.stringify(recent.slice(0, 3))\n  }\n};"
+      },
+      "id": "normalize-profile",
+      "name": "Normalize Profile",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: {\n    profile_headline: '',\n    profile_company: '',\n    recent_linkedin_post: '',\n    profile_recent_raw: '[]'\n  }\n};"
+      },
+      "id": "empty-profile",
+      "name": "Empty Profile",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.apollo_linkedin_url }}",
+              "operation": "notEmpty"
+            }
+          ]
+        }
+      },
+      "id": "has-company-linkedin",
+      "name": "Has Company LinkedIn?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "actor_id": "bestscrapers/linkedin-company-insights-scraper",
+            "run_input": "={{ { urls: [$json.apollo_linkedin_url], maxItems: 1 } }}",
+            "dataset_limit": 1
+          }
+        }
+      },
+      "id": "apify-company",
+      "name": "Apify: LinkedIn Company Insights",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const items = $json.apify_items || [];\nconst company = items[0] || {};\n\nconst updates = company.recentPosts || company.posts || company.updates || [];\nconst jobs = company.jobs || company.jobPostings || company.openJobs || [];\n\nreturn {\n  json: {\n    company_recent_news: JSON.stringify(updates.slice(0, 3)),\n    company_hiring_signals: JSON.stringify(jobs.slice(0, 5)),\n    headcount_change: company.headcountGrowth || company.employeeGrowth || company.headcountChange || ''\n  }\n};"
+      },
+      "id": "normalize-company",
+      "name": "Normalize Company Insights",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: {\n    company_recent_news: '[]',\n    company_hiring_signals: '[]',\n    headcount_change: ''\n  }\n};"
+      },
+      "id": "empty-company",
+      "name": "Empty Company Insights",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "mergeByPosition"
+      },
+      "id": "merge-profile-company",
+      "name": "Merge Profile + Company",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const lead = $('Split In Batches').item.json;\nconst enrichment = $json;\n\nreturn {\n  json: {\n    email: lead.email,\n    recent_linkedin_post: enrichment.recent_linkedin_post || '',\n    profile_headline: enrichment.profile_headline || '',\n    profile_company: enrichment.profile_company || '',\n    company_recent_news: enrichment.company_recent_news || '[]',\n    company_hiring_signals: enrichment.company_hiring_signals || '[]',\n    headcount_change: enrichment.headcount_change || '',\n    linkedin_enriched: 'true',\n    linkedin_enriched_at: new Date().toISOString()\n  }\n};"
+      },
+      "id": "prepare-update",
+      "name": "Prepare Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2220,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 492604584,
+          "cachedResultName": "qualified_leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=492604584"
+        },
+        "columnToMatchOn": "email",
+        "valueToMatchOn": "={{ $json.email }}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "recent_linkedin_post": "={{ $json.recent_linkedin_post }}",
+            "profile_headline": "={{ $json.profile_headline }}",
+            "profile_company": "={{ $json.profile_company }}",
+            "company_recent_news": "={{ $json.company_recent_news }}",
+            "company_hiring_signals": "={{ $json.company_hiring_signals }}",
+            "headcount_change": "={{ $json.headcount_change }}",
+            "linkedin_enriched": "={{ $json.linkedin_enriched }}",
+            "linkedin_enriched_at": "={{ $json.linkedin_enriched_at }}"
+          }
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "update-qualified",
+      "name": "Update Qualified Leads",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        2440,
+        240
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "seconds"
+      },
+      "id": "wait-rate-limit",
+      "name": "Wait (Rate Limit)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        2660,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Qualified Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Qualified Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Qualified Leads": {
+      "main": [
+        [
+          {
+            "node": "Filter LinkedIn Targets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter LinkedIn Targets": {
+      "main": [
+        [
+          {
+            "node": "Has Targets?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Targets?": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [
+          {
+            "node": "Has Person LinkedIn?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Has Company LinkedIn?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Person LinkedIn?": {
+      "main": [
+        [
+          {
+            "node": "Apify: LinkedIn Profile Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Empty Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify: LinkedIn Profile Scraper": {
+      "main": [
+        [
+          {
+            "node": "Normalize Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Empty Profile": {
+      "main": [
+        [
+          {
+            "node": "Merge Profile + Company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Profile": {
+      "main": [
+        [
+          {
+            "node": "Merge Profile + Company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Company LinkedIn?": {
+      "main": [
+        [
+          {
+            "node": "Apify: LinkedIn Company Insights",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Empty Company Insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify: LinkedIn Company Insights": {
+      "main": [
+        [
+          {
+            "node": "Normalize Company Insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Empty Company Insights": {
+      "main": [
+        [
+          {
+            "node": "Merge Profile + Company",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Normalize Company Insights": {
+      "main": [
+        [
+          {
+            "node": "Merge Profile + Company",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Profile + Company": {
+      "main": [
+        [
+          {
+            "node": "Prepare Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Update": {
+      "main": [
+        [
+          {
+            "node": "Update Qualified Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Qualified Leads": {
+      "main": [
+        [
+          {
+            "node": "Wait (Rate Limit)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait (Rate Limit)": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "leads"
+    },
+    {
+      "name": "linkedin"
+    },
+    {
+      "name": "enrichment"
+    }
+  ]
+}

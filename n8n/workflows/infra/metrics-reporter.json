@@ -1,0 +1,223 @@
+{
+  "id": "metrics-reporter",
+  "name": "Metrics Reporter (Daily)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 * * *"
+            }
+          ]
+        }
+      },
+      "id": "cron",
+      "name": "Daily Midnight",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ ($env.N8N_API_BASE_URL || $env.N8N_EDITOR_BASE_URL || $env.WEBHOOK_URL || 'http://localhost:5678').replace(/\\/$/, '') + '/api/v1/executions?limit=1000' }}",
+        "authentication": "none",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-API-KEY",
+              "value": "={{ $env.N8N_API_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-executions",
+      "name": "Fetch Executions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        460,
+        300
+      ],
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "jsCode": "// Calculate per-workflow metrics\nconst executions = $input.first().json.data || [];\nconst now = new Date();\nconst oneDayAgo = new Date(now - 24 * 60 * 60 * 1000);\nconst sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);\n\n// Group executions by workflow\nconst workflowMetrics = {};\n\nfor (const exec of executions) {\n  const workflowName = exec.workflowData?.name || 'Unknown';\n  const workflowId = exec.workflowId;\n  const startedAt = new Date(exec.startedAt);\n  const stoppedAt = exec.stoppedAt ? new Date(exec.stoppedAt) : null;\n  const duration = stoppedAt ? (stoppedAt - startedAt) : null;\n  const isSuccess = exec.finished && !exec.error;\n  const isLast24h = startedAt >= oneDayAgo;\n  const isLast7d = startedAt >= sevenDaysAgo;\n  \n  if (!workflowMetrics[workflowId]) {\n    workflowMetrics[workflowId] = {\n      name: workflowName,\n      id: workflowId,\n      total24h: 0,\n      success24h: 0,\n      failed24h: 0,\n      total7d: 0,\n      success7d: 0,\n      failed7d: 0,\n      avgDuration: [],\n      errors: []\n    };\n  }\n  \n  if (isLast24h) {\n    workflowMetrics[workflowId].total24h++;\n    if (isSuccess) {\n      workflowMetrics[workflowId].success24h++;\n    } else {\n      workflowMetrics[workflowId].failed24h++;\n      if (exec.error) {\n        workflowMetrics[workflowId].errors.push({\n          message: exec.error.message?.substring(0, 100),\n          time: exec.startedAt\n        });\n      }\n    }\n  }\n  \n  if (isLast7d) {\n    workflowMetrics[workflowId].total7d++;\n    if (isSuccess) {\n      workflowMetrics[workflowId].success7d++;\n    } else {\n      workflowMetrics[workflowId].failed7d++;\n    }\n    if (duration) {\n      workflowMetrics[workflowId].avgDuration.push(duration);\n    }\n  }\n}\n\n// Calculate final metrics\nconst results = Object.values(workflowMetrics).map(wf => {\n  const successRate24h = wf.total24h > 0 \n    ? ((wf.success24h / wf.total24h) * 100).toFixed(1) \n    : 'N/A';\n  const successRate7d = wf.total7d > 0 \n    ? ((wf.success7d / wf.total7d) * 100).toFixed(1) \n    : 'N/A';\n  const avgDuration = wf.avgDuration.length > 0\n    ? (wf.avgDuration.reduce((a, b) => a + b, 0) / wf.avgDuration.length / 1000).toFixed(2) + 's'\n    : 'N/A';\n    \n  return {\n    name: wf.name,\n    id: wf.id,\n    successRate24h: successRate24h + '%',\n    successRate7d: successRate7d + '%',\n    executions24h: wf.total24h,\n    executions7d: wf.total7d,\n    failed24h: wf.failed24h,\n    avgDuration,\n    recentErrors: wf.errors.slice(0, 3)\n  };\n}).sort((a, b) => b.executions24h - a.executions24h);\n\n// Check for anomalies (success rate < 90%)\nconst anomalies = results.filter(r => {\n  const rate = parseFloat(r.successRate24h);\n  return !isNaN(rate) && rate < 90;\n});\n\nreturn {\n  json: {\n    timestamp: now.toISOString(),\n    metrics: results,\n    anomalies,\n    hasAnomalies: anomalies.length > 0\n  }\n};"
+      },
+      "id": "calculate-metrics",
+      "name": "Calculate Metrics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.hasAnomalies }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check-anomalies",
+      "name": "Has Anomalies?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "requestMethod": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"#n8n-errors\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": {\n        \"type\": \"plain_text\",\n        \"text\": \"⚠️ Workflow Health Alert\",\n        \"emoji\": true\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"The following workflows have success rate below 90% in the last 24h:\"\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"{{ $json.anomalies.map(a => `• *${a.name}*: ${a.successRate24h} (${a.failed24h} failures)`).join('\\n') }}\"\n      }\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "slack-alert",
+      "name": "Slack Health Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1120,
+        200
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 100000008,
+          "cachedResultName": "workflow_metrics",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=100000008"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "store-metrics",
+      "name": "Store Metrics",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1120,
+        400
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily Midnight": {
+      "main": [
+        [
+          {
+            "node": "Fetch Executions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Executions": {
+      "main": [
+        [
+          {
+            "node": "Calculate Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Metrics": {
+      "main": [
+        [
+          {
+            "node": "Has Anomalies?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Anomalies?": {
+      "main": [
+        [
+          {
+            "node": "Slack Health Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Store Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack Health Alert": {
+      "main": [
+        [
+          {
+            "node": "Store Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "infra"
+    },
+    {
+      "name": "monitoring"
+    }
+  ]
+}

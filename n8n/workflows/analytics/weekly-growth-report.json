@@ -1,0 +1,304 @@
+{
+  "id": "weekly-growth-report",
+  "name": "Weekly Growth Report",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1"
+            }
+          ]
+        }
+      },
+      "id": "cron",
+      "name": "Monday 8am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://analyticsdata.googleapis.com/v1beta/properties/{{ $env.GA4_PROPERTY_ID }}:runReport",
+        "authentication": "oAuth2",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"dateRanges\": [\n    {\n      \"startDate\": \"7daysAgo\",\n      \"endDate\": \"yesterday\"\n    },\n    {\n      \"startDate\": \"14daysAgo\",\n      \"endDate\": \"8daysAgo\"\n    }\n  ],\n  \"metrics\": [\n    { \"name\": \"sessions\" },\n    { \"name\": \"totalUsers\" },\n    { \"name\": \"newUsers\" },\n    { \"name\": \"screenPageViews\" },\n    { \"name\": \"conversions\" },\n    { \"name\": \"averageSessionDuration\" }\n  ],\n  \"dimensions\": []\n}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "ga4-overview",
+      "name": "GA4: Overview",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        460,
+        200
+      ],
+      "credentials": {
+        "googleOAuth2Api": {
+          "id": "google-oauth",
+          "name": "Google OAuth"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "https://analyticsdata.googleapis.com/v1beta/properties/{{ $env.GA4_PROPERTY_ID }}:runReport",
+        "authentication": "oAuth2",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"dateRanges\": [\n    {\n      \"startDate\": \"7daysAgo\",\n      \"endDate\": \"yesterday\"\n    }\n  ],\n  \"metrics\": [\n    { \"name\": \"screenPageViews\" },\n    { \"name\": \"conversions\" }\n  ],\n  \"dimensions\": [\n    { \"name\": \"pagePath\" }\n  ],\n  \"limit\": 10,\n  \"orderBys\": [\n    {\n      \"metric\": { \"metricName\": \"screenPageViews\" },\n      \"desc\": true\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "ga4-top-pages",
+      "name": "GA4: Top Pages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        460,
+        400
+      ],
+      "credentials": {
+        "googleOAuth2Api": {
+          "id": "google-oauth",
+          "name": "Google OAuth"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.POSTHOG_API_URL }}/api/projects/{{ $env.POSTHOG_PROJECT_ID }}/insights/trend/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"events\": [\n    { \"id\": \"$pageview\", \"name\": \"Pageview\" },\n    { \"id\": \"signup_started\", \"name\": \"Signup Started\" },\n    { \"id\": \"booking_completed\", \"name\": \"Booking Completed\" }\n  ],\n  \"date_from\": \"-7d\",\n  \"date_to\": \"now\"\n}",
+        "options": {}
+      },
+      "id": "posthog-events",
+      "name": "PostHog: Key Events",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        460,
+        600
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "posthog-api",
+          "name": "PostHog API"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/webmasters/v3/sites/{{ encodeURIComponent($env.SEARCH_CONSOLE_SITE) }}/searchAnalytics/query",
+        "authentication": "oAuth2",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"startDate\": \"{{ $now.minus({days: 7}).toISODate() }}\",\n  \"endDate\": \"{{ $now.minus({days: 1}).toISODate() }}\",\n  \"dimensions\": [\"query\"],\n  \"rowLimit\": 20\n}",
+        "options": {}
+      },
+      "id": "search-console",
+      "name": "Search Console: Keywords",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        460,
+        800
+      ],
+      "credentials": {
+        "googleOAuth2Api": {
+          "id": "google-oauth",
+          "name": "Google OAuth"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate all data into a report structure\nconst ga4Overview = $('GA4: Overview').item.json || {};\nconst ga4TopPages = $('GA4: Top Pages').item.json || {};\nconst posthogEvents = $('PostHog: Key Events').item.json || {};\nconst searchConsole = $('Search Console: Keywords').item.json || {};\n\n// Parse GA4 overview (current vs previous week)\nconst parseGA4Row = (row) => {\n  if (!row?.metricValues) return {};\n  return {\n    sessions: parseInt(row.metricValues[0]?.value || 0),\n    users: parseInt(row.metricValues[1]?.value || 0),\n    newUsers: parseInt(row.metricValues[2]?.value || 0),\n    pageviews: parseInt(row.metricValues[3]?.value || 0),\n    conversions: parseInt(row.metricValues[4]?.value || 0),\n    avgSessionDuration: parseFloat(row.metricValues[5]?.value || 0)\n  };\n};\n\nconst currentWeek = parseGA4Row(ga4Overview.rows?.[0]);\nconst previousWeek = parseGA4Row(ga4Overview.rows?.[1]);\n\n// Calculate week-over-week changes\nconst calculateChange = (current, previous) => {\n  if (!previous || previous === 0) return 'N/A';\n  const change = ((current - previous) / previous * 100).toFixed(1);\n  return change > 0 ? `+${change}%` : `${change}%`;\n};\n\n// Parse top pages\nconst topPages = (ga4TopPages.rows || []).slice(0, 5).map(row => ({\n  path: row.dimensionValues?.[0]?.value || '',\n  views: parseInt(row.metricValues?.[0]?.value || 0),\n  conversions: parseInt(row.metricValues?.[1]?.value || 0)\n}));\n\n// Parse search console keywords\nconst topKeywords = (searchConsole.rows || []).slice(0, 10).map(row => ({\n  keyword: row.keys?.[0] || '',\n  clicks: row.clicks || 0,\n  impressions: row.impressions || 0,\n  ctr: ((row.ctr || 0) * 100).toFixed(1) + '%',\n  position: (row.position || 0).toFixed(1)\n}));\n\nreturn {\n  json: {\n    period: `${$now.minus({days: 7}).toFormat('MMM d')} - ${$now.minus({days: 1}).toFormat('MMM d, yyyy')}`,\n    overview: {\n      sessions: currentWeek.sessions,\n      sessionsChange: calculateChange(currentWeek.sessions, previousWeek.sessions),\n      users: currentWeek.users,\n      usersChange: calculateChange(currentWeek.users, previousWeek.users),\n      newUsers: currentWeek.newUsers,\n      pageviews: currentWeek.pageviews,\n      conversions: currentWeek.conversions,\n      conversionsChange: calculateChange(currentWeek.conversions, previousWeek.conversions),\n      avgSessionDuration: Math.round(currentWeek.avgSessionDuration) + 's'\n    },\n    topPages,\n    topKeywords,\n    hasData: currentWeek.sessions > 0\n  }\n};"
+      },
+      "id": "aggregate-data",
+      "name": "Aggregate Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-5.2",
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a growth analyst for Sako, a design subscription service.\n\nSummarize this weekly growth data into 3-5 key insights:\n\n## Traffic Overview\n- Sessions: {{ $json.overview.sessions }} ({{ $json.overview.sessionsChange }} WoW)\n- Users: {{ $json.overview.users }} ({{ $json.overview.usersChange }} WoW)\n- New Users: {{ $json.overview.newUsers }}\n- Pageviews: {{ $json.overview.pageviews }}\n- Conversions: {{ $json.overview.conversions }} ({{ $json.overview.conversionsChange }} WoW)\n- Avg Session: {{ $json.overview.avgSessionDuration }}\n\n## Top Pages\n{{ $json.topPages.map(p => `- ${p.path}: ${p.views} views, ${p.conversions} conversions`).join('\\n') }}\n\n## Top Search Keywords\n{{ $json.topKeywords.map(k => `- \"${k.keyword}\": ${k.clicks} clicks, ${k.impressions} impressions, ${k.ctr} CTR, pos ${k.position}`).join('\\n') }}\n\n## Instructions\n1. Start with the most important metric change (good or bad)\n2. Identify any concerning trends\n3. Note any keyword opportunities or ranking changes\n4. Suggest 1-2 actionable next steps\n\nKeep it concise - 150 words max. Use bullet points."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.5,
+          "maxTokens": 500
+        }
+      },
+      "id": "generate-summary",
+      "name": "Generate Summary",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        900,
+        500
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "VJQjLnLDwAkI2PxY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "requestMethod": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"#sako-growth\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": {\n        \"type\": \"plain_text\",\n        \"text\": \"📊 Weekly Growth Report\",\n        \"emoji\": true\n      }\n    },\n    {\n      \"type\": \"context\",\n      \"elements\": [\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"{{ $('Aggregate Data').item.json.period }}\"\n        }\n      ]\n    },\n    {\n      \"type\": \"divider\"\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Sessions*\\n{{ $('Aggregate Data').item.json.overview.sessions }} ({{ $('Aggregate Data').item.json.overview.sessionsChange }})\"\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Users*\\n{{ $('Aggregate Data').item.json.overview.users }} ({{ $('Aggregate Data').item.json.overview.usersChange }})\"\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Conversions*\\n{{ $('Aggregate Data').item.json.overview.conversions }} ({{ $('Aggregate Data').item.json.overview.conversionsChange }})\"\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Avg Session*\\n{{ $('Aggregate Data').item.json.overview.avgSessionDuration }}\"\n        }\n      ]\n    },\n    {\n      \"type\": \"divider\"\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*🔍 Key Insights*\\n{{ $json.text }}\"\n      }\n    },\n    {\n      \"type\": \"divider\"\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*📄 Top Pages*\\n{{ $('Aggregate Data').item.json.topPages.slice(0,5).map(p => `• ${p.path}: ${p.views} views`).join('\\n') }}\"\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*🔎 Top Keywords*\\n{{ $('Aggregate Data').item.json.topKeywords.slice(0,5).map(k => `• \\\"${k.keyword}\\\": pos ${k.position}, ${k.clicks} clicks`).join('\\n') }}\"\n      }\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "slack-report",
+      "name": "Post to Slack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1120,
+        500
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Monday 8am": {
+      "main": [
+        [
+          {
+            "node": "GA4: Overview",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GA4: Top Pages",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "PostHog: Key Events",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Search Console: Keywords",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GA4: Overview": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GA4: Top Pages": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostHog: Key Events": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Console: Keywords": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Data": {
+      "main": [
+        [
+          {
+            "node": "Generate Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Summary": {
+      "main": [
+        [
+          {
+            "node": "Post to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "analytics"
+    },
+    {
+      "name": "reporting"
+    }
+  ]
+}

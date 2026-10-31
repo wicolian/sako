@@ -1,0 +1,444 @@
+{
+  "id": "apollo-icp-qualifier",
+  "name": "Apollo ICP Qualifier",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "execute-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 0,
+          "cachedResultName": "apollo_import",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=0"
+        },
+        "options": {
+          "outputFormatting": {
+            "values": {
+              "general": "toText"
+            }
+          }
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "read-apollo-contacts",
+      "name": "Read Apollo Contacts",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        460,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 10,
+        "options": {}
+      },
+      "id": "batch-contacts",
+      "name": "Batch Contacts",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-5.2",
+        "options": {
+          "temperature": 0.3,
+          "maxTokens": 500
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an ICP (Ideal Customer Profile) qualifier for Sako, a design subscription service for B2B SaaS companies.\n\nSako's ICP:\n- Role: Marketing lead, Founder, CMO, VP Marketing, Head of Growth, PMM, Brand Manager\n- Company: B2B SaaS (software companies selling to businesses)\n- Size: 20-500 employees (too small = no budget, too big = enterprise procurement)\n- Need: Ongoing design/GTM assets (landing pages, pitch decks, ad creative, motion graphics)\n- Budget: Can approve $2.5k-$8.5k+/month (call-led)\n\nDISQUALIFY if:\n- Crypto/blockchain/web3 company\n- Sales role (not decision maker for design)\n- Enterprise (>1000 employees)\n- Agency/consultancy (competitors)\n- Healthcare/finance with heavy compliance\n- Non-B2B (consumer companies)\n\nScore this contact (0-100) and explain:\n\nName: {{ $json['First Name'] }} {{ $json['Last Name'] }}\nTitle: {{ $json['Title'] }}\nCompany: {{ $json['Company Name'] }}\nIndustry: {{ $json['Industry'] }}\nEmployees: {{ $json['# Employees'] }}\nKeywords: {{ $json['Keywords'] }}\n\nRespond in JSON format:\n{\n  \"score\": <0-100>,\n  \"qualified\": <true if score >= 70>,\n  \"reasoning\": \"<1-2 sentences explaining score>\",\n  \"red_flags\": [\"<any disqualifying factors>\"],\n  \"green_flags\": [\"<positive ICP signals>\"]\n}"
+            }
+          ]
+        }
+      },
+      "id": "ai-score-contact",
+      "name": "AI: Score Contact",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "VJQjLnLDwAkI2PxY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst contact = $('Batch Contacts').item.json;\n\n// Parse AI response\nlet aiResponse;\ntry {\n  // Extract JSON from the AI response\n  const responseText = input.message?.content || input.text || '';\n  const jsonMatch = responseText.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    aiResponse = JSON.parse(jsonMatch[0]);\n  } else {\n    throw new Error('No JSON found in AI response');\n  }\n} catch (e) {\n  aiResponse = {\n    score: 0,\n    qualified: false,\n    reasoning: 'Failed to parse AI response',\n    red_flags: ['parse_error'],\n    green_flags: []\n  };\n}\n\nreturn {\n  json: {\n    // Original contact data\n    first_name: contact['First Name'],\n    last_name: contact['Last Name'],\n    email: contact['Email'],\n    title: contact['Title'],\n    company: contact['Company Name'],\n    industry: contact['Industry'],\n    employees: contact['# Employees'],\n    linkedin_url: contact['Person Linkedin Url'],\n    company_linkedin: contact['Company Linkedin Url'],\n    website: contact['Website'],\n    \n    // ICP scoring\n    icp_score: aiResponse.score,\n    qualified: aiResponse.qualified,\n    reasoning: aiResponse.reasoning,\n    red_flags: aiResponse.red_flags?.join(', ') || '',\n    green_flags: aiResponse.green_flags?.join(', ') || '',\n    \n    // Status tracking\n    status: aiResponse.qualified ? 'qualified' : 'disqualified',\n    scored_at: new Date().toISOString()\n  }\n};"
+      },
+      "id": "parse-ai-response",
+      "name": "Parse AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.qualified }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "filter-qualified",
+      "name": "Filter Qualified",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 492604584,
+          "cachedResultName": "qualified_leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=492604584"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "first_name": "={{ $json.first_name }}",
+            "last_name": "={{ $json.last_name }}",
+            "email": "={{ $json.email }}",
+            "title": "={{ $json.title }}",
+            "company": "={{ $json.company }}",
+            "industry": "={{ $json.industry }}",
+            "employees": "={{ $json.employees }}",
+            "linkedin_url": "={{ $json.linkedin_url }}",
+            "website": "={{ $json.website }}",
+            "icp_score": "={{ $json.icp_score }}",
+            "reasoning": "={{ $json.reasoning }}",
+            "green_flags": "={{ $json.green_flags }}",
+            "status": "qualified",
+            "scored_at": "={{ $json.scored_at }}"
+          }
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "save-qualified",
+      "name": "Save to Qualified Leads",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1560,
+        200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 100000001,
+          "cachedResultName": "disqualified_leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=100000001"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "first_name": "={{ $json.first_name }}",
+            "last_name": "={{ $json.last_name }}",
+            "email": "={{ $json.email }}",
+            "title": "={{ $json.title }}",
+            "company": "={{ $json.company }}",
+            "industry": "={{ $json.industry }}",
+            "icp_score": "={{ $json.icp_score }}",
+            "reasoning": "={{ $json.reasoning }}",
+            "red_flags": "={{ $json.red_flags }}",
+            "scored_at": "={{ $json.scored_at }}"
+          }
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "save-disqualified",
+      "name": "Save to Disqualified",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1560,
+        400
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "loopScoped": false
+      },
+      "id": "loop-back",
+      "name": "Loop Back",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1780,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate results\nconst items = $input.all();\n\nconst qualified = items.filter(i => i.json.status === 'qualified').length;\nconst disqualified = items.filter(i => i.json.status === 'disqualified').length;\nconst total = qualified + disqualified;\n\nconst qualifiedList = items\n  .filter(i => i.json.status === 'qualified')\n  .map(i => `• ${i.json.first_name} ${i.json.last_name} (${i.json.title} @ ${i.json.company}) - Score: ${i.json.icp_score}`);\n\nreturn {\n  json: {\n    summary: {\n      total_processed: total,\n      qualified: qualified,\n      disqualified: disqualified,\n      pass_rate: Math.round((qualified / total) * 100) + '%'\n    },\n    qualified_contacts: qualifiedList.slice(0, 20), // Top 20 for Slack\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "aggregate-results",
+      "name": "Aggregate Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "channel": "#sako-leads",
+        "text": "=🎯 *ICP Qualification Complete*\n\n*Summary:*\n• Total processed: {{ $json.summary.total_processed }}\n• Qualified: {{ $json.summary.qualified }} ({{ $json.summary.pass_rate }})\n• Disqualified: {{ $json.summary.disqualified }}\n\n*Top Qualified Leads:*\n{{ $json.qualified_contacts.join('\\n') }}\n\n_Full list in Google Sheet: qualified_leads_",
+        "otherOptions": {}
+      },
+      "id": "slack-summary",
+      "name": "Post Summary to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        2220,
+        300
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Apollo Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Apollo Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Apollo Contacts": {
+      "main": [
+        [
+          {
+            "node": "Batch Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch Contacts": {
+      "main": [
+        [
+          {
+            "node": "AI: Score Contact",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aggregate Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Score Contact": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Response": {
+      "main": [
+        [
+          {
+            "node": "Filter Qualified",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Qualified": {
+      "main": [
+        [
+          {
+            "node": "Save to Qualified Leads",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save to Disqualified",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Qualified Leads": {
+      "main": [
+        [
+          {
+            "node": "Loop Back",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Disqualified": {
+      "main": [
+        [
+          {
+            "node": "Loop Back",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Back": {
+      "main": [
+        [
+          {
+            "node": "Batch Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Results": {
+      "main": [
+        [
+          {
+            "node": "Post Summary to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "sako-n8n"
+  },
+  "tags": [
+    {
+      "id": "leads",
+      "name": "leads"
+    }
+  ]
+}

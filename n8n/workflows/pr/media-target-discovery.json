@@ -1,0 +1,186 @@
+{
+  "id": "media-target-discovery",
+  "name": "Media Target Discovery (LinkedIn)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "cron",
+      "name": "Weekly",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "actor_id": "caprolok/linkedin-leads-generator",
+            "run_input": "={{ { keyword: 'SaaS journalist', location: 'US', max_leads: 50 } }}",
+            "dataset_limit": 200
+          }
+        }
+      },
+      "id": "apify-linkedin-leads",
+      "name": "Apify: LinkedIn Leads Generator",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.first().json.apify_items || [];\n\nconst rows = items\n  .map((p) => {\n    const outlet = p.companyName || p.company || p.currentCompany || p.organization || '';\n    const email = p.email || p.emailAddress || p.workEmail || '';\n    const title = p.jobTitle || p.title || p.headline || 'journalist';\n\n    return {\n      outlet_name: String(outlet).trim(),\n      contact: String(email).trim(),\n      format: 'journalist',\n      audience_fit: `${title}; beat: SaaS/design (seed list)`\n    };\n  })\n  .filter((r) => r.outlet_name && /@/.test(r.contact))\n  .slice(0, 50);\n\nif (rows.length === 0) return [{ json: { no_targets: true } }];\n\nreturn rows.map((r) => ({\n  json: {\n    outlet_name: r.outlet_name,\n    contact: r.contact,\n    format: r.format,\n    audience_fit: r.audience_fit,\n    last_pitched_at: ''\n  }\n}));"
+      },
+      "id": "normalize",
+      "name": "Normalize Targets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.no_targets }}",
+              "value2": false
+            }
+          ]
+        }
+      },
+      "id": "has-targets",
+      "name": "Has Targets?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 100000005,
+          "cachedResultName": "media_targets",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=100000005"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "outlet_name": "={{ $json.outlet_name }}",
+            "contact": "={{ $json.contact }}",
+            "format": "={{ $json.format }}",
+            "audience_fit": "={{ $json.audience_fit }}",
+            "last_pitched_at": "={{ $json.last_pitched_at }}"
+          }
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "append",
+      "name": "Append to media_targets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1120,
+        240
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      },
+      "continueOnFail": true
+    }
+  ],
+  "connections": {
+    "Weekly": {
+      "main": [
+        [
+          {
+            "node": "Apify: LinkedIn Leads Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify: LinkedIn Leads Generator": {
+      "main": [
+        [
+          {
+            "node": "Normalize Targets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Targets": {
+      "main": [
+        [
+          {
+            "node": "Has Targets?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Targets?": {
+      "main": [
+        [
+          {
+            "node": "Append to media_targets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "pr"
+    }
+  ]
+}

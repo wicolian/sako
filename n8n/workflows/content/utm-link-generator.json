@@ -1,0 +1,282 @@
+{
+  "id": "utm-link-generator",
+  "name": "UTM Link Generator",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "start",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "execute-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate UTM parameters and create trackable link\nconst input = $input.first()?.json ?? {};\n\nconst contentId = input.content_id;\nconst format = input.format;\nconst pillar = (input.pillar ?? 'general');\nconst finalText = input.final_text;\n\n// Map format to UTM values\nconst formatMap = {\n  'LI': { source: 'linkedin', medium: 'social' },\n  'X': { source: 'twitter', medium: 'social' },\n  'newsletter': { source: 'newsletter', medium: 'email' },\n  'blog': { source: 'blog', medium: 'content' }\n};\n\nconst utmConfig = formatMap[format] || { source: 'organic', medium: 'social' };\n\n// Build UTM parameters\nconst utmParams = {\n  utm_source: utmConfig.source,\n  utm_medium: utmConfig.medium,\n  utm_campaign: String(pillar).toLowerCase().replace(/\\s+/g, '_'),\n  utm_content: contentId\n};\n\n// Destination URL (pricing page is most common CTA)\nconst destinationUrl = 'https://trysako.com/pricing';\n\n// Build full URL with UTM\nconst utmString = Object.entries(utmParams)\n  .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)\n  .join('&');\nconst fullUrl = `${destinationUrl}?${utmString}`;\n\n// Generate a short ID for the link\nconst shortId = `sako_${contentId}_${Date.now().toString(36)}`;\n\nreturn {\n  json: {\n    content_id: contentId,\n    destination_url: destinationUrl,\n    full_url: fullUrl,\n    short_id: shortId,\n    ...utmParams,\n    final_text: finalText,\n    format: format\n  }\n};"
+      },
+      "id": "generate-utm",
+      "name": "Generate UTM",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.dub.co/links",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"url\": \"{{ $json.full_url }}\",\n  \"key\": \"{{ $json.short_id }}\",\n  \"domain\": \"link.trysako.com\"\n}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "create-shortlink",
+      "name": "Create Shortlink (Dub)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        680,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "dub-api",
+          "name": "Dub.co API"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Handle shortlink result\nconst utmData = $('Generate UTM').item.json;\nconst shortlinkResult = $input.first().json;\n\n// Use the shortlink if created, otherwise use full URL\nconst shortUrl = shortlinkResult.shortLink || shortlinkResult.key \n  ? `https://link.trysako.com/${shortlinkResult.key || utmData.short_id}`\n  : utmData.full_url;\n\nreturn {\n  json: {\n    ...utmData,\n    short_url: shortUrl,\n    shortlink_created: !!shortlinkResult.shortLink\n  }\n};"
+      },
+      "id": "process-shortlink",
+      "name": "Process Shortlink",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 100000007,
+          "cachedResultName": "campaign_links",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=100000007"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.short_id }}",
+            "destination_url": "={{ $json.destination_url }}",
+            "utm_source": "={{ $json.utm_source }}",
+            "utm_medium": "={{ $json.utm_medium }}",
+            "utm_campaign": "={{ $json.utm_campaign }}",
+            "utm_content": "={{ $json.utm_content }}",
+            "created_at": "={{ $now.toISO() }}",
+            "clicks": "0"
+          }
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "store-link",
+      "name": "Store in campaign_links",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1120,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Insert the link into the post text\nconst data = $('Process Shortlink').item.json;\nlet finalText = data.final_text;\nconst shortUrl = data.short_url;\n\n// Look for a CTA or link placeholder and replace, or append\nif (finalText.includes('[LINK]')) {\n  finalText = finalText.replace('[LINK]', shortUrl);\n} else if (finalText.includes('{{link}}')) {\n  finalText = finalText.replace('{{link}}', shortUrl);\n} else {\n  // Append link before any hashtags at the end\n  const hashtagMatch = finalText.match(/(\\n\\n?#[^\\n]+)$/);\n  if (hashtagMatch) {\n    finalText = finalText.replace(hashtagMatch[0], `\\n\\n${shortUrl}${hashtagMatch[0]}`);\n  } else {\n    finalText = `${finalText}\\n\\n${shortUrl}`;\n  }\n}\n\nreturn {\n  json: {\n    content_id: data.content_id,\n    format: data.format,\n    final_text_with_link: finalText,\n    short_url: shortUrl,\n    utm_campaign: data.utm_campaign\n  }\n};"
+      },
+      "id": "insert-link",
+      "name": "Insert Link into Post",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 1620036434,
+          "cachedResultName": "content_backlog",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=1620036434"
+        },
+        "filters": {
+          "filter": [
+            {
+              "column": "id",
+              "value": "={{ $json.content_id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "final_text": "={{ $json.final_text_with_link }}"
+          }
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "update-content",
+      "name": "Update Content with Link",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1560,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Generate UTM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Generate UTM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate UTM": {
+      "main": [
+        [
+          {
+            "node": "Create Shortlink (Dub)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Shortlink (Dub)": {
+      "main": [
+        [
+          {
+            "node": "Process Shortlink",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Shortlink": {
+      "main": [
+        [
+          {
+            "node": "Store in campaign_links",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store in campaign_links": {
+      "main": [
+        [
+          {
+            "node": "Insert Link into Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Link into Post": {
+      "main": [
+        [
+          {
+            "node": "Update Content with Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "content"
+    },
+    {
+      "name": "utm"
+    }
+  ]
+}

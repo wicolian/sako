@@ -1,0 +1,87 @@
+// This is your Prisma schema file for Sako Wall
+// This database is SEPARATE from sako-v1 and composer DBs
+// It stores: cache, snapshots, source status, and manual inputs
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ====================
+// wall_cache
+// ====================
+// Stores cached responses from upstream sources
+// Survives serverless cold starts
+model WallCache {
+  cacheKey   String   @id @map("cache_key")
+  payload    Json
+  fetchedAt  DateTime @map("fetched_at")
+  ttlSeconds Int      @map("ttl_seconds")
+  source     String
+
+  @@map("wall_cache")
+}
+
+// ====================
+// wall_source_status
+// ====================
+// Tracks health of each data source for the data trust layer
+model WallSourceStatus {
+  source        String    @id
+  state         String    // OK | DEGRADED | STALE | DOWN
+  lastSuccessAt DateTime? @map("last_success_at")
+  lastAttemptAt DateTime? @map("last_attempt_at")
+  errorCount    Int       @default(0) @map("error_count")
+  lastError     String?   @map("last_error")
+
+  @@map("wall_source_status")
+}
+
+// ====================
+// wall_snapshots
+// ====================
+// Stores historical metric values for trend charts
+// Captured every 15 minutes, retained for 30 days
+model WallSnapshot {
+  id           String   @id @default(uuid())
+  metricKey    String   @map("metric_key")
+  segment      String   @default("all")
+  ts           DateTime
+  valueNumeric Float?   @map("value_numeric")
+  valueJson    Json?    @map("value_json")
+  source       String
+
+  @@index([metricKey, segment, ts(sort: Desc)])
+  @@map("wall_snapshots")
+}
+
+// ====================
+// wall_manual_inputs
+// ====================
+// Stores manually entered data (e.g., social metrics)
+model WallManualInput {
+  key       String   @id
+  valueJson Json     @map("value_json")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("wall_manual_inputs")
+}
+
+// ====================
+// wall_sessions
+// ====================
+// Stores authenticated sessions
+model WallSession {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([token])
+  @@index([expiresAt])
+  @@map("wall_sessions")
+}

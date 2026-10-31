@@ -1,0 +1,398 @@
+{
+  "id": "designer-sourcing",
+  "name": "Designer Sourcing (LinkedIn)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Weekly",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        220
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const input = $json || {};\n\nconst title = input.title || 'Motion Designer';\nconst skills = input.skills || 'After Effects Figma';\nconst location = input.location || 'India';\nconst maxLeads = input.max_leads || 30;\n\nconst keyword = `${title} ${skills}`.trim();\n\nreturn {\n  json: {\n    keyword,\n    location,\n    maxLeads\n  }\n};"
+      },
+      "id": "build-search",
+      "name": "Build Search Params",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "actor_id": "caprolok/linkedin-leads-generator",
+            "run_input": "={{ { keyword: $json.keyword, location: $json.location, max_leads: $json.maxLeads } }}",
+            "dataset_limit": 200
+          }
+        }
+      },
+      "id": "apify-linkedin-leads",
+      "name": "Apify: LinkedIn Leads Generator",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 100000010,
+          "cachedResultName": "candidate_pipeline",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=100000010"
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "read-candidates",
+      "name": "Read Candidate Pipeline",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        680,
+        520
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "passThrough"
+      },
+      "id": "merge-inputs",
+      "name": "Merge Inputs",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = $items('Apify: LinkedIn Leads Generator')?.[0]?.json?.apify_items || [];\nconst existing = $items('Read Candidate Pipeline') || [];\n\nconst existingLinkedIn = new Set(\n  existing.map((i) => String(i.json.linkedin_url || '').toLowerCase()).filter(Boolean)\n);\n\nconst keyword = $items('Build Search Params')?.[0]?.json?.keyword || 'Designer search';\n\nconst rows = items\n  .map((p) => {\n    const fullName = p.fullName || p.name || `${p.firstName || ''} ${p.lastName || ''}`.trim();\n    return {\n      linkedin_url: p.profileUrl || p.linkedinUrl || p.profile || '',\n      name: fullName,\n      title: p.jobTitle || p.title || p.headline || '',\n      current_company: p.companyName || p.company || p.currentCompany || '',\n      email: p.email || p.emailAddress || '',\n      phone: p.phone || '',\n      skills: p.skills || '',\n      experience_years: p.yearsExperience || '',\n      portfolio_url: p.website || p.portfolio || ''\n    };\n  })\n  .filter((r) => r.name && r.linkedin_url)\n  .filter((r) => !existingLinkedIn.has(String(r.linkedin_url || '').toLowerCase()))\n  .slice(0, 100);\n\nif (rows.length === 0) {\n  return [{ json: { no_targets: true, keyword } }];\n}\n\nreturn rows.map((r) => ({\n  json: {\n    ...r,\n    status: 'sourced',\n    sourced_at: new Date().toISOString(),\n    keyword\n  }\n}));"
+      },
+      "id": "normalize-dedupe",
+      "name": "Normalize + Dedupe Candidates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.no_targets }}",
+              "value2": false
+            }
+          ]
+        }
+      },
+      "id": "has-candidates",
+      "name": "Has Candidates?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 100000010,
+          "cachedResultName": "candidate_pipeline",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=100000010"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "linkedin_url": "={{ $json.linkedin_url }}",
+            "name": "={{ $json.name }}",
+            "title": "={{ $json.title }}",
+            "current_company": "={{ $json.current_company }}",
+            "email": "={{ $json.email }}",
+            "phone": "={{ $json.phone }}",
+            "skills": "={{ $json.skills }}",
+            "experience_years": "={{ $json.experience_years }}",
+            "portfolio_url": "={{ $json.portfolio_url }}",
+            "status": "sourced",
+            "sourced_at": "={{ $json.sourced_at }}"
+          }
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "append-candidates",
+      "name": "Append to candidate_pipeline",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1560,
+        240
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows = $items('Normalize + Dedupe Candidates') || [];\n\nconst keyword = rows[0]?.json?.keyword || 'Designer search';\nconst total = rows.filter((r) => !r.json.no_targets).length;\n\nreturn [{\n  json: {\n    keyword,\n    total\n  }\n}];"
+      },
+      "id": "build-summary",
+      "name": "Build Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "channel": "#sako-leads",
+        "text": "=🧲 *Designer Sourcing*\n\n• Search: {{ $json.keyword }}\n• New candidates added: {{ $json.total }}\n• Sheet: candidate_pipeline"
+      },
+      "id": "post-summary",
+      "name": "Post Summary to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        240
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "channel": "#sako-leads",
+        "text": "=ℹ️ *Designer Sourcing*\n\nNo new candidates found for {{ $json.keyword }}.\nTry adjusting titles or skills."
+      },
+      "id": "post-none",
+      "name": "Post No Candidates",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        420
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Weekly": {
+      "main": [
+        [
+          {
+            "node": "Build Search Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Build Search Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Search Params": {
+      "main": [
+        [
+          {
+            "node": "Apify: LinkedIn Leads Generator",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Candidate Pipeline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify: LinkedIn Leads Generator": {
+      "main": [
+        [
+          {
+            "node": "Merge Inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Candidate Pipeline": {
+      "main": [
+        [
+          {
+            "node": "Merge Inputs",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Inputs": {
+      "main": [
+        [
+          {
+            "node": "Normalize + Dedupe Candidates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize + Dedupe Candidates": {
+      "main": [
+        [
+          {
+            "node": "Has Candidates?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Candidates?": {
+      "main": [
+        [
+          {
+            "node": "Append to candidate_pipeline",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Post No Candidates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to candidate_pipeline": {
+      "main": [
+        [
+          {
+            "node": "Build Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Summary": {
+      "main": [
+        [
+          {
+            "node": "Post Summary to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "recruiting"
+    },
+    {
+      "name": "linkedin"
+    }
+  ]
+}

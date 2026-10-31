@@ -1,0 +1,169 @@
+---
+title: "Sako + Slack"
+slug: "slack"
+template: "standard"
+published: true
+priority: 2
+seo:
+  metaTitle: "Sako + Slack | Notifications + Approvals Where Your Team Works"
+  metaDescription: "Get Sako task updates, review links, and approvals in Slack. Slack keeps your team in the loop. The Sako dashboard stays the source of truth."
+  keywords: ["Sako Slack integration", "Sako Slack notifications", "Sako design workflow", "Sako creative ops", "Sako async approvals", "design subscription Slack", "Sako team notifications", "Sako workflow integration", "design ops Slack"]
+  ogImage: "auto"
+jsonLd:
+  type: "SoftwareApplication"
+---
+
+<Hero
+  eyebrow="Slack"
+  variant="split"
+  title="Keep the team in {Slack}. Keep the work in Sako."
+  subtitle="Slack is for updates and quick decisions. Sako is where briefs, versions, approvals, and files live. No context switching, no lost threads."
+  primaryCta={{ label: "Start Shipping", href: "https://app.trysako.com" }}
+  secondaryCta={{ label: "See How It Works", href: "/how-it-works" }}
+  trustText="Slack is optional • Dashboard is source of truth • Real-time task updates"
+  scene="slack"
+/>
+
+<MetricCards
+  style="cards"
+  variant="transparent"
+  title="{Slack} integration"
+  subtitle="Less chasing. More clarity."
+  items={[
+    { title: "Updates", icon: "bell", value: "Instant", description: "When work moves states." },
+    { title: "Review links", icon: "link", value: "One click", description: "Jump straight to the task." },
+    { title: "Approvals", icon: "checkCircle", value: "Fast", description: "Quick confirm, then ship." },
+    { title: "Setup", icon: "zap", value: "2 min", description: "Connect once per workspace." }
+  ]}
+/>
+
+<FeatureGrid
+  columns={3}
+  variant="cards"
+  title="What {Slack} does (and doesn’t)"
+  items={[
+    {
+      icon: "Bell",
+      title: "Pings you when it matters",
+      description: "Queued → In progress → Ready for review → Delivered. No dashboard refreshing."
+    },
+    {
+      icon: "MessageSquare",
+      title: "Keeps decisions tight",
+      description: "Quick questions, quick answers. No 40-message approval thread on a JPG."
+    },
+    {
+      icon: "Link",
+      title: "Routes you to the source of truth",
+      description: "Slack sends the update. The dashboard holds the brief, files, versions, and approval."
+    },
+    {
+      icon: "FileText",
+      title: "Briefs stay structured",
+      description: "Submit and edit tasks in the dashboard so scope, assets, and brand are always attached."
+    },
+    {
+      icon: "History",
+      title: "Nothing gets lost",
+      description: "Every version and decision stays with the task. Slack is not your archive."
+    },
+    {
+      icon: "Users",
+      title: "Works for the whole team",
+      description: "Invite teammates. Roles keep approvals clean. No more “who’s the approver?” chaos."
+    }
+  ]}
+/>
+
+<Timeline
+  eyebrow="Workflow"
+  title="How it feels in {Slack}"
+  steps={[
+    { number: "01", title: "Connect Slack", description: "Link your workspace and pick a channel for updates.", badge: "2 min" },
+    { number: "02", title: "Submit in Sako", description: "Create the task in the dashboard with scope, brand, and assets.", badge: "5 min" },
+    { number: "03", title: "Get updates in Slack", description: "You’re notified when the task is Ready, in progress, and ready for review.", badge: "Instant" },
+    { number: "04", title: "Review via link", description: "Click through to review in the dashboard. Comments stay attached to the task.", badge: "One click" },
+    { number: "05", title: "Approve and ship", description: "Approve fast, iterate if needed. Unlimited revisions until it matches the brief.", badge: "You decide" }
+  ]}
+/>
+
+<FeatureGrid
+  columns={2}
+  variant="simple"
+  title="{Slack} + dashboard"
+  items={[
+    {
+      icon: "MessageSquare",
+      title: "Slack = awareness",
+      description: "Updates, nudges, and quick decisions. Keeps everyone aligned without meetings."
+    },
+    {
+      icon: "LayoutDashboard",
+      title: "Dashboard = control",
+      description: "Briefs, brands, files, versions, approvals, SLA timers, and delivery history. One system."
+    }
+  ]}
+/>
+
+<FeatureGrid
+  variant="bento"
+  title="Common setups"
+  subtitle="Pick what matches your team. No forcing function."
+  items={[
+    {
+      icon: "Users",
+      title: "Founder-led approvals",
+      description: "Slack pings the founder. Founder reviews in dashboard. Done.",
+      bentoContent: { type: "scene", id: "slackFounderApprovals" }
+    },
+    {
+      icon: "Layers",
+      title: "Marketing team flow",
+      description: "Submitters create tasks. One approver signs off. Everyone sees status in Slack.",
+      bentoContent: { type: "scene", id: "slackMarketingFlow" }
+    },
+    {
+      icon: "Shield",
+      title: "Enterprise hygiene",
+      description: "Private channels, roles, and governance. Slack for updates, dashboard for audit trail.",
+      bentoContent: { type: "scene", id: "slackEnterpriseHygiene" }
+    },
+    {
+      icon: "Target",
+      title: "No-Slack teams",
+      description: "Skip Slack entirely. Use the dashboard only. Same workflow, same SLAs.",
+      bentoContent: { type: "scene", id: "slackNoSlackTeams" }
+    }
+  ]}
+/>
+
+<FAQAccordion
+  title={{ prefix: "Slack", italic: "faq" }}
+  items={[
+    {
+      question: "Do we need Slack to use Sako?",
+      answer: "No. Slack is optional. The dashboard works standalone and stays the source of truth."
+    },
+    {
+      question: "Can multiple teammates access the workspace?",
+      answer: "Yes. Invite your team and assign roles so submissions and approvals stay clean."
+    },
+    {
+      question: "Can we submit tasks from Slack?",
+      answer: "Slack is optimized for updates and quick decisions. Tasks are submitted in the dashboard so scope, assets, brand, versions, and approvals stay attached."
+    },
+    {
+      question: "Is the Slack channel private?",
+      answer: "Yes. You control access. Only invited teammates and your Sako pod are in the channel you choose."
+    }
+  ]}
+/>
+
+<CTASection
+  variant="final"
+  title="Keep shipping. Stop {chasing} approvals."
+  subtitle="Turn on Slack updates and keep everyone aligned while the dashboard runs the work."
+  primaryCta={{ label: "Start Shipping", href: "https://app.trysako.com" }}
+  secondaryCta={{ label: "Book a fit check", href: "/book-a-call" }}
+  trustText="Slack optional • Real-time updates • Dashboard-first workflow"
+/>

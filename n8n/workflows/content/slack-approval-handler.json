@@ -1,0 +1,647 @@
+{
+  "id": "slack-approval-handler",
+  "name": "Slack Approval Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "slack-action",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "webhook",
+      "name": "Slack Action Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "slack-action"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Slack interactive message (crypto disallowed in n8n 2.6+, rely on URL obscurity + payload validation)\nconst input = $input.first().json;\nconst body = input.body;\n\n// Check timestamp freshness (replay protection)\nconst timestamp = input.headers['x-slack-request-timestamp'];\nif (timestamp) {\n  const currentTime = Math.floor(Date.now() / 1000);\n  if (Math.abs(currentTime - parseInt(timestamp)) > 300) {\n    throw new Error('Slack request too old');\n  }\n}\n\n// Parse the payload (Slack sends URL-encoded payload for interactive messages)\nconst payload = body.payload ? JSON.parse(body.payload) : body;\n\n// Validate this looks like a Slack interactive payload\nif (!payload.type || !payload.user) {\n  throw new Error('Invalid Slack interactive payload');\n}\n\nreturn {\n  json: {\n    type: payload.type,\n    action: payload.actions?.[0],\n    user: payload.user,\n    channel: payload.channel,\n    messageTs: payload.message?.ts,\n    responseUrl: payload.response_url\n  }\n};"
+      },
+      "id": "verify-slack",
+      "name": "Verify Slack",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse the action across multiple approval types\nconst action = $input.first().json.action;\nconst actionId = action?.action_id || '';\nconst value = action?.value || '';\n\nlet actionGroup = 'content';\nif (actionId.startsWith('inmail_')) actionGroup = 'inmail';\nif (actionId.startsWith('pr_')) actionGroup = 'pr';\nif (actionId.startsWith('call_')) actionGroup = 'call';\n\nlet actionType = 'unknown';\nlet variantNumber = null;\nlet contentId = null;\nlet email = null;\n\nconst contentApproveMatch = actionId.match(/approve_v(\\d+)/);\nif (contentApproveMatch) {\n  actionGroup = 'content';\n  actionType = 'approve';\n  variantNumber = contentApproveMatch[1];\n}\n\nif (actionId === 'content_reject' || actionId === 'reject') {\n  actionGroup = 'content';\n  actionType = 'reject';\n}\n\nif (actionId === 'content_edit' || actionId === 'edit') {\n  actionGroup = 'content';\n  actionType = 'edit';\n}\n\nif (actionId === 'inmail_approve') actionType = 'approve';\nif (actionId === 'inmail_edit') actionType = 'edit';\nif (actionId === 'inmail_skip') actionType = 'skip';\nif (actionId === 'inmail_reject') actionType = 'reject';\n\nif (actionGroup === 'content') {\n  const [id, variant] = value.split('|');\n  contentId = id;\n  if (!variantNumber && variant) variantNumber = variant;\n}\n\nif (actionGroup === 'inmail') {\n  email = value;\n}\n\nreturn {\n  json: {\n    actionGroup,\n    actionType,\n    contentId,\n    variantNumber,\n    email,\n    user: $input.first().json.user,\n    responseUrl: $input.first().json.responseUrl\n  }\n};"
+      },
+      "id": "parse-action",
+      "name": "Parse Action",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.actionGroup }}",
+        "rules": [
+          {
+            "operation": "equal",
+            "value2": "content"
+          },
+          {
+            "operation": "equal",
+            "value2": "inmail"
+          }
+        ],
+        "fallbackOutput": "extra"
+      },
+      "id": "route-approval",
+      "name": "Route Approval Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.actionType }}",
+              "value2": "approve"
+            }
+          ]
+        }
+      },
+      "id": "is-approve",
+      "name": "Is Approve?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 1620036434,
+          "cachedResultName": "content_backlog",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=1620036434"
+        },
+        "filters": {
+          "filter": [
+            {
+              "column": "id",
+              "value": "={{ $('Parse Action').item.json.contentId }}"
+            }
+          ]
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "fetch-content",
+      "name": "Fetch Content",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1120,
+        200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract the approved variant from draft_text\nconst content = $input.first().json;\nconst draftText = content.draft_text || '';\nconst variantNumber = $('Parse Action').item.json.variantNumber;\n\n// Parse variants (they're labeled VARIANT 1:, VARIANT 2:, VARIANT 3:)\nconst variantRegex = /\\*\\*VARIANT (\\d):\\*\\*([\\s\\S]*?)(?=\\*\\*VARIANT \\d:|$)/gi;\nconst matches = [...draftText.matchAll(variantRegex)];\n\nlet selectedVariant = '';\nfor (const match of matches) {\n  if (match[1] === variantNumber) {\n    selectedVariant = match[2].trim();\n    break;\n  }\n}\n\n// If no match found, use the whole draft\nif (!selectedVariant) {\n  selectedVariant = draftText;\n}\n\nreturn {\n  json: {\n    id: content.id,\n    pillar: content.pillar,\n    hook: content.hook,\n    format: content.format,\n    final_text: selectedVariant,\n    variant_selected: variantNumber\n  }\n};"
+      },
+      "id": "extract-variant",
+      "name": "Extract Variant",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 1620036434,
+          "cachedResultName": "content_backlog",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=1620036434"
+        },
+        "filters": {
+          "filter": [
+            {
+              "column": "id",
+              "value": "={{ $json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "final_text": "={{ $json.final_text }}",
+            "status": "approved"
+          }
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "update-approved",
+      "name": "Update to Approved",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1560,
+        200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate UTM parameters and create trackable link (inlined from UTM Link Generator)\nconst input = $input.first()?.json ?? {};\nconst contentId = input.content_id ?? input.id;\nconst format = input.format;\nconst pillar = (input.pillar ?? 'general');\nconst finalText = input.final_text;\n\nconst formatMap = { 'LI': { source: 'linkedin', medium: 'social' }, 'X': { source: 'twitter', medium: 'social' }, 'newsletter': { source: 'newsletter', medium: 'email' }, 'blog': { source: 'blog', medium: 'content' } };\nconst utmConfig = formatMap[format] || { source: 'organic', medium: 'social' };\nconst utmParams = { utm_source: utmConfig.source, utm_medium: utmConfig.medium, utm_campaign: String(pillar).toLowerCase().replace(/\\s+/g, '_'), utm_content: contentId };\nconst destinationUrl = 'https://trysako.com/pricing';\nconst utmString = Object.entries(utmParams).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');\nconst fullUrl = `${destinationUrl}?${utmString}`;\nconst shortId = `sako_${contentId}_${Date.now().toString(36)}`;\n\nreturn { json: { content_id: contentId, destination_url: destinationUrl, full_url: fullUrl, short_id: shortId, ...utmParams, final_text: finalText, format: format } };"
+      },
+      "id": "generate-utm",
+      "name": "Generate UTM",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 200]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.dub.co/links",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"url\": \"{{ $json.full_url }}\",\n  \"key\": \"{{ $json.short_id }}\",\n  \"domain\": \"link.trysako.com\"\n}",
+        "options": { "timeout": 10000 }
+      },
+      "id": "create-shortlink",
+      "name": "Create Shortlink (Dub)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [2000, 200],
+      "credentials": { "httpHeaderAuth": { "id": "dub-api", "name": "Dub.co API" } },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const utmData = $('Generate UTM').item.json;\nconst shortlinkResult = $input.first().json;\nconst shortUrl = shortlinkResult.shortLink || shortlinkResult.key ? `https://link.trysako.com/${shortlinkResult.key || utmData.short_id}` : utmData.full_url;\nreturn { json: { ...utmData, short_url: shortUrl, shortlink_created: !!shortlinkResult.shortLink } };"
+      },
+      "id": "process-shortlink",
+      "name": "Process Shortlink",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2220, 200]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "mode": "list", "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ", "cachedResultName": "Sako Marketing Automations", "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk" },
+        "sheetName": { "__rl": true, "mode": "list", "value": 100000007, "cachedResultName": "campaign_links", "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=100000007" },
+        "columns": { "mappingMode": "defineBelow", "value": { "id": "={{ $json.short_id }}", "destination_url": "={{ $json.destination_url }}", "utm_source": "={{ $json.utm_source }}", "utm_medium": "={{ $json.utm_medium }}", "utm_campaign": "={{ $json.utm_campaign }}", "utm_content": "={{ $json.utm_content }}", "created_at": "={{ $now.toISO() }}", "clicks": "0" } },
+        "options": {}
+      },
+      "id": "store-link",
+      "name": "Store in campaign_links",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [2440, 200],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "DmISg5P6tbWAXQv6", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $('Process Shortlink').item.json;\nlet finalText = data.final_text;\nconst shortUrl = data.short_url;\nif (finalText.includes('[LINK]')) finalText = finalText.replace('[LINK]', shortUrl);\nelse if (finalText.includes('{{link}}')) finalText = finalText.replace('{{link}}', shortUrl);\nelse { const m = finalText.match(/(\\n\\n?#[^\\n]+)$/); finalText = m ? finalText.replace(m[0], `\\n\\n${shortUrl}${m[0]}`) : `${finalText}\\n\\n${shortUrl}`; }\nreturn { json: { content_id: data.content_id, format: data.format, final_text_with_link: finalText, short_url: shortUrl, utm_campaign: data.utm_campaign } };"
+      },
+      "id": "insert-link",
+      "name": "Insert Link into Post",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2660, 200]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": { "__rl": true, "mode": "list", "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ", "cachedResultName": "Sako Marketing Automations", "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk" },
+        "sheetName": { "__rl": true, "mode": "list", "value": 1620036434, "cachedResultName": "content_backlog", "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=1620036434" },
+        "filters": { "filter": [{ "column": "id", "value": "={{ $json.content_id }}" }] },
+        "columns": { "mappingMode": "defineBelow", "value": { "final_text": "={{ $json.final_text_with_link }}" } },
+        "options": {}
+      },
+      "id": "update-content-link",
+      "name": "Update Content with Link",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [2880, 200],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "DmISg5P6tbWAXQv6", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "={{ $('Parse Action').item.json.responseUrl }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"replace_original\": true,\n  \"text\": \"✅ Content approved by <@{{ $('Parse Action').item.json.user.id }}>! Variant {{ $('Parse Action').item.json.variantNumber }} selected. Tracking link generated.\"\n}",
+        "options": {}
+      },
+      "id": "respond-approve",
+      "name": "Update Slack Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [3100, 200],
+      "credentials": { "slackOAuth2Api": { "id": "Hypoe71bz8A0qpQ3", "name": "Slack account" } }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 1620036434,
+          "cachedResultName": "content_backlog",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=1620036434"
+        },
+        "filters": {
+          "filter": [
+            {
+              "column": "id",
+              "value": "={{ $('Parse Action').item.json.contentId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "rejected"
+          }
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "update-rejected",
+      "name": "Update to Rejected",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1120,
+        400
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "={{ $('Parse Action').item.json.responseUrl }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"replace_original\": true,\n  \"text\": \"❌ Content rejected by <@{{ $('Parse Action').item.json.user.id }}>.\"\n}",
+        "options": {}
+      },
+      "id": "respond-reject",
+      "name": "Update Slack (Reject)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1340,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const statusMap = {\n  approve: 'approved',\n  edit: 'needs_edit',\n  skip: 'skipped',\n  reject: 'rejected'\n};\n\nconst actionType = $json.actionType || 'skipped';\nconst status = statusMap[actionType] || 'skipped';\n\nreturn {\n  json: {\n    email: $json.email || '',\n    status,\n    approved_by: $json.user?.username || $json.user?.id || 'slack',\n    approved_at: new Date().toISOString(),\n    responseUrl: $json.responseUrl\n  }\n};"
+      },
+      "id": "map-inmail-status",
+      "name": "Map InMail Status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 100000004,
+          "cachedResultName": "inmail_outreach",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=100000004"
+        },
+        "columnToMatchOn": "email",
+        "valueToMatchOn": "={{ $json.email }}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "={{ $json.status }}",
+            "approved_by": "={{ $json.approved_by }}",
+            "approved_at": "={{ $json.approved_at }}"
+          }
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "update-inmail",
+      "name": "Update InMail Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1340,
+        520
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "={{ $json.responseUrl }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"replace_original\": true,\n  \"text\": \"✅ InMail marked *{{ $json.status }}* by <@{{ $json.approved_by }}> .\"\n}",
+        "options": {}
+      },
+      "id": "respond-inmail",
+      "name": "Update Slack InMail",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1560,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "respond-ok",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        2220,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Slack Action Webhook": {
+      "main": [
+        [
+          {
+            "node": "Verify Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Slack": {
+      "main": [
+        [
+          {
+            "node": "Parse Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Action": {
+      "main": [
+        [
+          {
+            "node": "Route Approval Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Approval Type": {
+      "main": [
+        [
+          {
+            "node": "Is Approve?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Map InMail Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Approve?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Content",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update to Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Content": {
+      "main": [
+        [
+          {
+            "node": "Extract Variant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Variant": {
+      "main": [
+        [
+          {
+            "node": "Update to Approved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update to Approved": {
+      "main": [[{ "node": "Generate UTM", "type": "main", "index": 0 }]]
+    },
+    "Generate UTM": {
+      "main": [[{ "node": "Create Shortlink (Dub)", "type": "main", "index": 0 }]]
+    },
+    "Create Shortlink (Dub)": {
+      "main": [[{ "node": "Process Shortlink", "type": "main", "index": 0 }]]
+    },
+    "Process Shortlink": {
+      "main": [[{ "node": "Store in campaign_links", "type": "main", "index": 0 }]]
+    },
+    "Store in campaign_links": {
+      "main": [[{ "node": "Insert Link into Post", "type": "main", "index": 0 }]]
+    },
+    "Insert Link into Post": {
+      "main": [[{ "node": "Update Content with Link", "type": "main", "index": 0 }]]
+    },
+    "Update Content with Link": {
+      "main": [[{ "node": "Update Slack Message", "type": "main", "index": 0 }]]
+    },
+    "Update Slack Message": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update to Rejected": {
+      "main": [
+        [
+          {
+            "node": "Update Slack (Reject)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Slack (Reject)": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map InMail Status": {
+      "main": [
+        [
+          {
+            "node": "Update InMail Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update InMail Status": {
+      "main": [
+        [
+          {
+            "node": "Update Slack InMail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Slack InMail": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "content"
+    },
+    {
+      "name": "approval"
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+call_id,phone,email,name,company,duration,outcome,called_at,needs_followup,notes,objections,meeting_booked
+call_001,+1234567890,john@example.com,John Example,Example SaaS,5m 30s,connected,2026-02-05T10:30:00Z,false,Great conversation - interested in design subscription,Budget timing,true

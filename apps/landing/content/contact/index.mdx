@@ -1,0 +1,108 @@
+---
+title: "Contact Sako"
+slug: "contact"
+template: "standard"
+published: true
+priority: 1
+seo:
+  metaTitle: "Contact Sako | Sales, Support, Enterprise & Demo"
+  metaDescription: "Get in touch with Sako for design ops, enterprise plans, support, or partnerships. Request a demo or book a call. We respond within 24 hours."
+  keywords: ["contact Sako", "Sako demo", "Sako sales", "Sako support", "enterprise design ops", "Sako partnerships", "design subscription demo"]
+  ogImage: "auto"
+jsonLd:
+  type: "ContactPage"
+---
+
+<Hero
+  eyebrow="Contact Sako"
+  variant="centered"
+  title="Tell us what you're {shipping}."
+  subtitle="Sales, support, enterprise, or partnerships. Request a demo or book a call. We respond within 24 hours."
+  primaryCta={{ label: "Book a fit check", href: "/book-a-call" }}
+  secondaryCta={{ label: "Email us", href: "mailto:contact@trysako.com" }}
+  trustText="Response within 24 hours • No pressure • Practical next steps"
+/>
+
+<DemoRequestForm socialProof="We respond within 24 hours." />
+
+<FeatureGrid
+  columns={3}
+  variant="cards"
+  title="Pick the {right} lane"
+  subtitle="Reach the right Sako team without the runaround."
+  items={[
+    {
+      icon: "Calendar",
+      title: "Book a fit check",
+      description: "15-minute fit check with a founding team member. See how pods and SLAs work. No deck, no pressure.",
+      link: { label: "Schedule now", href: "/book-a-call" }
+    },
+    {
+      icon: "Mail",
+      title: "Sales & enterprise",
+      description: "Questions about plans, custom SLAs, or procurement? Email us. We respond within 24 hours.",
+      link: { label: "sales@trysako.com", href: "mailto:sales@trysako.com" }
+    },
+    {
+      icon: "Shield",
+      title: "Customer support",
+      description: "Already a Sako subscriber? Include your workspace name and request link.",
+      link: { label: "contact@trysako.com", href: "mailto:contact@trysako.com" }
+    },
+    {
+      icon: "Handshake",
+      title: "Partnerships",
+      description: "Tooling, platforms, agencies, or co-marketing. Keep it tight and clear.",
+      link: { label: "partnerships@trysako.com", href: "mailto:contact@trysako.com" }
+    },
+    {
+      icon: "Users",
+      title: "Join the team",
+      description: "Sako hires builders. Send a short pitch and portfolio.",
+      link: { label: "careers@trysako.com", href: "mailto:contact@trysako.com" }
+    }
+  ]}
+/>
+
+<MetricCards
+  style="cards"
+  variant="transparent"
+  title="{Sales} process"
+  subtitle="Fast, transparent, no pressure"
+  items={[
+    { title: "Response Time", icon: "clock", value: "<24h", description: "For all inquiries" },
+    { title: "Fit Check", icon: "users", value: "15 min", description: "No commitment" },
+    { title: "Enterprise Proposal", icon: "target", value: "Same Week", description: "Custom requirements" }
+  ]}
+/>
+
+<FAQAccordion
+  title={{ prefix: "Contact", italic: "faq" }}
+  items={[
+    {
+      question: "What happens on a demo call?",
+      answer: "We learn about your design needs, team structure, and current pain points. We show how Sako works and answer your questions. No pressure—just an honest conversation about whether we're a fit."
+    },
+    {
+      question: "Can I start without talking to anyone?",
+      answer: "Yes! Core and Ops Base are fully self-serve at app.trysako.com. No demo required. Enterprise typically prefers a conversation for custom requirements."
+    },
+    {
+      question: "How quickly can we start?",
+      answer: "Same day for Core and Ops Base. Enterprise with custom requirements typically starts within one week of agreement."
+    },
+    {
+      question: "What's the fastest way to get a response?",
+      answer: "Request a demo above or book a call. If you email, include timeline plus examples so we don't have to ask follow-ups."
+    }
+  ]}
+/>
+
+<CTASection
+  variant="final"
+  title="Ready to {start}?"
+  subtitle="Most teams are shipping within 24 hours of signing up."
+  primaryCta={{ label: "Start Shipping", href: "https://app.trysako.com" }}
+  secondaryCta={{ label: "Book a fit check", href: "/book-a-call" }}
+  trustText="14-day money-back guarantee • Self-serve or book a fit check"
+/>

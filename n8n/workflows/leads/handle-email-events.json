@@ -1,0 +1,282 @@
+{
+  "id": "handle-email-events",
+  "name": "Handle Email Events - Brevo (Bounces/Complaints)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "brevo-events",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "webhook",
+      "name": "Brevo Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "brevo-events"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Brevo webhook payload\n// Brevo sends events for: request, delivered, opened, clicked, soft_bounce, hard_bounce, invalid, deferred, complaint, unsubscribed, blocked\n// Docs: https://developers.brevo.com/docs/transactional-webhooks\n\nconst input = $input.first().json;\nconst body = typeof input.body === 'string' ? JSON.parse(input.body) : input.body || input;\n\nconst eventType = body.event || '';\nconst email = body.email || '';\nconst timestamp = body.date || body.ts_event || new Date().toISOString();\nconst messageId = body['message-id'] || body.msg_id || '';\nconst tag = body.tag || '';\nconst campaignId = body.camp_id || body.campaign_id || '';\n\nconst emailEvent = {\n  type: eventType,\n  email: email,\n  timestamp: typeof timestamp === 'number' ? new Date(timestamp * 1000).toISOString() : timestamp,\n  message_id: messageId,\n  campaign_id: campaignId,\n  tag: tag,\n  reason: '',\n  shouldSuppress: false,\n  details: ''\n};\n\nswitch (eventType) {\n  case 'hard_bounce':\n    emailEvent.reason = 'hard_bounce';\n    emailEvent.shouldSuppress = true;\n    emailEvent.details = body.reason || 'Email address does not exist';\n    break;\n    \n  case 'soft_bounce':\n    emailEvent.reason = 'soft_bounce';\n    emailEvent.shouldSuppress = false; // Soft bounces may recover\n    emailEvent.details = body.reason || 'Temporary delivery failure';\n    break;\n    \n  case 'invalid':\n    emailEvent.reason = 'invalid';\n    emailEvent.shouldSuppress = true;\n    emailEvent.details = 'Invalid email format';\n    break;\n    \n  case 'complaint':\n  case 'spam':\n    emailEvent.reason = 'spam';\n    emailEvent.shouldSuppress = true;\n    emailEvent.details = 'Marked as spam by recipient';\n    break;\n    \n  case 'unsubscribed':\n    emailEvent.reason = 'unsubscribe';\n    emailEvent.shouldSuppress = true;\n    emailEvent.details = body.link || 'User unsubscribed';\n    break;\n    \n  case 'blocked':\n    emailEvent.reason = 'blocked';\n    emailEvent.shouldSuppress = true;\n    emailEvent.details = body.reason || 'Email blocked by Brevo';\n    break;\n    \n  default:\n    // opened, clicked, delivered, request, deferred - don't suppress\n    emailEvent.reason = 'other';\n    emailEvent.shouldSuppress = false;\n}\n\nreturn { json: emailEvent };"
+      },
+      "id": "extract-event",
+      "name": "Parse Brevo Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.shouldSuppress }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "should-suppress",
+      "name": "Should Suppress?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 100000002,
+          "cachedResultName": "suppression_list",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=100000002"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "email": "={{ $json.email }}",
+            "reason": "={{ $json.reason }}",
+            "details": "={{ $json.details }}",
+            "suppressed_at": "={{ $json.timestamp }}",
+            "campaign_id": "={{ $json.campaign_id }}",
+            "source": "brevo-webhook"
+          }
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "add-suppression",
+      "name": "Add to Suppression List",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        900,
+        200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.brevo.com/v3/contacts/{{ encodeURIComponent($json.email) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"emailBlacklisted\": true,\n  \"updateEnabled\": true\n}",
+        "options": {}
+      },
+      "id": "blacklist-brevo",
+      "name": "Blacklist in Brevo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1120,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "bAJ8LsgwGI2XHllf",
+          "name": "Brevo account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "channel": "#n8n-errors",
+        "text": "=📧 *Email Suppressed*\n\n• Email: {{ $('Parse Brevo Event').item.json.email }}\n• Reason: {{ $('Parse Brevo Event').item.json.reason }}\n• Details: {{ $('Parse Brevo Event').item.json.details }}\n• Campaign: {{ $('Parse Brevo Event').item.json.campaign_id || 'N/A' }}\n• Time: {{ $('Parse Brevo Event').item.json.timestamp }}",
+        "otherOptions": {}
+      },
+      "id": "slack-notify",
+      "name": "Notify Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        200
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log non-suppression event for tracking\nconst event = $input.first().json;\nconsole.log(`Brevo event logged (not suppressed): ${event.type} - ${event.email}`);\nreturn { json: { logged: true, ...event } };"
+      },
+      "id": "log-event",
+      "name": "Log Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'processed', event_type: $('Parse Brevo Event').item.json.type, email: $('Parse Brevo Event').item.json.email } }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "respond",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Brevo Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse Brevo Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Brevo Event": {
+      "main": [
+        [
+          {
+            "node": "Should Suppress?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Suppress?": {
+      "main": [
+        [
+          {
+            "node": "Add to Suppression List",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add to Suppression List": {
+      "main": [
+        [
+          {
+            "node": "Blacklist in Brevo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Blacklist in Brevo": {
+      "main": [
+        [
+          {
+            "node": "Notify Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Slack": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Event": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "leads"
+    },
+    {
+      "name": "email"
+    },
+    {
+      "name": "compliance"
+    }
+  ]
+}

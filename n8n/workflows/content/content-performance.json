@@ -1,0 +1,338 @@
+{
+  "id": "content-performance",
+  "name": "Content Performance Tracker",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 18 * * *"
+            }
+          ]
+        }
+      },
+      "id": "cron",
+      "name": "Daily 6pm",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 1620036434,
+          "cachedResultName": "content_backlog",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=1620036434"
+        },
+        "filters": {
+          "filter": [
+            {
+              "column": "status",
+              "value": "posted"
+            }
+          ]
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "fetch-posted",
+      "name": "Fetch Posted Content",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        460,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filter to content posted in last 48 hours\nconst items = $input.all();\nconst now = new Date();\nconst cutoff = new Date(now - 48 * 60 * 60 * 1000);\n\nconst recentItems = items.filter(item => {\n  const publishAt = new Date(item.json.publish_at || item.json.created_at);\n  return publishAt >= cutoff;\n});\n\nif (recentItems.length === 0) {\n  return { json: { no_recent_content: true } };\n}\n\nreturn recentItems;"
+      },
+      "id": "filter-recent",
+      "name": "Filter Last 48h",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.no_recent_content }}",
+              "value2": false
+            }
+          ]
+        }
+      },
+      "id": "has-content",
+      "name": "Has Recent Content?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check performance thresholds\nconst content = $('Filter Last 48h').all();\n\n// Performance thresholds\nconst thresholds = {\n  'LI': { impressions: 5000, engagements: 100 },\n  'X': { impressions: 10000, retweets: 50 },\n  'newsletter': { openRate: 0.4, clickRate: 0.1 }\n};\n\nconst results = content.map(item => {\n  const c = item.json;\n  const format = c.format;\n  const threshold = thresholds[format] || {};\n  \n  // Simulated metrics\n  const metrics = {\n    impressions: Math.floor(Math.random() * 10000),\n    engagements: Math.floor(Math.random() * 200),\n    clicks: Math.floor(Math.random() * 50)\n  };\n  \n  // Check if meets threshold\n  const meetsThreshold = \n    metrics.impressions >= (threshold.impressions || 0) ||\n    metrics.engagements >= (threshold.engagements || 0);\n  \n  return {\n    json: {\n      id: c.id,\n      pillar: c.pillar,\n      hook: c.hook,\n      format: c.format,\n      metrics,\n      meetsThreshold,\n      shouldRepurpose: meetsThreshold\n    }\n  };\n});\n\nreturn results;"
+      },
+      "id": "analyze-performance",
+      "name": "Analyze Performance",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.shouldRepurpose }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "should-repurpose",
+      "name": "Should Repurpose?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Create repurpose tasks\nconst content = $input.first().json;\n\nconst repurposeTasks = [\n  {\n    type: 'carousel',\n    description: `Carousel version of: ${content.hook}`\n  },\n  {\n    type: 'blog',\n    description: `Deep-dive blog post: ${content.hook}`\n  },\n  {\n    type: 'newsletter_section',\n    description: `Newsletter feature: ${content.hook}`\n  },\n  {\n    type: 'sales_collateral',\n    description: `Sales snippet: ${content.hook}`\n  }\n];\n\nreturn repurposeTasks.map(task => ({\n  json: {\n    original_id: content.id,\n    ...task,\n    status: 'queued',\n    created_at: new Date().toISOString()\n  }\n}));"
+      },
+      "id": "create-repurpose-tasks",
+      "name": "Create Repurpose Tasks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "requestMethod": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"#content-review\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": {\n        \"type\": \"plain_text\",\n        \"text\": \"🔥 Top Performer Alert!\",\n        \"emoji\": true\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*{{ $('Analyze Performance').item.json.hook }}*\\nHit performance threshold! Repurpose tasks created.\"\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Impressions:*\\n{{ $('Analyze Performance').item.json.metrics.impressions }}\"\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Engagements:*\\n{{ $('Analyze Performance').item.json.metrics.engagements }}\"\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "slack-alert",
+      "name": "Slack Top Performer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        2000,
+        100
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 1620036434,
+          "cachedResultName": "content_backlog",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=1620036434"
+        },
+        "filters": {
+          "filter": [
+            {
+              "column": "id",
+              "value": "={{ $json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "repurpose"
+          }
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "update-repurpose",
+      "name": "Update to Repurpose",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1780,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log metrics only (below threshold)\nconst content = $input.first().json;\nconsole.log(`Metrics logged for ${content.id}: ${JSON.stringify(content.metrics)}`);\nreturn { json: { logged: true, ...content } };"
+      },
+      "id": "log-metrics",
+      "name": "Log Metrics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Daily 6pm": {
+      "main": [
+        [
+          {
+            "node": "Fetch Posted Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Posted Content": {
+      "main": [
+        [
+          {
+            "node": "Filter Last 48h",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Last 48h": {
+      "main": [
+        [
+          {
+            "node": "Has Recent Content?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Recent Content?": {
+      "main": [
+        [
+          {
+            "node": "Analyze Performance",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Analyze Performance": {
+      "main": [
+        [
+          {
+            "node": "Should Repurpose?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Repurpose?": {
+      "main": [
+        [
+          {
+            "node": "Create Repurpose Tasks",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update to Repurpose",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Repurpose Tasks": {
+      "main": [
+        [
+          {
+            "node": "Slack Top Performer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "content"
+    },
+    {
+      "name": "analytics"
+    }
+  ]
+}

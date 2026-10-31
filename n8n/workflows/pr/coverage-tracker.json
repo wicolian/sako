@@ -1,0 +1,329 @@
+{
+  "id": "coverage-tracker",
+  "name": "Coverage Discovery + Tracker",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "coverage-add",
+        "options": {}
+      },
+      "id": "webhook-manual",
+      "name": "Manual Add",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        200
+      ],
+      "webhookId": "coverage-add"
+    },
+    {
+      "parameters": {
+        "url": "https://www.google.com/alerts/feeds/YOUR_ALERT_ID",
+        "options": {}
+      },
+      "id": "google-alerts",
+      "name": "Google Alerts RSS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        240,
+        400
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalize coverage from different sources\nconst manual = $('Manual Add').item?.json || null;\nconst alerts = $('Google Alerts RSS').item?.json || null;\n\nconst coverageItems = [];\n\n// Process manual add\nif (manual && manual.url) {\n  coverageItems.push({\n    url: manual.url,\n    outlet: manual.outlet || 'Unknown',\n    title: manual.title || '',\n    source: 'manual'\n  });\n}\n\n// Process Google Alerts (RSS feed)\nif (alerts && alerts.feed && alerts.feed.entry) {\n  const entries = Array.isArray(alerts.feed.entry) ? alerts.feed.entry : [alerts.feed.entry];\n  entries.forEach(entry => {\n    coverageItems.push({\n      url: entry.link?.href || entry.link || '',\n      outlet: new URL(entry.link?.href || entry.link || '').hostname,\n      title: entry.title || '',\n      source: 'google_alerts'\n    });\n  });\n}\n\nif (coverageItems.length === 0) {\n  return { json: { no_coverage: true } };\n}\n\nreturn coverageItems.map(c => ({ json: c }));"
+      },
+      "id": "normalize",
+      "name": "Normalize Coverage",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.no_coverage }}",
+              "value2": false
+            }
+          ]
+        }
+      },
+      "id": "has-coverage",
+      "name": "Has Coverage?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "actor_id": "web.harvester/articles-extractor",
+            "run_input": "={{ { startUrls: [{ url: $json.url }], maxItems: 1 } }}",
+            "dataset_limit": 1
+          }
+        }
+      },
+      "id": "apify-article",
+      "name": "Apify: Article Extractor",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        820,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const coverage = $('Normalize Coverage').item.json;\nconst items = $input.first().json.apify_items || [];\nconst article = items[0] || {};\n\nreturn {\n  json: {\n    ...coverage,\n    article_title: article.title || coverage.title || '',\n    article_author: article.author || '',\n    article_published_at: article.publishedAt || article.published_at || '',\n    article_excerpt: article.description || article.excerpt || '',\n    article_text: article.text || article.content || ''\n  }\n};"
+      },
+      "id": "normalize-article",
+      "name": "Normalize Article",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-5.2",
+        "messages": {
+          "values": [
+            {
+              "content": "=Classify this media coverage for Sako:\n\nURL: {{ $json.url }}\nOutlet: {{ $json.outlet }}\nTitle: {{ $json.article_title || $json.title }}\nAuthor: {{ $json.article_author }}\nPublished: {{ $json.article_published_at }}\nExcerpt: {{ $json.article_excerpt }}\nContent: {{ ($json.article_text || '').slice(0, 1200) }}\n\n## Classification Types\n1. **earned_interview** - Reporter/host actively chose to feature Sako (interview, dedicated article, podcast appearance)\n2. **syndicated** - Press release picked up and republished without editorial selection\n3. **quote** - Founder quoted in a broader story (not the main subject)\n4. **mention** - Brief mention without substance\n\n## Output (JSON only)\n{\n  \"type\": \"earned_interview|syndicated|quote|mention\",\n  \"badge_allowed\": true|false,\n  \"confidence\": 0.0-1.0,\n  \"reasoning\": \"one sentence\"\n}\n\nNote: badge_allowed should be true ONLY for earned_interview and quote types."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3,
+          "maxTokens": 200
+        }
+      },
+      "id": "classify",
+      "name": "Classify Coverage",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        900,
+        200
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "VJQjLnLDwAkI2PxY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse classification result\nconst coverage = $('Normalize Article').item.json;\nconst classificationText = $input.first().json.text;\n\n// Try to parse JSON from response\nlet classification;\ntry {\n  const jsonMatch = classificationText.match(/\\{[\\s\\S]*\\}/);\n  classification = jsonMatch ? JSON.parse(jsonMatch[0]) : {};\n} catch (e) {\n  classification = { type: 'mention', badge_allowed: false, confidence: 0.5 };\n}\n\nreturn {\n  json: {\n    url: coverage.url,\n    outlet: coverage.outlet,\n    title: coverage.article_title || coverage.title,\n    author: coverage.article_author,\n    published_at: coverage.article_published_at,\n    type: classification.type || 'mention',\n    date: new Date().toISOString(),\n    badge_allowed: classification.badge_allowed || false,\n    confidence: classification.confidence || 0.5,\n    reasoning: classification.reasoning || ''\n  }\n};"
+      },
+      "id": "format-result",
+      "name": "Format Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 100000006,
+          "cachedResultName": "coverage",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=100000006"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "save-coverage",
+      "name": "Save to Coverage Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1340,
+        200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "requestMethod": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"#pr-coverage\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": {\n        \"type\": \"plain_text\",\n        \"text\": \"{{ $json.badge_allowed ? '🏆 Earned Coverage!' : '📰 New Coverage' }}\",\n        \"emoji\": true\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*Outlet:* {{ $json.outlet }}\\n*Type:* {{ $json.type }}\\n*Badge Eligible:* {{ $json.badge_allowed ? 'Yes ✅' : 'No (syndicated)' }}\"\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"<{{ $json.url }}|View Coverage>\"\n      }\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "slack-alert",
+      "name": "Slack: Coverage Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1560,
+        200
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Add": {
+      "main": [
+        [
+          {
+            "node": "Normalize Coverage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Alerts RSS": {
+      "main": [
+        [
+          {
+            "node": "Normalize Coverage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Coverage": {
+      "main": [
+        [
+          {
+            "node": "Has Coverage?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Coverage?": {
+      "main": [
+        [
+          {
+            "node": "Apify: Article Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Apify: Article Extractor": {
+      "main": [
+        [
+          {
+            "node": "Normalize Article",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Article": {
+      "main": [
+        [
+          {
+            "node": "Classify Coverage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Coverage": {
+      "main": [
+        [
+          {
+            "node": "Format Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Result": {
+      "main": [
+        [
+          {
+            "node": "Save to Coverage Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Coverage Sheet": {
+      "main": [
+        [
+          {
+            "node": "Slack: Coverage Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "pr"
+    },
+    {
+      "name": "coverage"
+    }
+  ]
+}

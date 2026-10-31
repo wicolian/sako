@@ -1,0 +1,150 @@
+---
+title: "Security"
+slug: "security"
+template: "standard"
+published: true
+priority: 3
+seo:
+  metaTitle: "Sako Security | Practical Security, Clear Answers"
+  metaDescription: "Sako's security: reputable cloud services, strict access controls, encrypted data. Get clear answers on request."
+  keywords: ["Sako security", "Sako design security", "Sako SaaS security", "Sako secure design subscription", "Sako security questionnaire", "Sako DPA NDA", "enterprise design security", "Sako compliance", "design ops security"]
+  ogImage: "auto"
+jsonLd:
+  type: "WebPage"
+---
+
+<Hero
+  variant="centered"
+  badge="Security"
+  title="Security that won’t block procurement. And won’t bullshit you."
+  subtitle="We’re not SOC 2 yet. We still run tight: encrypted data flows, strict access, and clear documentation when your team asks."
+  primaryCta={{ label: "Request security docs", href: "mailto:security@trysako.com" }}
+  secondaryCta={{ label: "Book a fit check", href: "/book-a-call" }}
+/>
+
+<MetricCards
+  style="cards"
+  variant="transparent"
+  title="Security snapshot"
+  subtitle="What’s true today"
+  items={[
+    { title: "Hosting", icon: "Cloud", value: "Railway (today)", description: "Moving to AWS as we scale" },
+    { title: "Database", icon: "Database", value: "Neon", description: "Managed Postgres, backups supported" },
+    { title: "Files", icon: "HardDrive", value: "Cloudflare R2", description: "Object storage for uploads" },
+    { title: "Auth", icon: "Lock", value: "Clerk", description: "Email OTP sign-in" }
+  ]}
+/>
+
+<FeatureGrid
+  columns={2}
+  variant="cards"
+  title="How we protect your data"
+  items={[
+    {
+      icon: "Shield",
+      title: "Least-access by default",
+      description: "We keep access tight. Internal access is limited to what’s needed to support your workspace. No “everyone has admin” chaos."
+    },
+    {
+      icon: "KeyRound",
+      title: "Authentication that’s hard to mess up",
+      description: "Clerk handles sign-in. Email OTP is required. If your team needs stricter controls later, we can align on what you want (SSO, enforced MFA, allowlists)."
+    },
+    {
+      icon: "FileText",
+      title: "Your data stays your data",
+      description: "You can request an export of your workspace data. If you cancel, you can ask us to delete it. No hostage situations."
+    },
+    {
+      icon: "Activity",
+      title: "Operational visibility",
+      description: "We run a public status page for availability and incidents. If something breaks, we post it and we fix it."
+    },
+    {
+      icon: "Shield",
+      title: "Internal monitoring",
+      description: "We conduct internal security scanning and monitoring. We don't have formal third-party security audits or penetration tests yet, but we follow industry-standard practices."
+    }
+  ]}
+/>
+
+<FeatureGrid
+  columns={1}
+  variant="simple"
+  title="Data flow"
+  items={[
+    {
+      icon: "ArrowRightLeft",
+      title: "Where things go",
+      description: "App data lives in Neon. Uploaded files live in Cloudflare R2. Auth is managed by Clerk. Payments are handled by Stripe (we don’t store raw card details)."
+    }
+  ]}
+/>
+
+<FeatureGrid
+  columns={3}
+  variant="cards"
+  title="What we can provide"
+  items={[
+    {
+      icon: "ClipboardCheck",
+      title: "Subprocessor list",
+      description: "We’ll share our current subprocessors and what they’re used for."
+    },
+    {
+      icon: "FileSignature",
+      title: "NDA on request",
+      description: "If your team requires an NDA before sharing brand assets, we’ll sign it."
+    },
+    {
+      icon: "HelpCircle",
+      title: "Questionnaire support",
+      description: "If you have a lightweight security questionnaire, send it. We’ll answer with what’s true today."
+    }
+  ]}
+/>
+
+<PainPoints
+  title="What we do not claim"
+  variant="negative"
+  items={[
+    { text: "We do not claim SOC 2 certification today.", type: "x" },
+    { text: "We do not claim a third-party pen test report today.", type: "x" },
+    { text: "We do not claim HIPAA, ISO 27001, or similar certifications for Sako today.", type: "x" }
+  ]}
+/>
+
+<FAQAccordion
+  title={{ prefix: "Security", italic: "faq" }}
+  items={[
+    {
+      question: "Are you SOC 2 compliant?",
+      answer: "Not today. We’re early. We use reputable cloud providers and keep strict access controls, but we won’t pretend we have a SOC 2 report when we don’t."
+    },
+    {
+      question: "Do you sign NDAs?",
+      answer: "Yes, on request. If your team needs it before sharing assets, send it to security@trysako.com."
+    },
+    {
+      question: "Can we export our data?",
+      answer: "Yes, on request. If you need a specific format, tell us what your team expects."
+    },
+    {
+      question: "Can you delete our data after cancellation?",
+      answer: "Yes, on request. If you have specific retention requirements, we’ll align on it."
+    },
+    {
+      question: "Where do you post incidents?",
+      answer: "status.trysako.com. If something breaks, you’ll see it there."
+    }
+  ]}
+/>
+
+<CTASection
+  variant="standard"
+  title="Need to get through security review?"
+  subtitle="Email us what your team needs. We’ll respond with honest, specific answers."
+  primaryCta={{ label: "Request security docs", href: "mailto:security@trysako.com" }}
+  secondaryCta={{ label: "Book a fit check", href: "/book-a-call" }}
+  trustText="No fake badges • Clear answers • Subprocessors + NDA on request"
+/>

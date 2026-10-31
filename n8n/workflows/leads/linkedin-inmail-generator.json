@@ -1,0 +1,426 @@
+{
+  "id": "linkedin-inmail-generator",
+  "name": "LinkedIn InMail Generator (Sales)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "execute-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 492604584,
+          "cachedResultName": "qualified_leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=492604584"
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "read-qualified",
+      "name": "Read Qualified Leads",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        460,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 100000004,
+          "cachedResultName": "inmail_outreach",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=100000004"
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "read-inmail",
+      "name": "Read InMail Outreach",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        460,
+        520
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "passThrough"
+      },
+      "id": "merge-inputs",
+      "name": "Merge Inputs",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const leads = $items('Read Qualified Leads') || [];\nconst existing = $items('Read InMail Outreach') || [];\n\nconst existingEmails = new Set(\n  existing.map((i) => String(i.json.email || '').toLowerCase()).filter(Boolean)\n);\n\nconst eligible = leads.filter((l) => {\n  const email = String(l.json.email || '').toLowerCase();\n  const status = String(l.json.status || '').toLowerCase();\n  const linkedinEnriched = String(l.json.linkedin_enriched || '').toLowerCase() === 'true';\n  return email && status === 'qualified' && linkedinEnriched && !existingEmails.has(email);\n});\n\nreturn eligible.length > 0 ? eligible : [{ json: { no_targets: true } }];"
+      },
+      "id": "filter-eligible",
+      "name": "Filter Eligible Leads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.no_targets }}",
+              "value2": false
+            }
+          ]
+        }
+      },
+      "id": "has-leads",
+      "name": "Has Leads?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "split-batches",
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-5.2",
+        "options": {
+          "temperature": 0.4,
+          "maxTokens": 250
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are writing a LinkedIn InMail for Sako, a design subscription for B2B SaaS. All plans are currently call-led sales.\n\n## Sako Packages\n- Core: $2,500/mo - 1 active task, 15 tasks/mo, 2 seats\n- Ops: $4,500/mo - 2 active tasks, 30 tasks/mo, 4 seats\n- Enterprise: starts at $8,500/mo - 3+ tasks, 45+ tasks/mo, 5+ seats\nAll include: Design + Motion, 48h turnaround, unlimited requests/revisions\n\n## Prospect\n- Name: {{ $json.first_name }} {{ $json.last_name }}\n- Title: {{ $json.title }}\n- Company: {{ $json.company }}\n- Recent Post: {{ $json.recent_linkedin_post }}\n- Company News: {{ $json.company_recent_news }}\n- Pain Points: {{ $json.pain_points }}\n- Tech Stack: {{ $json.apollo_technologies }}\n\n## Rules\n1. Subject: 6-10 words, reference something specific to them\n2. Body: Under 300 characters, one pain point, soft CTA for 15-min call\n3. Tone: Founder-to-founder, direct, zero fluff\n4. Use their post/company news if available\n\nReturn ONLY valid JSON:\n{\n  \"subject\": \"...\",\n  \"body\": \"...\",\n  \"personalization_hook\": \"...\"\n}"
+            }
+          ]
+        }
+      },
+      "id": "generate-inmail",
+      "name": "AI: Generate InMail",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "VJQjLnLDwAkI2PxY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const lead = $('Split In Batches').item.json;\nconst responseText = $json.message?.content || $json.text || '';\n\nlet parsed = {};\ntry {\n  const match = responseText.match(/\\{[\\s\\S]*\\}/);\n  if (match) parsed = JSON.parse(match[0]);\n} catch (e) {\n  parsed = {};\n}\n\nreturn {\n  json: {\n    email: lead.email,\n    linkedin_url: lead.linkedin_url,\n    first_name: lead.first_name,\n    last_name: lead.last_name,\n    title: lead.title,\n    company: lead.company,\n    subject: parsed.subject || '',\n    body: parsed.body || '',\n    personalization_hook: parsed.personalization_hook || '',\n    recommended_package: lead.recommended_package || '',\n    status: 'draft',\n    generated_at: new Date().toISOString()\n  }\n};"
+      },
+      "id": "parse-response",
+      "name": "Parse InMail Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 100000004,
+          "cachedResultName": "inmail_outreach",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=100000004"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "email": "={{ $json.email }}",
+            "linkedin_url": "={{ $json.linkedin_url }}",
+            "first_name": "={{ $json.first_name }}",
+            "last_name": "={{ $json.last_name }}",
+            "title": "={{ $json.title }}",
+            "company": "={{ $json.company }}",
+            "subject": "={{ $json.subject }}",
+            "body": "={{ $json.body }}",
+            "personalization_hook": "={{ $json.personalization_hook }}",
+            "recommended_package": "={{ $json.recommended_package }}",
+            "status": "draft",
+            "generated_at": "={{ $json.generated_at }}"
+          }
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "append-inmail",
+      "name": "Append to inmail_outreach",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        2000,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "seconds"
+      },
+      "id": "wait-rate-limit",
+      "name": "Wait (Rate Limit)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        2220,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Qualified Leads",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read InMail Outreach",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Qualified Leads",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read InMail Outreach",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Qualified Leads": {
+      "main": [
+        [
+          {
+            "node": "Merge Inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read InMail Outreach": {
+      "main": [
+        [
+          {
+            "node": "Merge Inputs",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Inputs": {
+      "main": [
+        [
+          {
+            "node": "Filter Eligible Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Eligible Leads": {
+      "main": [
+        [
+          {
+            "node": "Has Leads?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Leads?": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [
+          {
+            "node": "AI: Generate InMail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Generate InMail": {
+      "main": [
+        [
+          {
+            "node": "Parse InMail Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse InMail Response": {
+      "main": [
+        [
+          {
+            "node": "Append to inmail_outreach",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to inmail_outreach": {
+      "main": [
+        [
+          {
+            "node": "Wait (Rate Limit)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait (Rate Limit)": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "leads"
+    },
+    {
+      "name": "linkedin"
+    },
+    {
+      "name": "outreach"
+    }
+  ]
+}

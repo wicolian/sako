@@ -1,0 +1,530 @@
+{
+  "id": "company-enrichment",
+  "name": "Company Enrichment from Website + Apollo",
+  "meta": {
+    "instanceId": "f0a68da631efd4ed052a324b63ff90f7a844426af0398a68338f44245d1dd9e5"
+  },
+  "nodes": [
+    {
+      "id": "04750e9b-6ce3-401b-89e7-f1f17f3a4a28",
+      "name": "When clicking \"Execute Workflow\"",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -180,
+        300
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "parameters": {},
+      "id": "execute-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        -180,
+        120
+      ]
+    },
+    {
+      "id": "2754c6e1-9cf6-47d4-ad97-0797ec9155df",
+      "name": "Read Qualified Leads",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        40,
+        300
+      ],
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 492604584,
+          "cachedResultName": "qualified_leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=492604584"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/",
+          "cachedResultName": "Sako Marketing Automations"
+        },
+        "filters": {
+          "filter": [
+            {
+              "column": "enriched",
+              "value": "false"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      },
+      "typeVersion": 4
+    },
+    {
+      "id": "c2b93428-0dcc-4c02-bb81-496c12442284",
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        260,
+        300
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "apollo-enrich-company",
+      "name": "Apollo: Enrich by Domain",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        480,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/v1/organizations/enrich",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"domain\": \"{{ $json.website || $json.company_domain || '' }}\"\n}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "XsUtKQ6O9aPU0HyZ",
+          "name": "Apollo"
+        }
+      },
+      "typeVersion": 4,
+      "continueOnFail": true
+    },
+    {
+      "id": "7a8bb997-5a2d-4ee0-a1ca-bebe9fe32bc2",
+      "name": "Scrape Website",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        480,
+        400
+      ],
+      "parameters": {
+        "url": "=https://{{ $json.website || $json.company_domain || '' }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": true
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "typeVersion": 4,
+      "continueOnFail": true
+    },
+    {
+      "id": "6409f0c4-bf93-4a1d-a74c-e294fb39895f",
+      "name": "HTML Extract",
+      "type": "n8n-nodes-base.htmlExtract",
+      "position": [
+        680,
+        400
+      ],
+      "parameters": {
+        "options": {
+          "trimValues": true
+        },
+        "extractionValues": {
+          "values": [
+            {
+              "key": "body",
+              "cssSelector": "html"
+            },
+            {
+              "key": "title",
+              "cssSelector": "title"
+            },
+            {
+              "key": "meta_description",
+              "cssSelector": "meta[name='description']",
+              "attribute": "content"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "continueOnFail": true
+    },
+    {
+      "id": "669f888e-1416-4291-a854-07ffbbbfcab1",
+      "name": "Clean Website Content",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        880,
+        400
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const body = String($input.item.json.body || '').toLowerCase();\nconst title = String($input.item.json.title || '');\nconst metaDesc = String($input.item.json.meta_description || '');\n\n// Clean and truncate content\nconst cleanContent = body\n  .replace(/<[^>]*>/g, ' ')\n  .replace(/\\s+/g, ' ')\n  .trim()\n  .slice(0, 8000);\n\nreturn {\n  json: {\n    website_title: title,\n    website_description: metaDesc,\n    website_content: cleanContent\n  }\n};"
+      },
+      "typeVersion": 2,
+      "continueOnFail": true
+    },
+    {
+      "id": "merge-apollo-website",
+      "name": "Merge Apollo + Website",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        1100,
+        300
+      ],
+      "parameters": {
+        "mode": "combine",
+        "options": {},
+        "combinationMode": "mergeByPosition"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "normalize-apollo-data",
+      "name": "Normalize Apollo Data",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1300,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const lead = $('Split In Batches').item.json;\nconst apollo = $('Apollo: Enrich by Domain').item.json.organization || {};\nconst website = $('Clean Website Content').item.json || {};\n\n// Extract Apollo enrichment data\nconst enriched = {\n  // Original lead data\n  email: lead.email,\n  first_name: lead.first_name,\n  last_name: lead.last_name,\n  title: lead.title,\n  company: lead.company,\n  \n  // Apollo company data\n  apollo_company_name: apollo.name || '',\n  apollo_industry: apollo.industry || '',\n  apollo_employee_count: apollo.estimated_num_employees || '',\n  apollo_founded_year: apollo.founded_year || '',\n  apollo_linkedin_url: apollo.linkedin_url || '',\n  apollo_twitter_url: apollo.twitter_url || '',\n  apollo_facebook_url: apollo.facebook_url || '',\n  apollo_phone: apollo.phone || '',\n  apollo_short_description: apollo.short_description || '',\n  apollo_seo_description: apollo.seo_description || '',\n  apollo_annual_revenue: apollo.annual_revenue_printed || '',\n  apollo_technologies: (apollo.technologies || []).slice(0, 10).join(', '),\n  apollo_keywords: (apollo.keywords || []).slice(0, 10).join(', '),\n  apollo_city: apollo.city || '',\n  apollo_state: apollo.state || '',\n  apollo_country: apollo.country || '',\n  \n  // Website data\n  website_title: website.website_title || '',\n  website_description: website.website_description || '',\n  website_content: website.website_content || ''\n};\n\nreturn { json: enriched };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f45fcc6a-9ccd-43c9-9eaf-1797768e1e62",
+      "name": "AI: Analyze Company",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        1520,
+        300
+      ],
+      "parameters": {
+        "model": "gpt-5.2",
+        "messages": {
+          "values": [
+            {
+              "content": "=Analyze this company for Sako (a design subscription service for B2B SaaS):\n\n## Company Data (from Apollo)\n- Name: {{ $json.apollo_company_name || $json.company }}\n- Industry: {{ $json.apollo_industry }}\n- Employees: {{ $json.apollo_employee_count }}\n- Location: {{ $json.apollo_city }}, {{ $json.apollo_country }}\n- Technologies: {{ $json.apollo_technologies }}\n- Description: {{ $json.apollo_short_description || $json.apollo_seo_description }}\n\n## Website Content\n- Title: {{ $json.website_title }}\n- Meta Description: {{ $json.website_description }}\n- Content (truncated): {{ $json.website_content.slice(0, 3000) }}\n\n## Contact\n- Name: {{ $json.first_name }} {{ $json.last_name }}\n- Title: {{ $json.title }}\n- Company: {{ $json.company }}\n\n## Instructions\nReturn a JSON object with:\n1. value_proposition: Company's value prop in 25 words or less (format: \"[Company] helps [audience] [achieve outcome]\")\n2. industry: One of [Software, Consumer Goods, Finance, Health Care, Education, Manufacturing, Media, Retail, Other]\n3. target_audience: One of [marketing teams, sales teams, product teams, engineering teams, founders, consumers, HR teams, C-levels]\n4. market: B2B or B2C\n5. design_maturity: low/medium/high based on website quality\n6. design_subscription_fit: yes/no with brief reason\n7. pain_points: Array of 3 likely design-related pain points\n8. recommended_package: Core ($2.5k), Ops ($4.5k), or Enterprise ($8.5k+) and why\n\nReturn ONLY valid JSON, no markdown."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0,
+          "maxTokens": 500
+        }
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "VJQjLnLDwAkI2PxY",
+          "name": "OpenAi account"
+        }
+      },
+      "typeVersion": 1,
+      "continueOnFail": true
+    },
+    {
+      "id": "parse-ai-response",
+      "name": "Parse AI Response",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1740,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const enriched = $('Normalize Apollo Data').item.json;\nconst aiText = $json.text || $json.message?.content || '{}';\n\nlet ai = {};\ntry {\n  // Try to parse JSON from AI response\n  const jsonMatch = aiText.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    ai = JSON.parse(jsonMatch[0]);\n  }\n} catch (e) {\n  console.log('Failed to parse AI response:', e.message);\n}\n\nreturn {\n  json: {\n    ...enriched,\n    \n    // AI analysis results\n    value_proposition: ai.value_proposition || '',\n    industry: ai.industry || enriched.apollo_industry || '',\n    target_audience: ai.target_audience || '',\n    market: ai.market || 'B2B',\n    design_maturity: ai.design_maturity || '',\n    design_subscription_fit: ai.design_subscription_fit || '',\n    pain_points: Array.isArray(ai.pain_points) ? ai.pain_points.join('; ') : '',\n    recommended_package: ai.recommended_package || '',\n    \n    // Metadata\n    enriched: 'true',\n    enriched_at: new Date().toISOString()\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "update-qualified-leads",
+      "name": "Update Qualified Leads",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1960,
+        300
+      ],
+      "parameters": {
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 492604584,
+          "cachedResultName": "qualified_leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=492604584"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/",
+          "cachedResultName": "Sako Marketing Automations"
+        },
+        "columnToMatchOn": "email",
+        "valueToMatchOn": "={{ $json.email }}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "value_proposition": "={{ $json.value_proposition }}",
+            "industry": "={{ $json.industry }}",
+            "target_audience": "={{ $json.target_audience }}",
+            "market": "={{ $json.market }}",
+            "design_maturity": "={{ $json.design_maturity }}",
+            "design_subscription_fit": "={{ $json.design_subscription_fit }}",
+            "pain_points": "={{ $json.pain_points }}",
+            "recommended_package": "={{ $json.recommended_package }}",
+            "apollo_employee_count": "={{ $json.apollo_employee_count }}",
+            "apollo_linkedin_url": "={{ $json.apollo_linkedin_url }}",
+            "apollo_technologies": "={{ $json.apollo_technologies }}",
+            "enriched": "={{ $json.enriched }}",
+            "enriched_at": "={{ $json.enriched_at }}"
+          }
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      },
+      "typeVersion": 4
+    },
+    {
+      "id": "wait-rate-limit",
+      "name": "Wait (Rate Limit)",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        2180,
+        300
+      ],
+      "webhookId": "d44bc024-1c21-44e0-b2b4-5cff6fb9f402",
+      "parameters": {
+        "amount": 2,
+        "unit": "seconds"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "slack-summary",
+      "name": "Post Summary to Slack",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        2400,
+        100
+      ],
+      "parameters": {
+        "channel": "#sako-leads",
+        "text": "=🔍 *Company Enrichment Complete*\n\n• Processed: {{ $('Split In Batches').item.json.company }}\n• Industry: {{ $json.industry }}\n• Design Fit: {{ $json.design_subscription_fit }}\n• Package: {{ $json.recommended_package }}\n• Pain Points: {{ $json.pain_points }}",
+        "otherOptions": {}
+      },
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      },
+      "typeVersion": 2,
+      "continueOnFail": true
+    }
+  ],
+  "connections": {
+    "When clicking \"Execute Workflow\"": {
+      "main": [
+        [
+          {
+            "node": "Read Qualified Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Qualified Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Qualified Leads": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [
+          {
+            "node": "Apollo: Enrich by Domain",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Scrape Website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo: Enrich by Domain": {
+      "main": [
+        [
+          {
+            "node": "Merge Apollo + Website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape Website": {
+      "main": [
+        [
+          {
+            "node": "HTML Extract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML Extract": {
+      "main": [
+        [
+          {
+            "node": "Clean Website Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Website Content": {
+      "main": [
+        [
+          {
+            "node": "Merge Apollo + Website",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Apollo + Website": {
+      "main": [
+        [
+          {
+            "node": "Normalize Apollo Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Apollo Data": {
+      "main": [
+        [
+          {
+            "node": "AI: Analyze Company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Analyze Company": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Response": {
+      "main": [
+        [
+          {
+            "node": "Update Qualified Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Qualified Leads": {
+      "main": [
+        [
+          {
+            "node": "Wait (Rate Limit)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Post Summary to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait (Rate Limit)": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "leads"
+    },
+    {
+      "name": "enrichment"
+    }
+  ]
+}

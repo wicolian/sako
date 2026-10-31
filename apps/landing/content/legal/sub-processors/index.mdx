@@ -1,0 +1,329 @@
+---
+title: "Sub-Processors"
+slug: "legal/sub-processors"
+template: "legal"
+published: true
+priority: 2
+seo:
+  metaTitle: "Sub-Processors List | Sako Data Processing Vendors"
+  metaDescription: "Complete list of third-party sub-processors Sako uses to deliver design ops services. GDPR compliant with DPAs."
+  keywords: ["sub-processors", "third party", "data processing", "vendors", "GDPR"]
+  ogImage: "auto"
+jsonLd:
+  type: "WebPage"
+---
+
+<LegalContent title="Sub-Processors">
+
+**Last Updated:** December 24, 2025
+
+[Creative Ops, Inc.](https://www.creativeops.in/) ("Company," "Sako," "we," "us," or "our") uses carefully selected third-party sub-processors to deliver our services. This page lists all sub-processors that may process customer data, including personal data.
+
+All sub-processors are bound by **Data Processing Agreements (DPAs)** and maintain appropriate security certifications. For EU/UK customers, we implement **Standard Contractual Clauses (SCCs)** for international transfers.
+
+## 1. Infrastructure & Hosting
+
+These sub-processors provide core infrastructure for the Sako platform.
+
+| Sub-Processor | Purpose | Data Processed | Location | Certifications |
+|---------------|---------|----------------|----------|----------------|
+| **Railway Inc.** | Website and application hosting, CDN, edge functions | Account data, usage data, project files | United States | Built on AWS infrastructure, GDPR compliant |
+| **Cloudflare, Inc.** | Content delivery network, image optimization, R2 object storage | Static assets, cached content, user uploads | United States (global CDN) | SOC 2 Type II, ISO 27001, GDPR compliant |
+| **Neon Database** | Serverless PostgreSQL database hosting | Account data, project metadata, activity logs | United States | SOC 2 Type II, GDPR compliant |
+
+**Data flow:** Customer uploads → Railway (processing) → Cloudflare R2 (storage) → Neon (metadata)
+
+**Note:** Railway is built on AWS infrastructure but we do not have a direct contract with AWS. Not all providers listed have SOC 2. We evaluate security practices before engaging any processor.
+
+## 2. Authentication & Identity
+
+These sub-processors manage user authentication and access control.
+
+| Sub-Processor | Purpose | Data Processed | Location | Certifications |
+|---------------|---------|----------------|----------|----------------|
+| **Clerk, Inc.** | User authentication, SSO, session management | Email, name, password hashes, authentication tokens | United States | SOC 2 Type II, GDPR compliant |
+
+**Data flow:** User login → Clerk (authentication) → Sako (session creation)
+
+## 3. Payments & Billing
+
+These sub-processors handle payment processing and financial transactions.
+
+| Sub-Processor | Purpose | Data Processed | Location | Certifications |
+|---------------|---------|----------------|----------|----------------|
+| **Stripe, Inc.** | Payment processing, invoicing, subscription management, tax calculation | Payment methods, billing address, transaction history, invoices | United States | PCI DSS Level 1, SOC 2 Type II, GDPR compliant |
+
+**Note:** Sako does **not store** full credit card numbers. Stripe handles all payment card data.
+
+## 4. Communication
+
+These sub-processors facilitate communication between you and our team.
+
+| Sub-Processor | Purpose | Data Processed | Location | Certifications |
+|---------------|---------|----------------|----------|----------------|
+| **Slack Technologies, LLC** | Workspace integration, notifications add-on only, real-time messaging | Messages, file uploads, user profiles, workspace metadata | United States | SOC 2 Type II, ISO 27001, GDPR compliant |
+| **Resend, Inc.** | Transactional email delivery (notifications, receipts, status updates) | Email address, name, email content | United States | SOC 2 Type II, GDPR compliant |
+| **Loom, Inc.** | Async video messaging for feedback and communication | Video recordings, email (if shared) | United States | SOC 2 Type II, GDPR compliant |
+
+**Data flow:** You send Slack message → Slack (delivery) → Sako (processing) → Response via Slack
+
+## 5. AI & Content Generation
+
+These sub-processors power Sako Composer and AI-assisted design features.
+
+| Sub-Processor | Purpose | Data Processed | Location | Certifications |
+|---------------|---------|----------------|----------|----------------|
+| **OpenAI, L.L.C.** | AI text generation, design brief analysis | Design briefs, text prompts, brand descriptions | United States | SOC 2 Type II, GDPR compliant |
+| **Anthropic PBC** | AI text generation, design analysis | Design briefs, text prompts, feedback | United States | SOC 2 Type II, GDPR compliant |
+| **Google LLC (Vertex AI)** | AI image generation, vision models | Brand assets, design references, image prompts | United States | ISO 27001, SOC 2, GDPR compliant |
+| **Replicate, Inc.** | AI model inference (image generation, video) | Image prompts, style references | United States | SOC 2 Type II, GDPR compliant |
+
+**Important:**
+- AI providers process data **only to generate your outputs**
+- Your data is **not used to train** public AI models
+- Covered by **zero-retention agreements** where available
+- All AI processing adheres to our [Privacy Policy](/legal/privacy)
+
+## 6. Analytics & Monitoring
+
+These sub-processors help us improve the service and monitor performance.
+
+| Sub-Processor | Purpose | Data Processed | Location | Certifications |
+|---------------|---------|----------------|----------|----------------|
+| **PostHog Inc.** | Privacy-focused product analytics, feature usage tracking | Usage data, anonymized user IDs, page views, feature interactions | United States / EU (self-hosted option) | GDPR compliant, SOC 2 Type II |
+| **Sentry (Functional Software, Inc.)** | Error monitoring, performance tracking | Error logs, stack traces, user actions leading to errors | United States | SOC 2 Type II, ISO 27001, GDPR compliant |
+| **Railway Web Analytics** | Website performance monitoring | Page views, load times, anonymized visitor data | United States | GDPR compliant, no cookies |
+
+**Privacy note:** Analytics data is **aggregated and anonymized** where possible. No personally identifiable information (PII) is shared for analytics purposes unless necessary for debugging (e.g., error reports).
+
+## 7. Design & Collaboration Tools
+
+These sub-processors are used by our team to create and deliver your assets.
+
+| Sub-Processor | Purpose | Data Processed | Location | Certifications |
+|---------------|---------|----------------|----------|----------------|
+| **Figma, Inc.** | Design file creation, prototyping, collaboration | Design files, brand assets, project names | United States | SOC 2 Type II, GDPR compliant |
+| **Adobe Inc.** | After Effects, Photoshop, Illustrator (Creative Cloud) | Design files, motion graphics projects, images | United States | ISO 27001, SOC 2, GDPR compliant |
+| **Frame.io (Adobe)** | Video review and feedback | Video files, review comments, timestamps | United States | SOC 2 Type II, GDPR compliant |
+
+**Data flow:** Brand assets → Figma/Adobe (design creation) → Delivered to you via Sako OS
+
+## 8. Internal Operations
+
+These sub-processors support our internal business operations.
+
+| Sub-Processor | Purpose | Data Processed | Location | Certifications |
+|---------------|---------|----------------|----------|----------------|
+| **Google LLC (Workspace)** | Email, docs, sheets (internal operations) | Support tickets, internal notes, customer correspondence | United States | ISO 27001, SOC 2 Type II, GDPR compliant |
+| **Notion Labs, Inc.** | Internal project management, knowledge base | Project metadata, internal documentation | United States | SOC 2 Type II, GDPR compliant |
+| **Linear (Linear Orbit, Inc.)** | Bug tracking, issue management | Error reports, feature requests, internal tickets | United States | SOC 2 Type II, GDPR compliant |
+
+**Note:** Customer data in internal tools is **access-controlled** and limited to employees directly supporting your account.
+
+## 9. Service Delivery (Indian Subsidiary)
+
+| Entity | Purpose | Data Processed | Location | Certifications |
+|--------|---------|----------------|----------|----------------|
+| **Sako Studios Private Limited** | Design and motion production, customer support | All customer data types (as necessary for service delivery) | India (Chennai, Tamil Nadu) | Internal DPA, SCCs, Internal security standards |
+
+**Relationship:** Sako Studios Private Limited is our **wholly-owned subsidiary** and operates under the same security and privacy standards as Creative Ops, Inc.
+
+**Data protection:** Transfers to India are protected by **Standard Contractual Clauses** and internal **Data Processing Agreement**.
+
+## 10. Sub-Processor Obligations
+
+All sub-processors must:
+
+### 10.1 Contractual Requirements
+- Sign **Data Processing Agreements (DPAs)** or equivalent
+- Implement **Standard Contractual Clauses (SCCs)** for international transfers (EU/UK customers)
+- Process data **only on our instructions**
+- **Not use customer data** for their own purposes (except as required to provide services)
+
+### 10.2 Security Requirements
+- Maintain **appropriate technical and organizational measures** (TOMs)
+- Hold relevant **security certifications** where available (SOC 2, ISO 27001, etc.)
+- Implement **encryption** in transit and at rest
+- Follow **industry-standard security practices**
+- Provide **breach notification** within 24 hours of discovery
+
+**Note:** Not all sub-processors have formal certifications like SOC 2. We evaluate their security practices and infrastructure before engagement.
+
+### 10.3 Data Subject Rights
+- Assist with **data subject access requests** (DSARs)
+- Support **deletion, correction, and portability** requests
+- Cooperate with **supervisory authority inquiries**
+
+### 10.4 Termination
+- **Delete or return** all customer data upon contract termination
+- Provide **certification of deletion** upon request
+
+## 11. Our Due Diligence Process
+
+Before engaging any sub-processor, we:
+
+### 11.1 Security Assessment
+- Review **security certifications** (SOC 2, ISO 27001, PCI DSS, etc.)
+- Assess **data handling practices** and infrastructure
+- Verify **encryption standards** (TLS 1.3, AES-256, etc.)
+- Evaluate **incident response procedures**
+
+### 11.2 Legal Review
+- Review **Data Processing Agreements (DPAs)**
+- Ensure **GDPR/CCPA compliance**
+- Verify **Standard Contractual Clauses (SCCs)** for international transfers
+- Check **insurance coverage** (cyber liability, E&O)
+
+### 11.3 Ongoing Monitoring
+- Annual **re-certification review**
+- Quarterly **security posture checks**
+- Monitor for **data breaches or incidents**
+- Track **compliance with SLAs**
+
+## 12. Changes to Sub-Processors
+
+### 12.1 Adding or Replacing Sub-Processors
+We may add or replace sub-processors as we improve our services. Changes are made only after:
+- Completing due diligence (Section 11)
+- Signing Data Processing Agreements
+- Implementing appropriate safeguards
+
+### 12.2 Notification Timeline
+
+**All Customers:**
+- **30 days advance notice** for new sub-processors that process personal data
+- Notice via email to your account email
+- Update to this page (check "Last Updated" date)
+
+**Enterprise Customers with DPAs:**
+- **Email notification** 30 days before engagement
+- Right to **object** for legitimate data protection reasons
+- Alternative solutions or **contract termination** if objection cannot be accommodated
+
+### 12.3 How to Object
+If you're an Enterprise customer and object to a new sub-processor:
+
+**Email:** [legal@trysako.com](mailto:legal@trysako.com)  
+**Subject:** Sub-Processor Objection  
+**Include:**
+- Sub-processor name
+- Specific data protection concerns
+- Proposed alternatives (if any)
+
+**Response:** Within 10 business days, we'll either:
+- Provide additional safeguards to address concerns
+- Not engage the sub-processor
+- Allow contract termination without penalty (prorated refund)
+
+### 12.4 Subscribe to Notifications
+Enterprise customers can subscribe to **automated sub-processor change notifications**:
+
+**Email:** [legal@trysako.com](mailto:legal@trysako.com)  
+**Subject:** Subscribe to Sub-Processor Notifications
+
+## 13. Data Processing Agreements (DPAs)
+
+### 13.1 Standard DPA
+For all customers, these Terms of Service, [Privacy Policy](/legal/privacy), and [GDPR Compliance](/legal/gdpr) pages **collectively function as a Data Processing Agreement**.
+
+### 13.2 Enterprise DPA
+Enterprise customers can request a **standalone, signed DPA** with:
+- Custom liability terms
+- Extended audit rights
+- Dedicated support for data subject requests
+- Priority breach notification
+- Custom sub-processor approval workflows
+
+**Request a DPA:** [legal@trysako.com](mailto:legal@trysako.com)
+
+### 13.3 Standard Contractual Clauses (SCCs)
+For EU/UK customers, we implement **EU Commission-approved Standard Contractual Clauses (2021 version)** for all international data transfers.
+
+**Request SCCs:** [legal@trysako.com](mailto:legal@trysako.com)
+
+## 14. Security & Compliance Verification
+
+### 14.1 Available Documentation
+We can provide (under NDA for Enterprise customers):
+- **Sub-processor security certifications** (where available)
+- **Data Processing Agreements** (redacted versions)
+- **Security questionnaire responses**
+- **Internal security documentation**
+
+### 14.2 Audit Rights
+Enterprise customers with signed DPAs may:
+- Conduct **annual security audits** (at your expense, with reasonable notice)
+- Request **sub-processor audit reports**
+- Review our **internal security policies**
+
+**Schedule an audit:** [security@trysako.com](mailto:security@trysako.com)
+
+## 15. Data Residency
+
+### 15.1 Primary Data Locations
+
+| Data Type | Primary Location | Backup Location |
+|-----------|------------------|-----------------|
+| **Account data** | United States (Neon, us-east-1) | United States (automated backups) |
+| **Project files** | United States (Cloudflare R2) | United States (Cloudflare R2, multi-region) |
+| **Databases** | United States (Neon, us-east-1) | United States (automated backups) |
+| **Design files** | United States (Figma servers) | N/A (Figma-managed) |
+
+### 15.2 Data Processing Locations
+Data may be **temporarily processed** in other locations by sub-processors (e.g., AI inference), but **permanent storage** is in the United States.
+
+### 15.3 Indian Operations
+Sako Studios Private Limited (India) accesses customer data **only as necessary** for service delivery (design production, support). Data is **not permanently stored** in India.
+
+## 16. Sub-Processor Incidents & Breaches
+
+### 16.1 Incident Notification
+If a sub-processor experiences a data breach affecting your data:
+- **Sub-processor notifies us:** Within 24 hours (per our DPAs)
+- **We notify you:** Within 24 hours of learning of the breach
+- **We notify authorities:** As required by GDPR/applicable law (within 72 hours)
+
+### 16.2 What We Provide
+- **Nature of the breach** (what data, how many affected)
+- **Likely consequences** and risk assessment
+- **Measures taken** by sub-processor and us to mitigate
+- **Recommended actions** for you (if any)
+
+### 16.3 Historical Incidents
+**No breaches to date.** This page will be updated if any sub-processor incidents affect customer data.
+
+## 17. Questions & Contact
+
+### General Sub-Processor Questions
+**Email:** [legal@trysako.com](mailto:legal@trysako.com)
+
+### Data Processing Agreements (DPAs)
+**Email:** [legal@trysako.com](mailto:legal@trysako.com)  
+**Subject:** DPA Request
+
+### Security & Compliance
+**Email:** [security@trysako.com](mailto:security@trysako.com)
+
+### Privacy & Data Protection
+**Email:** [privacy@trysako.com](mailto:privacy@trysako.com)  
+**DPO:** [dpo@trysako.com](mailto:dpo@trysako.com)
+
+### Sub-Processor Change Notifications
+**Email:** [legal@trysako.com](mailto:legal@trysako.com)  
+**Subject:** Subscribe to Sub-Processor Notifications
+
+### Mail (Legal Notices)
+Creative Ops, Inc.  
+c/o Legalinc Corporate Services Inc.  
+131 Continental Dr, Suite 305  
+Newark, DE 19713  
+United States
+
+**Phone:** +1 (415) 914-9798
+
+***
+
+**Last reviewed:** December 24, 2025  
+**Next review:** June 24, 2026
+
+</LegalContent>

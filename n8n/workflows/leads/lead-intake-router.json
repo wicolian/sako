@@ -1,0 +1,728 @@
+{
+  "id": "lead-intake-router",
+  "name": "Lead Intake Router",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "calcom-booking",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "webhook-calcom",
+      "name": "Cal.com Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        200
+      ],
+      "webhookId": "calcom-booking"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "calendly-event",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "webhook-calendly",
+      "name": "Calendly Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        400
+      ],
+      "webhookId": "calendly-event"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Cal.com webhook (crypto disallowed in n8n 2.6+, rely on URL obscurity + payload validation)\nconst payload = $input.first().json.body;\n\n// Validate this looks like a Cal.com webhook\nif (!payload?.triggerEvent || !payload?.payload) {\n  throw new Error('Invalid Cal.com webhook payload');\n}\n\nreturn {\n  json: {\n    ...payload,\n    source: 'calcom',\n    verified: true\n  }\n};"
+      },
+      "id": "verify-calcom",
+      "name": "Verify Cal.com",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Calendly webhook (crypto disallowed in n8n 2.6+, rely on URL obscurity + payload validation)\nconst payload = $input.first().json.body;\n\n// Validate this looks like a Calendly webhook\nif (!payload?.event || !payload?.payload) {\n  throw new Error('Invalid Calendly webhook payload');\n}\n\nreturn {\n  json: {\n    ...payload,\n    source: 'calendly',\n    verified: true\n  }\n};"
+      },
+      "id": "verify-calendly",
+      "name": "Verify Calendly",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalize lead data from different sources\nconst input = $input.first().json;\nconst source = input.source;\n\nlet normalized = {\n  external_event_id: '',\n  email: '',\n  name: '',\n  company: '',\n  phone: '',\n  source: source,\n  campaign: '',\n  raw_payload: input\n};\n\nif (source === 'calcom') {\n  // Cal.com payload structure\n  const attendee = input.payload?.attendees?.[0] || {};\n  normalized.external_event_id = input.payload?.uid || '';\n  normalized.email = attendee.email || '';\n  normalized.name = attendee.name || '';\n  normalized.company = input.payload?.responses?.company?.value || '';\n  normalized.phone = input.payload?.responses?.phone?.value || '';\n  normalized.booking_time = input.payload?.startTime;\n} else if (source === 'calendly') {\n  // Calendly payload structure\n  const invitee = input.payload?.invitee || {};\n  normalized.external_event_id = input.payload?.event?.uuid || '';\n  normalized.email = invitee.email || '';\n  normalized.name = invitee.name || '';\n  normalized.company = invitee.questions_and_answers?.find(q => \n    q.question.toLowerCase().includes('company')\n  )?.answer || '';\n  normalized.phone = invitee.questions_and_answers?.find(q => \n    q.question.toLowerCase().includes('phone')\n  )?.answer || '';\n  normalized.booking_time = input.payload?.event?.start_time;\n}\n\n// Clean email\nnormalized.email = normalized.email.toLowerCase().trim();\n\n// Extract domain for enrichment\nconst emailParts = normalized.email.split('@');\nnormalized.company_domain = emailParts.length > 1 ? emailParts[1] : '';\n\nreturn { json: normalized };"
+      },
+      "id": "normalize",
+      "name": "Normalize Lead Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 100000003,
+          "cachedResultName": "idempotency_log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=100000003"
+        },
+        "filters": {
+          "filter": [
+            {
+              "column": "external_event_id",
+              "value": "={{ $json.external_event_id }}"
+            }
+          ]
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "check-idempotency",
+      "name": "Check Idempotency",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        900,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.length || 0 }}",
+              "operation": "equal",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "is-new-event",
+      "name": "Is New Event?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={\"status\": \"already_processed\", \"event_id\": \"{{ $('Normalize Lead Data').item.json.external_event_id }}\"}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "respond-duplicate",
+      "name": "Respond OK (Duplicate)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 100000003,
+          "cachedResultName": "idempotency_log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=100000003"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "external_event_id": "={{ $('Normalize Lead Data').item.json.external_event_id }}",
+            "processed_at": "={{ $now.toISO() }}",
+            "workflow": "lead-intake-router"
+          }
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "log-idempotency",
+      "name": "Log to Idempotency",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1340,
+        200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 100000002,
+          "cachedResultName": "suppression_list",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=100000002"
+        },
+        "filters": {
+          "filter": [
+            {
+              "column": "email",
+              "value": "={{ $('Normalize Lead Data').item.json.email }}"
+            }
+          ]
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "check-suppression",
+      "name": "Check Suppression",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1560,
+        200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.length || 0 }}",
+              "operation": "equal",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "not-suppressed",
+      "name": "Not Suppressed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log suppressed lead\nconst lead = $('Normalize Lead Data').item.json;\nconsole.log(`Lead suppressed: ${lead.email}`);\nreturn { json: { status: 'suppressed', email: lead.email } };"
+      },
+      "id": "log-suppressed",
+      "name": "Log Suppressed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.clearbit.com/v2/combined/find?email={{ $('Normalize Lead Data').item.json.email }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "enrich-clearbit",
+      "name": "Enrich (Clearbit)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        2000,
+        100
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "clearbit-api",
+          "name": "Clearbit API"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "actor_id": "intelecta/fast-contact-info-scraper-with-emails",
+            "run_input": "={{ { startUrls: [{ url: `https://${$('Normalize Lead Data').item.json.company_domain}` }] } }}",
+            "dataset_limit": 3
+          }
+        }
+      },
+      "id": "apify-contact",
+      "name": "Apify: Contact Scraper",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        2000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: {\n    clearbit: $json || {}\n  }\n};"
+      },
+      "id": "wrap-clearbit",
+      "name": "Wrap Clearbit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2220,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const items = $json.apify_items || [];\nconst primary = items[0] || {};\n\nconst emails = new Set();\nconst phones = new Set();\nconst socials = new Set();\n\nif (primary.email) emails.add(primary.email);\nif (Array.isArray(primary.emails)) primary.emails.forEach(e => emails.add(e));\nif (primary.phone) phones.add(primary.phone);\nif (Array.isArray(primary.phones)) primary.phones.forEach(p => phones.add(p));\nif (primary.linkedinUrl) socials.add(primary.linkedinUrl);\nif (primary.twitterUrl) socials.add(primary.twitterUrl);\nif (Array.isArray(primary.socials)) primary.socials.forEach(s => socials.add(s));\n\nreturn {\n  json: {\n    apify: {\n      contact_emails: Array.from(emails),\n      contact_phones: Array.from(phones),\n      contact_socials: Array.from(socials),\n      source_url: primary.url || ''\n    }\n  }\n};"
+      },
+      "id": "normalize-apify",
+      "name": "Normalize Apify Contact",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "options": {},
+        "combinationMode": "mergeByPosition"
+      },
+      "id": "merge-enrichment",
+      "name": "Merge Enrichment",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        2440,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge enrichment data and score lead\nconst lead = $('Normalize Lead Data').item.json;\nconst clearbit = $input.first().json.clearbit || {};\nconst apify = $input.first().json.apify || {};\n\n// Extract enrichment data (handle null/missing)\nconst person = clearbit?.person || {};\nconst company = clearbit?.company || {};\n\nconst enrichedLead = {\n  ...lead,\n  // Person data\n  full_name: person.name?.fullName || lead.name,\n  title: person.employment?.title || '',\n  linkedin_url: person.linkedin?.handle ? `https://linkedin.com/in/${person.linkedin.handle}` : '',\n  \n  // Company data\n  company_name: company.name || lead.company,\n  company_domain: company.domain || lead.company_domain,\n  company_size: company.metrics?.employees || '',\n  company_industry: company.category?.industry || '',\n  company_location: company.geo?.city ? `${company.geo.city}, ${company.geo.country}` : '',\n  company_funding: company.metrics?.raised || '',\n\n  // Apify contact enrichment (fallback)\n  contact_emails: apify.contact_emails?.join(', ') || '',\n  contact_phones: apify.contact_phones?.join(', ') || '',\n  contact_socials: apify.contact_socials?.join(', ') || '',\n  \n  // Enrichment status\n  enriched: !!clearbit?.person || !!clearbit?.company || (apify.contact_emails?.length || apify.contact_phones?.length),\n  enriched_at: new Date().toISOString()\n};\n\n// Score the lead\nlet score = 0;\nconst scoreReasons = [];\n\n// Company size scoring\nif (enrichedLead.company_size >= 50 && enrichedLead.company_size <= 500) {\n  score += 20;\n  scoreReasons.push('SMB target size');\n} else if (enrichedLead.company_size > 500) {\n  score += 15;\n  scoreReasons.push('Enterprise');\n}\n\n// Title scoring (decision maker)\nconst title = (enrichedLead.title || '').toLowerCase();\nif (title.includes('founder') || title.includes('ceo') || title.includes('owner')) {\n  score += 30;\n  scoreReasons.push('Founder/CEO');\n} else if (title.includes('head') || title.includes('director') || title.includes('vp')) {\n  score += 25;\n  scoreReasons.push('Director level');\n} else if (title.includes('manager') || title.includes('lead')) {\n  score += 15;\n  scoreReasons.push('Manager level');\n}\n\n// Industry scoring (design relevance)\nconst industry = (enrichedLead.company_industry || '').toLowerCase();\nif (industry.includes('software') || industry.includes('technology') || industry.includes('saas')) {\n  score += 20;\n  scoreReasons.push('SaaS/Tech');\n} else if (industry.includes('marketing') || industry.includes('agency')) {\n  score += 15;\n  scoreReasons.push('Agency/Marketing');\n}\n\n// Booking = high intent\nscore += 20;\nscoreReasons.push('Booked call');\n\n// Add enriched flag bonus\nif (enrichedLead.enriched) {\n  score += 5;\n  scoreReasons.push('Enriched');\n}\n\nenrichedLead.score = Math.min(score, 100);\nenrichedLead.score_reasons = scoreReasons.join(', ');\nenrichedLead.is_high_intent = score >= 70;\n\nreturn { json: enrichedLead };"
+      },
+      "id": "score-lead",
+      "name": "Score Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2220,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.is_high_intent }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check-intent",
+      "name": "High Intent?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        2440,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "requestMethod": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"#sako-leads\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": {\n        \"type\": \"plain_text\",\n        \"text\": \"🔥 High Intent Lead\",\n        \"emoji\": true\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Name:*\\n{{ $json.full_name }}\"\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Email:*\\n{{ $json.email }}\"\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Company:*\\n{{ $json.company_name }}\"\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Title:*\\n{{ $json.title || 'Unknown' }}\"\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Score:*\\n{{ $json.score }}/100\"\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Source:*\\n{{ $json.source }}\"\n        }\n      ]\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*Score Reasons:* {{ $json.score_reasons }}\"\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"{{ $json.linkedin_url ? '<' + $json.linkedin_url + '|LinkedIn>' : '' }} {{ $json.company_domain ? '<https://' + $json.company_domain + '|Website>' : '' }}\"\n      }\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "slack-high-intent",
+      "name": "Slack: High Intent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        2660,
+        0
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SAKO_API_URL }}/marketing/capture-lead",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"email\": \"{{ $('Score Lead').item.json.email }}\",\n  \"name\": \"{{ $('Score Lead').item.json.full_name }}\",\n  \"source\": \"{{ $('Score Lead').item.json.source }}\",\n  \"utmSource\": \"{{ $('Score Lead').item.json.source }}\",\n  \"utmCampaign\": \"booking\"\n}",
+        "options": {}
+      },
+      "id": "sync-sako",
+      "name": "Sync to Sako API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        2660,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "sako-api",
+          "name": "Sako API"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'processed', lead_id: $('Score Lead').item.json.email, score: $('Score Lead').item.json.score, high_intent: $('Score Lead').item.json.is_high_intent } }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "respond-success",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        2880,
+        100
+      ]
+    }
+  ],
+  "connections": {
+    "Cal.com Webhook": {
+      "main": [
+        [
+          {
+            "node": "Verify Cal.com",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendly Webhook": {
+      "main": [
+        [
+          {
+            "node": "Verify Calendly",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Cal.com": {
+      "main": [
+        [
+          {
+            "node": "Normalize Lead Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Calendly": {
+      "main": [
+        [
+          {
+            "node": "Normalize Lead Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Lead Data": {
+      "main": [
+        [
+          {
+            "node": "Check Idempotency",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Idempotency": {
+      "main": [
+        [
+          {
+            "node": "Is New Event?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is New Event?": {
+      "main": [
+        [
+          {
+            "node": "Log to Idempotency",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond OK (Duplicate)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Idempotency": {
+      "main": [
+        [
+          {
+            "node": "Check Suppression",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Suppression": {
+      "main": [
+        [
+          {
+            "node": "Not Suppressed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Not Suppressed?": {
+      "main": [
+        [
+          {
+            "node": "Enrich (Clearbit)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Apify: Contact Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Suppressed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich (Clearbit)": {
+      "main": [
+        [
+          {
+            "node": "Wrap Clearbit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify: Contact Scraper": {
+      "main": [
+        [
+          {
+            "node": "Normalize Apify Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Apify Contact": {
+      "main": [
+        [
+          {
+            "node": "Merge Enrichment",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap Clearbit": {
+      "main": [
+        [
+          {
+            "node": "Merge Enrichment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Enrichment": {
+      "main": [
+        [
+          {
+            "node": "Score Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score Lead": {
+      "main": [
+        [
+          {
+            "node": "High Intent?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "High Intent?": {
+      "main": [
+        [
+          {
+            "node": "Slack: High Intent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Sync to Sako API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sync to Sako API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: High Intent": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sync to Sako API": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "leads"
+    },
+    {
+      "name": "capture"
+    }
+  ]
+}

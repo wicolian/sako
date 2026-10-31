@@ -1,0 +1,289 @@
+---
+title: "Sako Composer"
+slug: "composer"
+template: "standard"
+published: true
+priority: 2
+seo:
+  metaTitle: "Sako Composer | Generate Campaigns. Validate Claims. Deploy Everywhere."
+  metaDescription: "Sako Composer turns a single URL into fully branded landing pages, pitch decks, email sequences, and ad creatives — with built-in claim validation so nothing ships unverified. Join the early access waitlist."
+  keywords: ["Sako Composer", "AI campaign generation", "claim validation marketing", "evidence-backed marketing", "AI landing page generator", "AI pitch deck", "brand-aware AI", "compliance marketing tool", "GTM workflow", "deploy to HubSpot Webflow WordPress Framer", "marketing claim checker"]
+  ogImage: "auto"
+jsonLd:
+  type: "SoftwareApplication"
+---
+
+<Hero
+  variant="centered"
+  badge="AI GTM Workflow"
+  title="Generate campaigns. Validate every claim. {Ship} with proof."
+  subtitle="Sako Composer turns a single URL into branded landing pages, pitch decks, email sequences, social posts, and ad creatives. Every marketing claim is checked, evidence-linked, and risk-scored before anything goes live. Your team moves faster. Your legal team sleeps better."
+  primaryCta={{ label: "Request Early Access", href: "https://form.typeform.com/to/UPnIvcQ9?utm_source=trysako&utm_medium=website&utm_campaign=composer_waitlist&utm_content=composer_hero#ref=composer&page=%2Fcomposer&product=composer&plan=anonymous&app_user_id=anonymous&workspace_id=anonymous", external: true }}
+  secondaryCta={{ label: "See How It Works", href: "#how-it-works" }}
+  trustText="Used by early-access B2B teams • Claim validation before publish • Deploys to 20+ platforms"
+/>
+
+<MetricCards
+  style="cards"
+  variant="transparent"
+  title="From blank canvas to live campaign — {without} the usual pain."
+  subtitle="One URL. Full brand extraction. Multi-channel output. Compliance built in."
+  items={[
+    {
+      title: "Brand extraction",
+      icon: "link",
+      value: "Paste one URL",
+      description: "Composer pulls your colors, typography, voice, positioning, existing claims, and supporting evidence — automatically."
+    },
+    {
+      title: "Campaign generation",
+      icon: "layers",
+      value: "Pages, decks, emails, ads",
+      description: "A single brief produces a coordinated set of assets. Consistent messaging. Consistent brand. Every channel."
+    },
+    {
+      title: "Claim validation",
+      icon: "shield",
+      value: "Every claim checked",
+      description: "Marketing claims are flagged, risk-scored, and linked to evidence before publish. Risky language gets rewritten. Nothing ships unverified."
+    },
+    {
+      title: "Multi-platform deploy",
+      icon: "upload",
+      value: "HubSpot, Webflow, WordPress +",
+      description: "Push directly to your existing stack, export clean HTML, or download production-ready assets. No manual migration."
+    }
+  ]}
+/>
+
+<FeatureGrid
+  columns={2}
+  variant="cards"
+  title="One workflow. Two hard problems {solved}."
+  items={[
+    {
+      icon: "Sparkles",
+      title: "Campaign generation that actually understands your brand",
+      description: "Most AI tools produce generic output you spend hours fixing. Composer generates from your actual brand — your colors, your voice, your positioning, your proof points. Landing pages, sales decks, email sequences, social posts, ad variants, and video scripts. Structured layouts, not prompt soup."
+    },
+    {
+      icon: "Shield",
+      title: "Claim validation that runs before you hit publish",
+      description: "Every marketing claim is automatically scanned against your compliance policies. Unverified statistics, superlative language like \"best in class\" or \"#1\", unsupported comparisons — all flagged in real time. Evidence is linked. Safer alternatives are suggested. Publishing is blocked until checks pass."
+    }
+  ]}
+/>
+
+<FeatureGrid
+  columns={1}
+  variant="simple"
+  title="Your team doesn't have a {creative} problem. They have a starting-point problem."
+  items={[
+    {
+      icon: "Clock",
+      title: "The first usable draft is where weeks disappear",
+      description: "Marketing teams don't lose time on final polish. They lose time on the blank-canvas phase — figuring out structure, writing the first version, getting something real enough to react to. Composer eliminates that dead zone. Your team starts with structured, on-brand, compliance-checked drafts — so the humans focus on taste, positioning, and strategic decisions from minute one."
+    }
+  ]}
+/>
+
+<Timeline
+  id="how-it-works"
+  eyebrow="How it works"
+  title="URL → campaign → validated → {live}"
+  steps={[
+    {
+      number: "01",
+      title: "Import your brand in seconds",
+      description: "Paste any URL — your website, a landing page, or a competitor page. Composer extracts brand tokens, voice profile, existing marketing claims, and supporting evidence automatically. No brand guides to upload. No manual setup.",
+      badge: "Seconds"
+    },
+    {
+      number: "02",
+      title: "Choose a recipe and generate",
+      description: "Select from proven campaign structures: launch pages, pricing pages, fundraise decks, ad bundles, email sequences. Composer generates multi-asset drafts built on your brand, your message, and your evidence — not generic AI templates.",
+      badge: "Minutes"
+    },
+    {
+      number: "03",
+      title: "Claims are validated automatically",
+      description: "Every marketing claim in your generated assets is scanned in real time. Risky language is flagged. Evidence sources are linked. Risk scores are assigned. Compliant alternatives are suggested. Your campaign cannot ship until every claim passes validation.",
+      badge: "Built-in"
+    },
+    {
+      number: "04",
+      title: "Deploy, export, or hand off for polish",
+      description: "Publish directly to HubSpot, Webflow, WordPress, Framer, and more. Export clean HTML or production-ready images. Or click Send to Sako to hand your draft to a dedicated pod for final production polish — with full context attached.",
+      badge: "Ship it"
+    }
+  ]}
+/>
+
+<FeatureGrid
+  variant="bento"
+  title="Start from a proven {recipe} — not a blank screen."
+  subtitle="Campaign structures built for the work B2B teams actually ship, week after week."
+  items={[
+    {
+      icon: "Rocket",
+      title: "Product launch page",
+      description: "Hero, problem-solution narrative, social proof, conversion path. Structured to convert — not just to look good.",
+      bentoContent: { type: "scene", id: "composerLaunchPage" }
+    },
+    {
+      icon: "Sparkles",
+      title: "Feature announcement",
+      description: "Ship an update with clear positioning and structured messaging. No more reinventing the wheel every release.",
+      bentoContent: { type: "scene", id: "composerFeatureShip" }
+    },
+    {
+      icon: "DollarSign",
+      title: "PLG pricing page",
+      description: "Tier comparison, value framing, and objection handling — designed for self-serve products.",
+      bentoContent: { type: "scene", id: "composerPLGPricing" }
+    },
+    {
+      icon: "Presentation",
+      title: "Fundraise deck",
+      description: "10-slide narrative structure with consistent story arc. Designed for clarity under pressure.",
+      bentoContent: { type: "scene", id: "composerFundraiseDeck" }
+    },
+    {
+      icon: "Megaphone",
+      title: "Ad campaign bundle",
+      description: "One core message adapted across placements, sizes, and platforms. Coordinated creative — not fragmented assets.",
+      bentoContent: { type: "scene", id: "composerAdBundle" }
+    },
+    {
+      icon: "Layout",
+      title: "Campaign experiment page",
+      description: "Built for A/B testing from day one. Variant-ready structure so your growth team can iterate fast.",
+      bentoContent: { type: "scene", id: "composerExperimentPage" }
+    }
+  ]}
+/>
+
+<FeatureGrid
+  columns={3}
+  variant="cards"
+  title="Built for teams that can't afford to {guess}."
+  items={[
+    {
+      icon: "palette",
+      title: "Brand-aware from the first pixel",
+      description: "Composer uses your actual brand tokens — colors, typography, voice, layout preferences. Every draft looks like your company, not a template library. Import once, maintain forever."
+    },
+    {
+      icon: "shield",
+      title: "Claim validation with audit trail",
+      description: "Real-time risk scoring. Evidence linking. Suggested compliant rewrites. Full audit history for every claim. Designed for teams in regulated, high-stakes, or reputation-sensitive markets."
+    },
+    {
+      icon: "upload",
+      title: "Deploy without the migration tax",
+      description: "Push campaigns directly into your existing marketing stack — HubSpot, Webflow, WordPress, Framer, and more. Export clean HTML or production images. No copy-paste workflows. No format conversion."
+    }
+  ]}
+/>
+
+<FeatureGrid
+  variant="bento"
+  title="Export and deploy on {your} terms."
+  subtitle="Your campaigns go where your stack lives. No vendor lock-in."
+  items={[
+    {
+      icon: "Code",
+      title: "HTML export",
+      description: "Download a complete page as a standalone HTML file with all assets included. Clean markup. Production-ready.",
+      bentoContent: { type: "scene", id: "composerHTMLExport" }
+    },
+    {
+      icon: "ImageIcon",
+      title: "Image export",
+      description: "High-resolution PNG and JPG exports for stakeholder reviews, Slack sharing, or internal approvals.",
+      bentoContent: { type: "scene", id: "composerImageExport" }
+    },
+    {
+      icon: "Layout",
+      title: "Copy to Figma",
+      description: "One-click paste into Figma for design teams that want to refine or extend the output. Available on Pro.",
+      bentoContent: { type: "scene", id: "composerCopyToFigma" }
+    },
+    {
+      icon: "Globe",
+      title: "Publish with custom domain",
+      description: "Get a hosted URL instantly. Connect your own domain when you're ready. Available on Pro.",
+      bentoContent: { type: "scene", id: "composerPublishDomain" }
+    }
+  ]}
+/>
+
+<FeatureGrid
+  columns={1}
+  variant="simple"
+  title="When the draft is 80% there, don't burn a week on the last {20%}."
+  items={[
+    {
+      icon: "users",
+      title: "Send to Sako — production polish by a dedicated pod",
+      description: "Composer gets you to a strong, validated draft fast. When the stakes are high enough to warrant production-level polish, click Send to Sako. Your draft — with brand context, claim status, revision notes, and all generated assets — becomes a task assigned to a dedicated pod. They deliver ship-ready output. You stay focused on strategy."
+    }
+  ]}
+/>
+
+<FeatureGrid
+  columns={2}
+  variant="cards"
+  title="Two ways to work. Both start {here}."
+  items={[
+    {
+      icon: "zap",
+      title: "For self-serve marketing teams",
+      description: "Generate branded campaign drafts in minutes. Iterate with built-in claim validation. Export or deploy directly to your stack. No agency. No creative queue. No waiting."
+    },
+    {
+      icon: "shield",
+      title: "For teams that need production polish",
+      description: "Use Composer for speed, direction, and compliance — then hand off to Sako when the stakes demand human craft. Your draft arrives with full context. Your pod delivers production-ready output."
+    }
+  ]}
+/>
+
+<FAQAccordion
+  title={{ prefix: "Frequently asked", italic: "questions" }}
+  items={[
+    {
+      question: "How do I get access to Composer?",
+      answer: "We're onboarding early-access users from our waitlist. Request access and our team will reach out as we expand capacity. Early users get direct input into the product roadmap."
+    },
+    {
+      question: "What is claim validation and how does it work?",
+      answer: "Composer automatically scans every marketing claim in your generated content. It identifies risky language — unverified statistics, superlative claims like \"#1\" or \"best in class\", unsupported competitive comparisons — and flags each one with a risk score. Evidence sources are linked automatically. Safer, compliant alternatives are suggested. You cannot publish content until all flagged claims are resolved. Every validation decision is logged for audit purposes."
+    },
+    {
+      question: "Can I use Composer without being a Sako customer?",
+      answer: "Yes. Composer is a standalone product with its own Free and Pro tiers. You can generate, validate, export, and deploy without any Sako involvement. Send to Sako is an optional feature for teams that want production-level polish on high-stakes deliverables."
+    },
+    {
+      question: "How does Composer stay on-brand for my company?",
+      answer: "When you paste a URL, Composer extracts your brand tokens — colors, typography, voice, tone, positioning — and uses them to generate every asset. You can also configure brand rules manually: approved phrases, forbidden language, compliance policies, and layout preferences. If you're an existing Sako customer, your brand profiles import automatically."
+    },
+    {
+      question: "Does Composer replace my design or content team?",
+      answer: "No. Composer replaces the blank-canvas phase — the hours spent on first drafts, structure, and repetitive production work. Your designers focus on judgment, taste, and high-stakes creative. Your content team focuses on strategy and messaging. Composer handles the starting point and the compliance checks."
+    },
+    {
+      question: "What platforms can I deploy to?",
+      answer: "Composer supports direct deployment to HubSpot, Webflow, WordPress, Framer, Shopify, and more — with additional integrations shipping regularly. You can also export as clean HTML, production-ready images, or copy directly to Figma on Pro plans."
+    }
+  ]}
+/>
+
+<CTASection
+  variant="final"
+  title="Your marketing claims deserve {evidence}. Your team deserves speed."
+  subtitle="Request early access to Sako Composer. Generate branded campaigns with built-in claim validation — and ship with confidence."
+  primaryCta={{ label: "Request Early Access", href: "https://form.typeform.com/to/UPnIvcQ9?utm_source=trysako&utm_medium=website&utm_campaign=composer_waitlist&utm_content=composer_footer#ref=composer&page=%2Fcomposer&product=composer&plan=anonymous&app_user_id=anonymous&workspace_id=anonymous", external: true }}
+  secondaryCta={{ label: "Learn About Sako", href: "https://trysako.com" }}
+  trustText="Claim validation • Evidence linking • Brand-aware generation • 20+ deploy targets • Optional Send to Sako polish"
+/>

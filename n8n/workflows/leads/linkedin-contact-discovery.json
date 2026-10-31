@@ -1,0 +1,478 @@
+{
+  "id": "linkedin-contact-discovery",
+  "name": "LinkedIn Contact Discovery (Sales)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "execute-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const input = $json || {};\n\nconst title = input.title || 'Head of Marketing';\nconst industry = input.industry || 'SaaS';\nconst location = input.location || 'US';\nconst maxLeads = input.max_leads || 50;\n\nconst keyword = `${title} ${industry}`.trim();\n\nreturn {\n  json: {\n    keyword,\n    location,\n    maxLeads\n  }\n};"
+      },
+      "id": "build-search",
+      "name": "Build Search Params",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "actor_id": "caprolok/linkedin-leads-generator",
+            "run_input": "={{ { keyword: $json.keyword, location: $json.location, max_leads: $json.maxLeads } }}",
+            "dataset_limit": 200
+          }
+        }
+      },
+      "id": "apify-linkedin-leads",
+      "name": "Apify: LinkedIn Leads Generator",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 492604584,
+          "cachedResultName": "qualified_leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=492604584"
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "read-qualified",
+      "name": "Read Qualified Leads",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        680,
+        100
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 0,
+          "cachedResultName": "apollo_import",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=0"
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "read-apollo-import",
+      "name": "Read Apollo Import",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        680,
+        500
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "passThrough"
+      },
+      "id": "merge-qualified",
+      "name": "Merge Qualified Leads",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "passThrough"
+      },
+      "id": "merge-apollo",
+      "name": "Merge Apollo Import",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const apifyItems = $items('Apify: LinkedIn Leads Generator')?.[0]?.json?.apify_items || [];\n\nconst qualified = $items('Read Qualified Leads') || [];\nconst apolloImport = $items('Read Apollo Import') || [];\n\nconst existingEmails = new Set([\n  ...qualified.map((i) => String(i.json.email || '').toLowerCase()),\n  ...apolloImport.map((i) => String(i.json['Email'] || '').toLowerCase())\n].filter(Boolean));\n\nconst existingLinkedIn = new Set([\n  ...qualified.map((i) => String(i.json.linkedin_url || '').toLowerCase()),\n  ...apolloImport.map((i) => String(i.json['Person Linkedin Url'] || '').toLowerCase())\n].filter(Boolean));\n\nconst keyword = $items('Build Search Params')?.[0]?.json?.keyword || 'LinkedIn search';\n\nconst rows = apifyItems\n  .map((p) => {\n    const fullName = p.fullName || p.name || `${p.firstName || ''} ${p.lastName || ''}`.trim();\n    const [firstName, ...rest] = String(fullName).split(' ');\n    const lastName = rest.join(' ').trim();\n\n    return {\n      first_name: firstName || '',\n      last_name: lastName || '',\n      title: p.jobTitle || p.title || p.headline || '',\n      company: p.companyName || p.company || p.currentCompany || p.organization || '',\n      email: p.email || p.emailAddress || p.workEmail || '',\n      employees: p.companySize || p.employeeCount || '',\n      industry: p.industry || '',\n      keywords: p.keywords || '',\n      linkedin_url: p.profileUrl || p.linkedinUrl || p.profile || '',\n      website: p.companyWebsite || p.website || '',\n      company_linkedin: p.companyLinkedinUrl || p.companyLinkedin || '',\n      city: p.city || '',\n      country: p.country || ''\n    };\n  })\n  .filter((r) => r.first_name && (r.email || r.linkedin_url))\n  .filter((r) => !existingEmails.has(String(r.email || '').toLowerCase()))\n  .filter((r) => !existingLinkedIn.has(String(r.linkedin_url || '').toLowerCase()))\n  .slice(0, 100);\n\nif (rows.length === 0) {\n  return [{ json: { no_targets: true, keyword } }];\n}\n\nreturn rows.map((r) => ({\n  json: {\n    ...r,\n    keyword\n  }\n}));"
+      },
+      "id": "normalize-dedupe",
+      "name": "Normalize + Dedupe Leads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.no_targets }}",
+              "value2": false
+            }
+          ]
+        }
+      },
+      "id": "has-leads",
+      "name": "Has New Leads?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 0,
+          "cachedResultName": "apollo_import",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "First Name": "={{ $json.first_name }}",
+            "Last Name": "={{ $json.last_name }}",
+            "Title": "={{ $json.title }}",
+            "Company Name": "={{ $json.company }}",
+            "Email": "={{ $json.email }}",
+            "# Employees": "={{ $json.employees }}",
+            "Industry": "={{ $json.industry }}",
+            "Keywords": "={{ $json.keywords }}",
+            "Person Linkedin Url": "={{ $json.linkedin_url }}",
+            "Website": "={{ $json.website }}",
+            "Company Linkedin Url": "={{ $json.company_linkedin }}",
+            "City": "={{ $json.city }}",
+            "Country": "={{ $json.country }}"
+          }
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "append-apollo-import",
+      "name": "Append to apollo_import",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1780,
+        240
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows = $items('Normalize + Dedupe Leads') || [];\n\nconst keyword = rows[0]?.json?.keyword || 'LinkedIn search';\nconst total = rows.filter((r) => !r.json.no_targets).length;\n\nreturn [{\n  json: {\n    keyword,\n    total\n  }\n}];"
+      },
+      "id": "build-summary",
+      "name": "Build Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "channel": "#sako-leads",
+        "text": "=🔎 *LinkedIn Contact Discovery*\n\n• Search: {{ $json.keyword }}\n• New leads added: {{ $json.total }}\n• Sheet: apollo_import\n\nNext: run Apollo ICP Qualifier"
+      },
+      "id": "post-summary",
+      "name": "Post Summary to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        2220,
+        240
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "channel": "#sako-leads",
+        "text": "=ℹ️ *LinkedIn Contact Discovery*\n\nNo new leads found for {{ $json.keyword }}.\nTry adjusting title/industry or location."
+      },
+      "id": "post-none",
+      "name": "Post No Leads to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        420
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Build Search Params",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Qualified Leads",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Apollo Import",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Build Search Params",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Qualified Leads",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Apollo Import",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Search Params": {
+      "main": [
+        [
+          {
+            "node": "Apify: LinkedIn Leads Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify: LinkedIn Leads Generator": {
+      "main": [
+        [
+          {
+            "node": "Merge Qualified Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Qualified Leads": {
+      "main": [
+        [
+          {
+            "node": "Merge Qualified Leads",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Qualified Leads": {
+      "main": [
+        [
+          {
+            "node": "Merge Apollo Import",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Apollo Import": {
+      "main": [
+        [
+          {
+            "node": "Merge Apollo Import",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Apollo Import": {
+      "main": [
+        [
+          {
+            "node": "Normalize + Dedupe Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize + Dedupe Leads": {
+      "main": [
+        [
+          {
+            "node": "Has New Leads?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has New Leads?": {
+      "main": [
+        [
+          {
+            "node": "Append to apollo_import",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Post No Leads to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to apollo_import": {
+      "main": [
+        [
+          {
+            "node": "Build Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Summary": {
+      "main": [
+        [
+          {
+            "node": "Post Summary to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "leads"
+    },
+    {
+      "name": "linkedin"
+    },
+    {
+      "name": "apify"
+    }
+  ]
+}

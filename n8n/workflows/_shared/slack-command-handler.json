@@ -1,0 +1,796 @@
+{
+  "id": "slack-command-handler",
+  "name": "Slack Command Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "slack-command",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "webhook",
+      "name": "Slack Command Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "slack-command"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Slack slash command (crypto disallowed in n8n 2.6+, rely on URL obscurity + payload validation)\nconst input = $input.first().json;\nconst body = input.body;\n\n// Check timestamp freshness (replay protection)\nconst timestamp = input.headers['x-slack-request-timestamp'];\nif (timestamp) {\n  const currentTime = Math.floor(Date.now() / 1000);\n  if (Math.abs(currentTime - parseInt(timestamp)) > 300) {\n    throw new Error('Slack request too old');\n  }\n}\n\nlet payload = body;\nif (typeof body === 'string') {\n  payload = Object.fromEntries(new URLSearchParams(body));\n}\n\n// Validate this looks like a Slack command\nif (!payload.command || !payload.user_id) {\n  throw new Error('Invalid Slack command payload');\n}\n\nreturn {\n  json: {\n    text: (payload.text || '').trim(),\n    command: payload.command || '/sako',\n    userId: payload.user_id,\n    userName: payload.user_name,\n    channelId: payload.channel_id,\n    channelName: payload.channel_name,\n    responseUrl: payload.response_url\n  }\n};"
+      },
+      "id": "verify-slack",
+      "name": "Verify Slack Command",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = ($input.first().json.text || '').trim();\nconst [command, ...rest] = text.split(/\\s+/).filter(Boolean);\nconst args = rest.join(' ');\n\nreturn {\n  json: {\n    command: command || 'help',\n    args,\n    rawText: text,\n    userId: $input.first().json.userId,\n    userName: $input.first().json.userName,\n    channelId: $input.first().json.channelId,\n    channelName: $input.first().json.channelName,\n    responseUrl: $input.first().json.responseUrl\n  }\n};"
+      },
+      "id": "parse-command",
+      "name": "Parse Command",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.command }}",
+        "rules": [
+          {
+            "operation": "equal",
+            "value2": "help"
+          },
+          {
+            "operation": "equal",
+            "value2": "metrics"
+          },
+          {
+            "operation": "equal",
+            "value2": "leads"
+          },
+          {
+            "operation": "equal",
+            "value2": "brief"
+          },
+          {
+            "operation": "equal",
+            "value2": "qualify"
+          },
+          {
+            "operation": "equal",
+            "value2": "content"
+          },
+          {
+            "operation": "equal",
+            "value2": "pr"
+          },
+          {
+            "operation": "equal",
+            "value2": "signals"
+          }
+        ],
+        "fallbackOutput": "extra"
+      },
+      "id": "route-command",
+      "name": "Route Command",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const helpText = `*Sako Command Center*\n\n• /sako help — list commands\n• /sako leads [today|week|all]\n• /sako brief <email>\n• /sako qualify <email>\n• /sako content [pending|approved]\n• /sako metrics\n• /sako pr\n• /sako signals`;\n\nreturn {\n  json: {\n    response: {\n      response_type: 'ephemeral',\n      text: helpText\n    }\n  }\n};"
+      },
+      "id": "help-response",
+      "name": "Build Help Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.response }}"
+      },
+      "id": "respond-help",
+      "name": "Respond Help",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ ($env.N8N_API_BASE_URL || $env.N8N_EDITOR_BASE_URL || $env.WEBHOOK_URL || 'http://localhost:5678').replace(/\\/$/, '') + '/api/v1/executions?limit=200' }}",
+        "authentication": "none",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-API-KEY",
+              "value": "={{ $env.N8N_API_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-executions",
+      "name": "Fetch Executions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1120,
+        260
+      ],
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "jsCode": "const executions = $input.first().json.data || [];\nconst now = new Date();\nconst oneDayAgo = new Date(now - 24 * 60 * 60 * 1000);\n\nlet total = 0;\nlet success = 0;\nlet failed = 0;\n\nfor (const exec of executions) {\n  const startedAt = new Date(exec.startedAt);\n  if (startedAt < oneDayAgo) continue;\n  total++;\n  if (exec.finished && !exec.error) success++;\n  else failed++;\n}\n\nconst rate = total > 0 ? Math.round((success / total) * 100) : 0;\nconst text = `*n8n Health (last 24h)*\\n• Executions: ${total}\\n• Success: ${success}\\n• Failed: ${failed}\\n• Success Rate: ${rate}%\\n\\nFull report: #n8n-errors`;\n\nreturn {\n  json: {\n    response: {\n      response_type: 'ephemeral',\n      text\n    }\n  }\n};"
+      },
+      "id": "metrics-response",
+      "name": "Build Metrics Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.response }}"
+      },
+      "id": "respond-metrics",
+      "name": "Respond Metrics",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 492604584,
+          "cachedResultName": "qualified_leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=492604584"
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "read-qualified",
+      "name": "Read Qualified Leads",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1120,
+        420
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all().map(i => i.json);\nconst range = ($json.args || 'today').toLowerCase();\nconst now = new Date();\nconst dayAgo = new Date(now - 24 * 60 * 60 * 1000);\nconst weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);\n\nconst isInRange = (date) => {\n  if (!date) return false;\n  const d = new Date(date);\n  if (range === 'week') return d >= weekAgo;\n  if (range === 'all') return true;\n  return d >= dayAgo;\n};\n\nconst filtered = items.filter(i => isInRange(i.scored_at));\nconst top = filtered.slice(0, 5).map(i => `• ${i.first_name || ''} ${i.last_name || ''} (${i.company || ''})`).join('\\n');\n\nconst text = `*Qualified Leads (${range})*\\nTotal: ${filtered.length}\\n${top ? `\\n${top}` : '\\nNo leads found.'}`;\n\nreturn {\n  json: {\n    response: {\n      response_type: 'ephemeral',\n      text\n    }\n  }\n};"
+      },
+      "id": "leads-response",
+      "name": "Build Leads Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.response }}"
+      },
+      "id": "respond-leads",
+      "name": "Respond Leads",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const email = ($json.args || '').trim();\nif (!email || !email.includes('@')) {\n  return {\n    json: {\n      response: {\n        response_type: 'ephemeral',\n        text: 'Usage: /sako brief <email>'\n      }\n    }\n  };\n}\n\nreturn {\n  json: {\n    email,\n    response: {\n      response_type: 'in_channel',\n      text: `🧾 Generating call prep brief for *${email}*... I will post it in #sako-leads shortly.`\n    }\n  }\n};"
+      },
+      "id": "brief-validate",
+      "name": "Validate Brief Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        580
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.WEBHOOK_URL }}/webhook/call-prep-trigger?email={{ $json.email }}",
+        "options": {}
+      },
+      "id": "trigger-brief",
+      "name": "Trigger Call Prep",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1340,
+        580
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.response }}"
+      },
+      "id": "respond-brief",
+      "name": "Respond Brief",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        580
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const email = ($json.args || '').trim();\nif (!email || !email.includes('@')) {\n  return {\n    json: {\n      response: {\n        response_type: 'ephemeral',\n        text: 'Usage: /sako qualify <email>'\n      }\n    }\n  };\n}\n\nreturn {\n  json: {\n    response: {\n      response_type: 'ephemeral',\n      text: `✅ Qualification queued for ${email}. Run *Apollo ICP Qualifier* in n8n to process.`\n    }\n  }\n};"
+      },
+      "id": "qualify-response",
+      "name": "Build Qualify Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        740
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.response }}"
+      },
+      "id": "respond-qualify",
+      "name": "Respond Qualify",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        740
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 1620036434,
+          "cachedResultName": "content_backlog",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=1620036434"
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "read-content",
+      "name": "Read Content Backlog",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1120,
+        900
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all().map(i => i.json);\nconst mode = ($json.args || 'pending').toLowerCase();\nconst pendingStatuses = ['queued', 'draft', 'needs_review'];\n\nconst filtered = items.filter(i => {\n  const status = (i.status || '').toLowerCase();\n  if (mode === 'approved') return status === 'approved';\n  return pendingStatuses.includes(status);\n});\n\nconst top = filtered.slice(0, 5).map(i => `• ${i.id} — ${i.pillar || ''} (${i.format || ''})`).join('\\n');\n\nconst text = `*Content Queue (${mode})*\\nTotal: ${filtered.length}\\n${top ? `\\n${top}` : '\\nNo items found.'}`;\n\nreturn {\n  json: {\n    response: {\n      response_type: 'ephemeral',\n      text\n    }\n  }\n};"
+      },
+      "id": "content-response",
+      "name": "Build Content Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.response }}"
+      },
+      "id": "respond-content",
+      "name": "Respond Content",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 888766463,
+          "cachedResultName": "pr_backlog",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=888766463"
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "read-pr",
+      "name": "Read PR Backlog",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1120,
+        1060
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all().map(i => i.json);\nconst queued = items.filter(i => (i.status || '').toLowerCase() === 'queued');\nconst top = queued.slice(0, 5).map(i => `• ${i.id} — ${i.hook || ''}`).join('\\n');\n\nconst text = `*PR Backlog (queued)*\\nTotal: ${queued.length}\\n${top ? `\\n${top}` : '\\nNo queued items.'}`;\n\nreturn {\n  json: {\n    response: {\n      response_type: 'ephemeral',\n      text\n    }\n  }\n};"
+      },
+      "id": "pr-response",
+      "name": "Build PR Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        1060
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.response }}"
+      },
+      "id": "respond-pr",
+      "name": "Respond PR",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        1060
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 339358735,
+          "cachedResultName": "hiring_signals",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=339358735"
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "read-signals",
+      "name": "Read Hiring Signals",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1120,
+        1220
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all().map(i => i.json);\nconst top = items.slice(0, 5).map(i => `• ${i.company || ''} — ${i.job_title || ''}`).join('\\n');\n\nconst text = `*Recent Hiring Signals*\\n${top ? top : 'No signals found.'}`;\n\nreturn {\n  json: {\n    response: {\n      response_type: 'ephemeral',\n      text\n    }\n  }\n};"
+      },
+      "id": "signals-response",
+      "name": "Build Signals Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        1220
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.response }}"
+      },
+      "id": "respond-signals",
+      "name": "Respond Signals",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        1220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  json: {\n    response: {\n      response_type: 'ephemeral',\n      text: 'Unknown command. Try `/sako help`.'\n    }\n  }\n};"
+      },
+      "id": "unknown-response",
+      "name": "Build Unknown Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        1380
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.response }}"
+      },
+      "id": "respond-unknown",
+      "name": "Respond Unknown",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        1380
+      ]
+    }
+  ],
+  "connections": {
+    "Slack Command Webhook": {
+      "main": [
+        [
+          {
+            "node": "Verify Slack Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Slack Command": {
+      "main": [
+        [
+          {
+            "node": "Parse Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Command": {
+      "main": [
+        [
+          {
+            "node": "Route Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Command": {
+      "main": [
+        [
+          {
+            "node": "Build Help Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fetch Executions",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read Qualified Leads",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Validate Brief Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Qualify Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read Content Backlog",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read PR Backlog",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read Hiring Signals",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Unknown Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Help Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Help",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Executions": {
+      "main": [
+        [
+          {
+            "node": "Build Metrics Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Metrics Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Qualified Leads": {
+      "main": [
+        [
+          {
+            "node": "Build Leads Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Leads Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Brief Request": {
+      "main": [
+        [
+          {
+            "node": "Respond Brief",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Trigger Call Prep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Call Prep": {
+      "main": []
+    },
+    "Build Qualify Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Qualify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Content Backlog": {
+      "main": [
+        [
+          {
+            "node": "Build Content Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Content Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read PR Backlog": {
+      "main": [
+        [
+          {
+            "node": "Build PR Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build PR Response": {
+      "main": [
+        [
+          {
+            "node": "Respond PR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Hiring Signals": {
+      "main": [
+        [
+          {
+            "node": "Build Signals Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Signals Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Signals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Unknown Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Unknown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "slack"
+    },
+    {
+      "name": "commands"
+    }
+  ]
+}

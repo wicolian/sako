@@ -1,0 +1,445 @@
+{
+  "id": "quo-call-logger",
+  "name": "Quo Call Logger",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "quo-call-completed",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "webhook-quo",
+      "name": "Quo Webhook: Call Completed",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "quo-call-completed"
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $input.first().json.body || $input.first().json;\n\n// Extract call data from Quo/OpenPhone webhook\nconst call = payload.data || payload;\n\nreturn {\n  json: {\n    call_id: call.id || call.callId,\n    from_number: call.from || call.fromNumber,\n    to_number: call.to || call.toNumber,\n    direction: call.direction, // 'inbound' or 'outbound'\n    status: call.status, // 'completed', 'missed', 'voicemail'\n    duration_seconds: call.duration || call.durationSeconds || 0,\n    started_at: call.startedAt || call.createdAt,\n    ended_at: call.endedAt,\n    \n    // Contact info if available\n    contact_name: call.contact?.name || '',\n    contact_email: call.contact?.email || '',\n    \n    // For fetching transcription later\n    has_recording: call.hasRecording || false,\n    has_voicemail: call.hasVoicemail || false,\n    \n    raw_payload: payload\n  }\n};"
+      },
+      "id": "parse-quo-webhook",
+      "name": "Parse Quo Webhook",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.direction }}",
+              "value2": "outbound"
+            }
+          ]
+        }
+      },
+      "id": "filter-outbound",
+      "name": "Filter Outbound Calls",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 1096236767,
+          "cachedResultName": "warm_opens",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=1096236767"
+        },
+        "filters": {
+          "filter": [
+            {
+              "column": "phone",
+              "value": "={{ $json.to_number }}"
+            }
+          ]
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "lookup-contact",
+      "name": "Lookup Contact in Warm Opens",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        900,
+        200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const call = $('Parse Quo Webhook').item.json;\nconst warmOpen = $('Lookup Contact in Warm Opens').first()?.json || {};\n\n// Determine call outcome\nlet outcome = 'unknown';\nif (call.status === 'completed' && call.duration_seconds > 60) {\n  outcome = 'connected';\n} else if (call.status === 'completed' && call.duration_seconds <= 60) {\n  outcome = 'quick_hangup';\n} else if (call.has_voicemail) {\n  outcome = 'voicemail';\n} else if (call.status === 'missed' || call.status === 'no_answer') {\n  outcome = 'no_answer';\n}\n\nreturn {\n  json: {\n    // Call details\n    call_id: call.call_id,\n    phone: call.to_number,\n    duration_seconds: call.duration_seconds,\n    duration_formatted: Math.floor(call.duration_seconds / 60) + 'm ' + (call.duration_seconds % 60) + 's',\n    outcome: outcome,\n    called_at: call.started_at,\n    \n    // Contact from warm opens (if found)\n    contact_found: !!warmOpen.email,\n    email: warmOpen.email || call.contact_email || '',\n    name: warmOpen.name || call.contact_name || '',\n    company: warmOpen.company || '',\n    \n    // Flags\n    needs_followup: outcome === 'voicemail' || outcome === 'no_answer',\n    was_connected: outcome === 'connected',\n    \n    // For transcription fetch\n    has_recording: call.has_recording\n  }\n};"
+      },
+      "id": "determine-outcome",
+      "name": "Determine Call Outcome",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 31482936,
+          "cachedResultName": "call_tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=31482936"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "call_id": "={{ $json.call_id }}",
+            "phone": "={{ $json.phone }}",
+            "email": "={{ $json.email }}",
+            "name": "={{ $json.name }}",
+            "company": "={{ $json.company }}",
+            "duration": "={{ $json.duration_formatted }}",
+            "outcome": "={{ $json.outcome }}",
+            "called_at": "={{ $json.called_at }}",
+            "needs_followup": "={{ $json.needs_followup }}"
+          }
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "log-call",
+      "name": "Log to Call Tracker",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1340,
+        200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.contact_found }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check-contact-found",
+      "name": "Contact in Warm Opens?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 1096236767,
+          "cachedResultName": "warm_opens",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=1096236767"
+        },
+        "filters": {
+          "filter": [
+            {
+              "column": "email",
+              "value": "={{ $json.email }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "call_status": "={{ $json.was_connected ? 'called' : 'attempted' }}",
+            "called_at": "={{ $json.called_at }}",
+            "call_outcome": "={{ $json.outcome }}",
+            "call_duration": "={{ $json.duration_formatted }}"
+          }
+        },
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "cachedResultName": "Sako Marketing Automations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+        }
+      },
+      "id": "update-warm-opens",
+      "name": "Update Warm Opens Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1780,
+        100
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DmISg5P6tbWAXQv6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.was_connected }}",
+              "value2": true
+            }
+          ],
+          "number": [
+            {
+              "value1": "={{ $json.duration_seconds }}",
+              "operation": "larger",
+              "value2": 180
+            }
+          ]
+        },
+        "combineOperation": "all"
+      },
+      "id": "check-good-call",
+      "name": "Good Call (3+ min)?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "channel": "#sako-leads",
+        "text": "=📞 *Call Completed* ({{ $json.duration_formatted }})\n\n• Contact: {{ $json.name || 'Unknown' }}\n• Company: {{ $json.company || 'Unknown' }}\n• Outcome: {{ $json.outcome }}\n\n_Was this call a win? Update status in the sheet._",
+        "otherOptions": {}
+      },
+      "id": "notify-good-call",
+      "name": "Notify: Good Call",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        200
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.outcome }}",
+              "value2": "voicemail"
+            }
+          ]
+        }
+      },
+      "id": "check-voicemail",
+      "name": "Left Voicemail?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "channel": "#sako-leads",
+        "text": "=📬 *Voicemail Left* - Schedule follow-up\n\n• Contact: {{ $json.name || $json.phone }}\n• Company: {{ $json.company || 'Unknown' }}\n\n_Send follow-up email in 24-48h_",
+        "otherOptions": {}
+      },
+      "id": "notify-voicemail",
+      "name": "Notify: Voicemail Follow-up",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        500
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Quo Webhook: Call Completed": {
+      "main": [
+        [
+          {
+            "node": "Parse Quo Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Quo Webhook": {
+      "main": [
+        [
+          {
+            "node": "Filter Outbound Calls",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Outbound Calls": {
+      "main": [
+        [
+          {
+            "node": "Lookup Contact in Warm Opens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup Contact in Warm Opens": {
+      "main": [
+        [
+          {
+            "node": "Determine Call Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Determine Call Outcome": {
+      "main": [
+        [
+          {
+            "node": "Log to Call Tracker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Call Tracker": {
+      "main": [
+        [
+          {
+            "node": "Contact in Warm Opens?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contact in Warm Opens?": {
+      "main": [
+        [
+          {
+            "node": "Update Warm Opens Status",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Good Call (3+ min)?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Left Voicemail?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Good Call (3+ min)?": {
+      "main": [
+        [
+          {
+            "node": "Notify: Good Call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Left Voicemail?": {
+      "main": [
+        [
+          {
+            "node": "Notify: Voicemail Follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "sako-n8n"
+  },
+  "tags": [
+    {
+      "id": "leads",
+      "name": "leads"
+    }
+  ]
+}

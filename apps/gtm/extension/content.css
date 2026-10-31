@@ -1,0 +1,320 @@
+/**
+ * Sako Composer Chrome Extension - Content Styles
+ */
+
+/* ============================================================================
+   Variables
+   ============================================================================ */
+
+:root {
+  --sako-primary: #6366f1;
+  --sako-primary-hover: #4f46e5;
+  --sako-bg: #ffffff;
+  --sako-bg-secondary: #f9fafb;
+  --sako-border: #e5e7eb;
+  --sako-text: #111827;
+  --sako-text-muted: #6b7280;
+  --sako-success: #22c55e;
+  --sako-warning: #eab308;
+  --sako-error: #ef4444;
+  --sako-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --sako-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --sako-radius: 8px;
+  --sako-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+}
+
+/* ============================================================================
+   Toolbar
+   ============================================================================ */
+
+#sako-toolbar {
+  position: absolute;
+  z-index: 2147483647;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+  font-family: var(--sako-font);
+}
+
+#sako-toolbar.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.sako-toolbar-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  background: var(--sako-bg);
+  border: 1px solid var(--sako-border);
+  border-radius: var(--sako-radius);
+  box-shadow: var(--sako-shadow-lg);
+}
+
+.sako-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--sako-text-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.sako-btn:hover {
+  background: var(--sako-bg-secondary);
+  color: var(--sako-text);
+}
+
+.sako-btn-primary {
+  background: var(--sako-primary);
+  color: white;
+}
+
+.sako-btn-primary:hover {
+  background: var(--sako-primary-hover);
+  color: white;
+}
+
+.sako-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--sako-border);
+  margin: 0 4px;
+}
+
+/* ============================================================================
+   Result Panel
+   ============================================================================ */
+
+#sako-result-panel {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 380px;
+  max-height: 80vh;
+  z-index: 2147483647;
+  background: var(--sako-bg);
+  border: 1px solid var(--sako-border);
+  border-radius: var(--sako-radius);
+  box-shadow: var(--sako-shadow-lg);
+  font-family: var(--sako-font);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(20px);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+  overflow: hidden;
+}
+
+#sako-result-panel.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+.sako-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--sako-bg-secondary);
+  border-bottom: 1px solid var(--sako-border);
+}
+
+.sako-panel-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--sako-text);
+}
+
+.sako-close-btn {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  color: var(--sako-text-muted);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+
+.sako-close-btn:hover {
+  background: var(--sako-border);
+}
+
+.sako-panel-content {
+  padding: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--sako-text);
+}
+
+.sako-panel-actions {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--sako-border);
+  background: var(--sako-bg-secondary);
+}
+
+.sako-action-btn {
+  flex: 1;
+  padding: 8px 16px;
+  border: 1px solid var(--sako-border);
+  border-radius: 6px;
+  background: var(--sako-bg);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sako-text);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.sako-action-btn:hover {
+  background: var(--sako-bg-secondary);
+  border-color: var(--sako-text-muted);
+}
+
+/* Result content styles */
+.sako-original,
+.sako-result,
+.sako-issues,
+.sako-suggestion {
+  margin-bottom: 12px;
+}
+
+.sako-original p,
+.sako-result p,
+.sako-suggestion p {
+  margin: 4px 0 0 0;
+  padding: 8px 12px;
+  background: var(--sako-bg-secondary);
+  border-radius: 6px;
+  color: var(--sako-text);
+}
+
+.sako-original strong,
+.sako-result strong,
+.sako-issues strong,
+.sako-suggestion strong {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sako-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sako-issues ul {
+  margin: 4px 0 0 0;
+  padding-left: 20px;
+}
+
+.sako-issues li {
+  margin-bottom: 4px;
+  color: var(--sako-text);
+}
+
+.sako-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sako-confidence {
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+/* ============================================================================
+   Loading
+   ============================================================================ */
+
+#sako-loading {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  z-index: 2147483647;
+  background: var(--sako-bg);
+  border: 1px solid var(--sako-border);
+  border-radius: var(--sako-radius);
+  box-shadow: var(--sako-shadow-lg);
+  font-family: var(--sako-font);
+  font-size: 14px;
+  color: var(--sako-text);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(20px);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+}
+
+#sako-loading.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+.sako-loading-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--sako-border);
+  border-top-color: var(--sako-primary);
+  border-radius: 50%;
+  animation: sako-spin 0.8s linear infinite;
+}
+
+@keyframes sako-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================================
+   Notifications
+   ============================================================================ */
+
+.sako-notification {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  z-index: 2147483647;
+  background: var(--sako-text);
+  border-radius: var(--sako-radius);
+  box-shadow: var(--sako-shadow-lg);
+  font-family: var(--sako-font);
+  font-size: 14px;
+  color: white;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.sako-notification.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.sako-notification.sako-error {
+  background: var(--sako-error);
+}

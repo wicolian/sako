@@ -1,0 +1,184 @@
+{
+  "id": "error-handler",
+  "name": "Error Handler (Shared)",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "id": "error-trigger",
+      "name": "On Error",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract error context for logging and alerting\n\nconst execution = $input.first().json.execution;\nconst workflow = $input.first().json.workflow;\n\n// Determine if this is a critical error\nconst criticalWorkflows = [\n  'lead-intake-router',\n  'handle-email-events',\n  'backup-workflows'\n];\n\nconst isCritical = criticalWorkflows.some(name => \n  workflow.name?.toLowerCase().includes(name.toLowerCase())\n);\n\n// Format error message\nconst errorNode = execution.error?.node?.name || 'Unknown';\nconst errorMessage = execution.error?.message || 'No error message';\nconst errorStack = execution.error?.stack?.substring(0, 500) || '';\n\nconst timestamp = new Date().toISOString();\n\nreturn {\n  json: {\n    workflowName: workflow.name || 'Unknown Workflow',\n    workflowId: workflow.id,\n    executionId: execution.id,\n    errorNode,\n    errorMessage,\n    errorStack,\n    isCritical,\n    timestamp,\n    executionUrl: `https://n8n.sako.agency/workflow/${workflow.id}/executions/${execution.id}`\n  }\n};"
+      },
+      "id": "extract-context",
+      "name": "Extract Error Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "requestMethod": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"#n8n-errors\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": {\n        \"type\": \"plain_text\",\n        \"text\": \"{{ $json.isCritical ? '🚨 CRITICAL' : '⚠️' }} Workflow Error\",\n        \"emoji\": true\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Workflow:*\\n{{ $json.workflowName }}\"\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Node:*\\n{{ $json.errorNode }}\"\n        }\n      ]\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*Error:*\\n```{{ $json.errorMessage }}```\"\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Time:*\\n{{ $json.timestamp }}\"\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Execution:*\\n<{{ $json.executionUrl }}|View Execution>\"\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "slack-alert",
+      "name": "Slack Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        680,
+        300
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $('Extract Error Context').item.json.isCritical }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "is-critical",
+      "name": "Is Critical?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log error for daily digest (non-critical)\nconst error = $('Extract Error Context').item.json;\n\n// In a real setup, you might:\n// 1. Write to a Google Sheet for tracking\n// 2. Send to PostHog/Sentry\n// 3. Store in database\n\nconsole.log('Error logged for daily digest:', error);\n\nreturn { json: { logged: true, ...error } };"
+      },
+      "id": "log-digest",
+      "name": "Log for Digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "requestMethod": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"#sako-alerts\",\n  \"text\": \"🚨 CRITICAL ERROR: {{ $('Extract Error Context').item.json.workflowName }} failed. <{{ $('Extract Error Context').item.json.executionUrl }}|View execution>\"\n}",
+        "options": {}
+      },
+      "id": "page-oncall",
+      "name": "Page On-Call",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1120,
+        200
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hypoe71bz8A0qpQ3",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "On Error": {
+      "main": [
+        [
+          {
+            "node": "Extract Error Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Error Context": {
+      "main": [
+        [
+          {
+            "node": "Slack Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack Alert": {
+      "main": [
+        [
+          {
+            "node": "Is Critical?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Critical?": {
+      "main": [
+        [
+          {
+            "node": "Page On-Call",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log for Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "shared"
+    },
+    {
+      "name": "monitoring"
+    }
+  ]
+}
