@@ -139,7 +139,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<Validatio
       .select('workspace_id, permissions, rate_limit')
       .eq('key_hash', hashApiKey(apiKey))
       .eq('is_active', true)
-      .maybeSingle();
+      .single();
 
     // Invalid or missing API key must fail hard — no demo workspace fallback.
     if (keyError || !apiKeyRecord) {

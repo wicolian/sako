@@ -350,7 +350,7 @@ export async function getTaskStatus(taskId: string, refresh = false): Promise<Sa
     .from('sako_tasks')
     .select('*')
     .eq('id', taskId)
-    .maybeSingle();
+    .single();
 
   if (error || !task) {
     return null;

@@ -139,7 +139,7 @@ export class SalesforceProvider implements DeploymentProvider {
         expires_at: new Date(Date.now() + 7200 * 1000).toISOString(),
       }, { onConflict: 'workspace_id,provider' })
       .select()
-      .maybeSingle()
+      .single()
 
     if (error) throw error
 
@@ -352,7 +352,7 @@ export class SalesforceProvider implements DeploymentProvider {
       .select('workspace_id, metadata')
       .eq('campaign_id', campaignId)
       .eq('provider', 'salesforce')
-      .maybeSingle()
+      .single()
 
     if (!deployment?.metadata?.pardotFormId) return null
 
@@ -396,7 +396,7 @@ export class SalesforceProvider implements DeploymentProvider {
       .select('*')
       .eq('workspace_id', workspaceId)
       .eq('provider', 'salesforce')
-      .maybeSingle()
+      .single()
 
     if (!data) return null
 

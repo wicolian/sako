@@ -1,10 +1,7 @@
 import { Suspense } from 'react'
-import { createServiceClient } from '@/lib/supabase/service'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { AudienceManager } from '@/components/audiences/audience-manager'
 import { Target } from 'lucide-react'
-import { Database } from '@/lib/supabase/types'
-
-type WorkspaceRow = Database['public']['Tables']['workspaces']['Row']
 
 export const metadata = {
   title: 'Audiences | Sako Composer',
@@ -12,13 +9,13 @@ export const metadata = {
 }
 
 export default async function AudiencesPage() {
-  const supabase = await createServiceClient()
+  const supabase = await createServerSupabaseClient()
 
   // Get current workspace
   const { data: workspace } = await supabase
     .from('workspaces')
     .select('id')
-    .maybeSingle()
+    .single()
 
   if (!workspace) {
     return (
@@ -44,7 +41,7 @@ export default async function AudiencesPage() {
             </div>
           </div>
         }>
-          <AudienceManager workspaceId={workspace.id as string} />
+          <AudienceManager workspaceId={workspace.id} />
         </Suspense>
       </div>
     </div>

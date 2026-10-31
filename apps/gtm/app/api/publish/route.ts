@@ -97,19 +97,27 @@ export async function POST(request: NextRequest) {
       if (blocked) return blocked
     }
 
-    // Generate HTML
-    const html = generatePublishableHtml({
-      id: design.id,
-      workspace_id: design.workspace_id,
-      name: design.name,
-      description: design.description,
-      sections: design.sections || [],
-      globalStyles: design.global_styles || {},
-      seoMeta: design.seo_meta || {},
-      status: design.status,
-      created_at: design.created_at,
-      updated_at: design.updated_at,
-    })
+    // Generate HTML — prefer canonical render_html for campaign-linked (controlled) designs
+    // so the published page is identical to what the campaign builder previews.
+    const designRow = design as Record<string, unknown>
+    const renderHtml = typeof designRow.render_html === 'string' ? designRow.render_html : ''
+    const editorMode = designRow.editor_mode === 'controlled' ? 'controlled' : 'freeform'
+
+    const html =
+      editorMode === 'controlled' && renderHtml.length > 0
+        ? renderHtml
+        : generatePublishableHtml({
+            id: design.id,
+            workspace_id: design.workspace_id,
+            name: design.name,
+            description: design.description,
+            sections: design.sections || [],
+            globalStyles: design.global_styles || {},
+            seoMeta: design.seo_meta || {},
+            status: design.status,
+            created_at: design.created_at,
+            updated_at: design.updated_at,
+          })
 
     // Upload to R2 storage
     const key = `published/${subdomain}/index.html`

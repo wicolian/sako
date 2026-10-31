@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { encrypt } from '@/lib/encryption'
-import { Database } from '@/lib/supabase/types'
-
-type ProviderConnectionRow = Database['public']['Tables']['provider_connections']['Row']
 
 const FIGMA_CLIENT_ID = process.env.FIGMA_CLIENT_ID
 const FIGMA_CLIENT_SECRET = process.env.FIGMA_CLIENT_SECRET

@@ -205,7 +205,7 @@ export async function generateImage(params: ImageGenerationParams): Promise<Gene
       status: 'completed',
     })
     .select()
-    .maybeSingle()
+    .single()
 
   if (error) {
     console.error('Failed to save generated image:', error)
@@ -291,7 +291,7 @@ export async function deleteImage(imageId: string): Promise<boolean> {
     .from('generated_images')
     .select('storage_path')
     .eq('id', imageId)
-    .maybeSingle()
+    .single()
 
   if (!image) {
     return false

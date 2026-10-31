@@ -1,13 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { generatePageBlocks, fetchPerformanceForFeedback, type Evidence } from '@/lib/ai/ai-sdk-client'
-import { Database } from '@/lib/supabase/types'
+import {
+  fetchPerformanceForFeedback,
+  generatePageBlocks,
+  StructuredGenerationRoutingError,
+  type Evidence,
+} from '@/lib/ai/ai-sdk-client'
+import { withAIContext, type WorkspaceOpenRouterSettings } from '@/lib/ai/context'
+import type { ModelPreferences } from '@/lib/ai/openrouter'
 
-type CampaignRow = Database['public']['Tables']['campaigns']['Row']
-type WorkspaceSettingsRow = Database['public']['Tables']['workspace_settings']['Row']
-type EvidenceRow = Database['public']['Tables']['evidence']['Row']
-type MessageRow = Database['public']['Tables']['messages']['Row']
-type PageBlockRow = Database['public']['Tables']['page_blocks']['Row']
+async function loadWorkspaceAIContext(
+  supabase: ReturnType<typeof createServiceClient>,
+  workspaceId: string,
+): Promise<{
+  settings?: WorkspaceOpenRouterSettings
+  modelPreferences?: ModelPreferences
+}> {
+  try {
+    const { data: workspace } = await supabase
+      .from('workspaces')
+      .select('settings')
+      .eq('id', workspaceId)
+      .single()
+
+    const settings = workspace?.settings as {
+      openrouter?: WorkspaceOpenRouterSettings & { modelPreferences?: ModelPreferences }
+    } | null
+    const openrouter = settings?.openrouter
+    return {
+      settings: openrouter,
+      modelPreferences: openrouter?.modelPreferences,
+    }
+  } catch {
+    return {}
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,7 +55,7 @@ export async function POST(request: NextRequest) {
       .from('campaigns')
       .select('*')
       .eq('id', campaignId)
-      .maybeSingle()
+      .single()
 
     const campaign = campaignData as { 
       audience: string
@@ -53,7 +80,7 @@ export async function POST(request: NextRequest) {
       .from('workspace_settings')
       .select('forbidden_phrases, brand_voice')
       .eq('workspace_id', campaign.workspace_id)
-      .maybeSingle()
+      .single()
 
     if (settingsData) {
       const settings = settingsData as { 
@@ -87,19 +114,27 @@ export async function POST(request: NextRequest) {
     const performanceData = await fetchPerformanceForFeedback(campaignId, supabase)
 
     // Generate page blocks with full context AND performance feedback
-    const generated = await generatePageBlocks(
-      campaign.audience || '',
-      campaign.goal || '',
-      campaign.offer || '',
-      campaign.cta || '',
-      messageTexts,
+    const aiContext = await loadWorkspaceAIContext(supabase, campaign.workspace_id)
+    const generated = await withAIContext(
       {
-        forbiddenPhrases,
-        brandVoice,
-        evidence: evidence || undefined,
-        pageGoal: pageGoal || 'lead-gen',
-        performance: performanceData, // 🔄 THE LEARNING LOOP
-      }
+        workspaceId: campaign.workspace_id,
+        settings: aiContext.settings,
+        modelPreferences: aiContext.modelPreferences,
+      },
+      () => generatePageBlocks(
+        campaign.audience || '',
+        campaign.goal || '',
+        campaign.offer || '',
+        campaign.cta || '',
+        messageTexts,
+        {
+          forbiddenPhrases,
+          brandVoice,
+          evidence: evidence || undefined,
+          pageGoal: pageGoal || 'lead-gen',
+          performance: performanceData, // 🔄 THE LEARNING LOOP
+        }
+      )
     )
 
     // Delete existing blocks
@@ -131,6 +166,12 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Failed to generate page:', error)
+    if (error instanceof StructuredGenerationRoutingError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 503 }
+      )
+    }
     return NextResponse.json(
       { error: 'Failed to generate page' },
       { status: 500 }

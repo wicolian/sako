@@ -28,7 +28,7 @@ import { Badge } from '@/components/ui/badge'
 import { retrieveGateCopy, clearGateCopy, extractBriefFromGateCopy } from '@/lib/gate/copy-transfer'
 import type { LaunchKitBrief, LaunchType, KitGenerationOptions, GenerationProgress, LaunchKit } from '@/lib/kit/kit-types'
 import type { GenerationPlan, ReviewActionId } from '@/lib/planning/types'
-import { applyReviewActionToPlan } from '@/lib/planning/generation-plan'
+import { applyReviewActionToPlan } from '@/lib/planning/plan-helpers'
 import { buildReviewSignals, recommendReviewActions } from '@/lib/planning/review-signals'
 import {
   ArrowRight,
@@ -87,6 +87,7 @@ interface WizardState {
   options: KitGenerationOptions
   generationProgress: GenerationProgress | null
   kit: LaunchKit | null
+  campaignId: string | null
   error: string | null
 }
 
@@ -113,6 +114,7 @@ export function KitWizardPage() {
     },
     generationProgress: null,
     kit: null,
+    campaignId: null,
     error: null,
   })
   
@@ -267,17 +269,27 @@ export function KitWizardPage() {
             const data = JSON.parse(dataLine.substring(6)) as {
               message?: string
               kit?: LaunchKit
+              campaignId?: string
             }
 
             if (eventType === 'progress') {
               setState(prev => ({ ...prev, generationProgress: data as GenerationProgress }))
             } else if (eventType === 'complete') {
-              setState(prev => ({ ...prev, kit: data.kit ?? null }))
+              setState(prev => ({
+                ...prev,
+                kit: data.kit ?? null,
+                campaignId: data.campaignId ?? null,
+              }))
               setIsLoading(false)
-              goNext()
 
               if (source === 'gate') {
                 clearGateCopy()
+              }
+
+              if (data.campaignId) {
+                router.push(`/campaigns/${data.campaignId}`)
+              } else {
+                setState(prev => ({ ...prev, error: 'Campaign created but no destination was returned.' }))
               }
             } else if (eventType === 'error') {
               setState(prev => ({ ...prev, error: data.message ?? 'Generation failed' }))
@@ -285,7 +297,15 @@ export function KitWizardPage() {
             }
           } catch (e) {
             console.error('Parse error:', e)
+          }
+        }
       }
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        error: error instanceof Error ? error.message : 'Generation failed',
+      }))
+      setIsLoading(false)
     }
   }
 
@@ -304,14 +324,6 @@ export function KitWizardPage() {
     const nextPlan = applyReviewActionToPlan(state.brief.planning, action)
     handlePlanChange(nextPlan)
     await handleGenerate({ plan: nextPlan })
-  }
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        error: error instanceof Error ? error.message : 'Generation failed',
-      }))
-      setIsLoading(false)
-    }
   }
   
   const handleExport = (format: string) => {
@@ -1025,7 +1037,7 @@ function ExportStep({
         
         <div className="pt-6 border-t border-border/50">
           <Button variant="outline" size="lg" className="w-full h-12" asChild>
-            <a href={`/campaigns/${kit?.id}`}>Go to Campaign Dashboard</a>
+            <a href={`/campaigns/${kit?.campaignId}`}>Go to Campaign Dashboard</a>
           </Button>
         </div>
       </CardContent>

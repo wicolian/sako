@@ -106,7 +106,7 @@ export class SlackProvider implements DeploymentProvider {
         },
       }, { onConflict: 'workspace_id,provider' })
       .select()
-      .maybeSingle()
+      .single()
 
     if (error) throw error
 
@@ -463,7 +463,7 @@ export class SlackProvider implements DeploymentProvider {
       .select('*')
       .eq('workspace_id', workspaceId)
       .eq('provider', 'slack')
-      .maybeSingle()
+      .single()
 
     if (!data) return null
 

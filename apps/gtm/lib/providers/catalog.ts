@@ -7,6 +7,7 @@ export type ProviderCategory =
   | 'marketing_automation'
   | 'website_cms'
   | 'advertising'
+  | 'social'
   | 'analytics'
   | 'collaboration'
 
@@ -194,6 +195,18 @@ const PROVIDER_META: Record<ProviderType, Omit<ProviderCatalogItem, 'deliveryMod
     requiresConnection: true,
     features: ['Provider scaffold'],
   },
+  twitter: {
+    id: 'twitter',
+    name: 'Twitter/X',
+    description: 'Direct publishing for approved social posts.',
+    category: 'social',
+    color: '#111827',
+    iconLabel: 'X',
+    surfaceStatus: 'beta',
+    authType: 'oauth',
+    requiresConnection: true,
+    features: ['Direct post publishing', 'OAuth 2.0 PKCE', 'Queue approval publish'],
+  },
   ga4: {
     id: 'ga4',
     name: 'GA4',
@@ -307,6 +320,7 @@ function isConfigured(providerId: ProviderType): boolean {
     case 'google-ads':
     case 'meta-ads':
     case 'linkedin-ads':
+    case 'twitter':
       return true
     default:
       return false
@@ -316,6 +330,7 @@ function isConfigured(providerId: ProviderType): boolean {
 function getDeliveryMode(providerId: ProviderType): ProviderDeliveryMode {
   if (providerId === 'figma') return 'export_only'
   if (providerId === 'framer') return 'export_only'
+  if (providerId === 'twitter') return 'direct_deploy'
   if (PROVIDER_META[providerId].surfaceStatus === 'coming_soon') return 'coming_soon'
   return 'direct_deploy'
 }
@@ -333,6 +348,7 @@ export const PROVIDER_CATEGORIES: Array<{ id: ProviderCategory; name: string }> 
   { id: 'marketing_automation', name: 'Marketing Automation' },
   { id: 'website_cms', name: 'Website & CMS' },
   { id: 'advertising', name: 'Advertising' },
+  { id: 'social', name: 'Social' },
   { id: 'analytics', name: 'Analytics' },
   { id: 'collaboration', name: 'Collaboration' },
 ]

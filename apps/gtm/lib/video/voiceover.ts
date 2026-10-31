@@ -5,7 +5,7 @@
  * using ElevenLabs, with per-scene segmentation and storage.
  */
 
-import { createServiceClient } from '@/lib/supabase/service';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { 
   generateSpeech, 
   getVoice, 
@@ -229,7 +229,7 @@ async function uploadAudio(
   filename: string,
   workspaceId: string
 ): Promise<string> {
-  const supabase = await createServiceClient();
+  const supabase = await createServerSupabaseClient();
   const path = `${workspaceId}/voiceovers/${filename}`;
   
   const { data, error } = await supabase.storage
@@ -256,7 +256,7 @@ async function uploadAudio(
  * Save voiceover to database
  */
 async function saveVoiceover(voiceover: Voiceover, workspaceId: string): Promise<void> {
-  const supabase = await createServiceClient();
+  const supabase = await createServerSupabaseClient();
   
   // Find or create the script record first
   const { error } = await supabase

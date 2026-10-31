@@ -8,6 +8,7 @@
 import { Client } from '@hubspot/api-client'
 import { decrypt, encrypt } from '@/lib/encryption'
 import { createServiceClient } from '@/lib/supabase/service'
+import { getHubSpotAccessToken, getHubSpotEmailStats, getHubSpotFormSubmissions } from '@/lib/hubspot/client'
 import type {
   DeploymentProvider,
   ProviderCapabilities,
@@ -109,7 +110,7 @@ export class HubSpotProvider implements DeploymentProvider {
         scopes: tokens.scope?.split(' ') || [],
       }, { onConflict: 'workspace_id' })
       .select()
-      .maybeSingle()
+      .single()
 
     if (error) {
       throw new Error('Failed to save HubSpot connection')
@@ -252,27 +253,112 @@ export class HubSpotProvider implements DeploymentProvider {
   }
 
   async getPerformance(campaignId: string): Promise<PerformanceMetrics | null> {
-    // TODO: Implement performance tracking via HubSpot Analytics API
-    // For now, return basic contact metrics
     const supabase = createServiceClient()
     
-    // Get deployment for this campaign
     const { data: deployment } = await supabase
       .from('deployments')
-      .select('hubspot_result')
+      .select(`
+        id,
+        hubspot_result,
+        campaigns!inner (
+          workspace_id
+        )
+      `)
       .eq('campaign_id', campaignId)
       .order('created_at', { ascending: false })
       .limit(1)
-      .maybeSingle()
+      .single()
 
     if (!deployment?.hubspot_result) {
       return null
     }
 
+    const campaign = Array.isArray(deployment.campaigns)
+      ? deployment.campaigns[0]
+      : deployment.campaigns
+
+    if (!campaign?.workspace_id) {
+      return null
+    }
+
+    const accessToken = await getHubSpotAccessToken(campaign.workspace_id)
+    const client = await this.getClient(campaign.workspace_id)
+    if (!accessToken || !client) {
+      return null
+    }
+
+    const hubspotResult = deployment.hubspot_result as Record<string, unknown>
+    const hubspotDeployment = (hubspotResult.hubspot as Record<string, unknown> | undefined) ?? hubspotResult
+    const metadata = (hubspotDeployment.metadata as Record<string, unknown> | undefined) ?? {}
+    const formId =
+      (metadata.formId as string | undefined) ||
+      (metadata.guid as string | undefined)
+    const emailId =
+      (metadata.emailId as string | undefined) ||
+      (metadata.externalEmailId as string | undefined)
+
+    let formSubmissions: number | undefined
+    let emailOpens: number | undefined
+    let emailClicks: number | undefined
+    let dataSource: PerformanceMetrics['dataSource'] = 'estimated'
+
+    if (formId) {
+      const submissionCount = await getHubSpotFormSubmissions(accessToken, formId)
+      if (submissionCount !== null) {
+        formSubmissions = submissionCount
+        dataSource = 'hubspot_api'
+      }
+    }
+
+    if (emailId) {
+      const emailStats = await getHubSpotEmailStats(accessToken, emailId)
+      if (emailStats.emailOpens !== null) {
+        emailOpens = emailStats.emailOpens ?? undefined
+        emailClicks = emailStats.emailClicks ?? undefined
+        dataSource = 'hubspot_api'
+      }
+    }
+
+    let contactsCreated = 0
+    try {
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      const contactsResponse = await client.crm.contacts.searchApi.doSearch({
+        filterGroups: [
+          {
+            filters: [
+              {
+                propertyName: 'createdate',
+                operator: 'GTE' as never,
+                value: thirtyDaysAgo.toISOString(),
+              },
+            ],
+          },
+        ],
+        limit: 1,
+        properties: ['email'],
+      })
+
+      contactsCreated = contactsResponse.total
+      dataSource = 'hubspot_api'
+    } catch (error) {
+      console.error('Failed to fetch HubSpot contacts for performance:', error)
+    }
+
+    const pageViews = undefined
+    const conversionRate =
+      typeof formSubmissions === 'number' && typeof pageViews === 'number' && pageViews > 0
+        ? Number(((formSubmissions / pageViews) * 100).toFixed(1))
+        : undefined
+
     return {
-      formSubmissions: 0,
-      pageViews: 0,
-      contactsCreated: 0,
+      formSubmissions,
+      pageViews,
+      contactsCreated,
+      emailOpens,
+      emailClicks,
+      conversionRate,
+      dataSource,
+      lastUpdated: new Date().toISOString(),
     }
   }
 
@@ -283,7 +369,7 @@ export class HubSpotProvider implements DeploymentProvider {
       .from('hubspot_connections')
       .select('*')
       .eq('workspace_id', workspaceId)
-      .maybeSingle()
+      .single()
 
     if (!data) return null
 

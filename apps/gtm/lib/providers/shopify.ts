@@ -1,8 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import type { DeploymentProvider, ProviderCapabilities, ProviderConnection, PageMetadata, DeployResult, PerformanceMetrics } from './types'
-import { Database } from '@/lib/supabase/types'
-
-type ProviderConnectionRow = Database['public']['Tables']['provider_connections']['Row']
 
 export class ShopifyProvider implements DeploymentProvider {
   id = 'shopify' as const
@@ -13,7 +10,7 @@ export class ShopifyProvider implements DeploymentProvider {
 
   async isConnected(workspaceId: string): Promise<boolean> {
     const supabase = createServiceClient()
-    const { data } = await supabase.from('provider_connections').select('id').eq('workspace_id', workspaceId).eq('provider', 'shopify').maybeSingle()
+    const { data } = await supabase.from('provider_connections').select('id').eq('workspace_id', workspaceId).eq('provider', 'shopify').single()
     return !!data
   }
 
@@ -23,7 +20,7 @@ export class ShopifyProvider implements DeploymentProvider {
 
   async handleOAuthCallback(code: string, workspaceId: string): Promise<ProviderConnection> {
     const supabase = createServiceClient()
-    const { data, error } = await supabase.from('provider_connections').upsert({ workspace_id: workspaceId, provider: 'shopify', access_token: code }).select().maybeSingle()
+    const { data, error } = await supabase.from('provider_connections').upsert({ workspace_id: workspaceId, provider: 'shopify', access_token: code }).select().single()
     if (error) throw error
     return { id: data.id, workspaceId, provider: 'shopify', isConnected: true }
   }

@@ -1,10 +1,7 @@
 /**
  * Enhanced Human-in-the-Loop (HITL) System (Jan 2026)
  * 
- * Structured approval workflows forimport { Database } from '@/lib/supabase/types'
-
-type WorkspaceMemberRow = Database['public']['Tables']['workspace_members']['Row']
- AI agent actions:
+ * Structured approval workflows for AI agent actions:
  * - Risk-based escalation
  * - Multi-approver support
  * - Expiration and auto-escalation
@@ -219,7 +216,7 @@ export async function processApprovalDecision(
     .from('approval_requests')
     .select('*')
     .eq('id', requestId)
-    .maybeSingle();
+    .single();
   
   if (fetchError || !request) {
     throw new Error('Approval request not found');
@@ -332,7 +329,7 @@ export async function getApprovalRequest(requestId: string): Promise<ApprovalReq
     .from('approval_requests')
     .select('*')
     .eq('id', requestId)
-    .maybeSingle();
+    .single();
   
   return data;
 }

@@ -2,12 +2,7 @@
  * Usage Metering System
  * 
  * Tracks and enforces usage limits for AI generations,
- * deployments, API calls, animport { Database } from '@/lib/supabase/types'
-
-type WorkspaceRow = Database['public']['Tables']['workspaces']['Row']
-type CampaignRow = Database['public']['Tables']['campaigns']['Row']
-type WorkspaceMemberRow = Database['public']['Tables']['workspace_members']['Row']
-d other metered features.
+ * deployments, API calls, and other metered features.
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
@@ -156,7 +151,7 @@ class UsageMeteringService {
       .from('workspaces')
       .select('subscription:subscriptions(plan_id)')
       .eq('id', workspaceId)
-      .maybeSingle()
+      .single()
 
     const planId = normalizePlanId((workspace?.subscription as any)?.plan_id || 'free')
     const plan = PLANS[planId as PlanId] || PLANS.free
@@ -186,7 +181,7 @@ class UsageMeteringService {
       .select('*')
       .eq('workspace_id', workspaceId)
       .gte('period_start', periodStart.toISOString().split('T')[0])
-      .maybeSingle()
+      .single()
 
     // Get current counts for non-event-based limits
     const [campaignsResult, brandsResult, membersResult] = await Promise.all([
@@ -262,7 +257,7 @@ class UsageMeteringService {
       .select('total_cost_usd')
       .eq('workspace_id', workspaceId)
       .gte('period_start', current.periodStart.toISOString().split('T')[0])
-      .maybeSingle()
+      .single()
 
     return {
       limits,

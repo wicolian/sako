@@ -1,9 +1,7 @@
 /**
  * Canvas Collaboration (Phase 3.3)
  * 
- * Real-time collimport { Database } from '@/lib/supabase/types'
-
-aborative canvas for multi-user editing.
+ * Real-time collaborative canvas for multi-user editing.
  * Uses Supabase Realtime for synchronization.
  */
 
@@ -64,7 +62,7 @@ export async function getCanvasState(campaignId: string): Promise<CanvasState | 
     .from('canvas_states')
     .select('*')
     .eq('campaign_id', campaignId)
-    .maybeSingle()
+    .single()
 
   if (error) {
     // Canvas state doesn't exist yet
@@ -95,7 +93,7 @@ export async function initializeCanvas(
     .from('canvas_states')
     .upsert(initialState, { onConflict: 'campaign_id' })
     .select()
-    .maybeSingle()
+    .single()
 
   if (error) {
     throw new Error('Failed to initialize canvas')
@@ -179,7 +177,7 @@ export async function applyCanvasOperation(
     })
     .eq('campaign_id', campaignId)
     .select()
-    .maybeSingle()
+    .single()
 
   if (error) {
     throw new Error('Failed to apply operation')

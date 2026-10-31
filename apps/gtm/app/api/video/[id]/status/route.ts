@@ -27,7 +27,7 @@ export async function GET(
       .select('*')
       .eq('render_job_id', videoId)
       .eq('workspace_id', workspaceId)
-      .maybeSingle()
+      .single()
     
     // If we have a completed asset, return it
     if (asset && asset.render_status === 'complete') {

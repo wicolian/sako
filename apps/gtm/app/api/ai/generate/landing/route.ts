@@ -5,7 +5,7 @@ import {
   streamLandingPageHTML,
   type LandingPageContent 
 } from '@/lib/ai/ai-sdk-client'
-import { buildCampaignContextWithLearning, type CampaignInput } from '@/lib/learning/prompt-enhancer'
+import { buildCampaignContextWithLearning } from '@/lib/learning/prompt-enhancer'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getBrandContext, formatBrandPrompt, generateBrandCSS, getBrandFontLink } from '@/lib/ai/brand-context'
 import { generateLandingPage } from '@/lib/ai/template-aware-generation'
@@ -50,13 +50,7 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (campaign) {
-        const campaignInput: CampaignInput = {
-          audience: (campaign as Record<string, unknown>).audience as string || '',
-          goal: (campaign as Record<string, unknown>).goal as string || '',
-          offer: (campaign as Record<string, unknown>).offer as string || '',
-          cta: (campaign as Record<string, unknown>).cta as string,
-        }
-        const enhancedContext = await buildCampaignContextWithLearning(campaignInput, workspaceId)
+        const enhancedContext = await buildCampaignContextWithLearning(campaign, workspaceId)
         context = enhancedContext.campaignContext
         if (enhancedContext.hasLearningData) {
           context = enhancedContext.learningContext + '\n\n' + context
@@ -79,7 +73,7 @@ export async function POST(request: NextRequest) {
     if (useTemplates) {
       const result = await generateLandingPage({
         brief: prompt,
-        industry: (settings as Record<string, unknown>)?.industry as string | undefined,
+        industry: settings?.industry,
         style: style || {
           theme: brandContext?.visualStyle.theme || 'dark',
           layout: 'centered',

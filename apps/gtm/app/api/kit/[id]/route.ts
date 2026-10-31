@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getWorkspaceIdWithFallback } from '@/lib/workspace'
+import { isMissingLaunchKitsTableError, mapLaunchKitRecord, type LaunchKitRecord } from '@/lib/kit/launch-kit-store'
 
 /**
  * GET /api/kit/[id]
@@ -28,13 +29,19 @@ export async function GET(
     .single()
   
   if (error || !kit) {
+    if (error && isMissingLaunchKitsTableError(error.message)) {
+      return NextResponse.json(
+        { error: 'Launch kit storage is unavailable. Apply the required Supabase migrations.' },
+        { status: 503 }
+      )
+    }
     return NextResponse.json(
       { error: 'Kit not found' },
       { status: 404 }
     )
   }
   
-  return NextResponse.json({ kit })
+  return NextResponse.json({ kit: mapLaunchKitRecord(kit as LaunchKitRecord) })
 }
 
 /**

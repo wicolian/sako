@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       .eq('workspace_id', workspaceId)
       .order('version', { ascending: false })
       .limit(1)
-      .maybeSingle()
+      .single()
 
     if (policy) {
       const parsedPolicy = parsePolicyFromDatabase(policy)

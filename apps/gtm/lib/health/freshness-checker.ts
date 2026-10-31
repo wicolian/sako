@@ -1,11 +1,7 @@
 /**
  * Evidence Freshness Checker (Jan 2026)
  * 
- * Validates import { Database } from '@/lib/supabase/types'
-
-type EvidenceRow = Database['public']['Tables']['evidence']['Row']
-type MessageEvidenceRow = Database['public']['Tables']['message_evidence']['Row']
-evidence links and tracks age/currency of evidence.
+ * Validates evidence links and tracks age/currency of evidence.
  * Runs as a background job or on-demand.
  */
 
@@ -384,7 +380,7 @@ export async function scheduleFreshnessCheck(
       scheduled_at: new Date().toISOString(),
     })
     .select()
-    .maybeSingle();
+    .single();
   
   if (error) {
     throw new Error(`Failed to schedule freshness check: ${error.message}`);

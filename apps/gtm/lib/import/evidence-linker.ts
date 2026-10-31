@@ -30,6 +30,10 @@ export interface LinkingSummary {
   averageConfidence: number;
 }
 
+export interface AutoLinkEvidenceOptions {
+  skipRewriteGeneration?: boolean;
+}
+
 // Schema for linking evaluation
 const LinkEvaluationSchema = z.object({
   isMatch: z.boolean().describe('Does this evidence support this claim?'),
@@ -48,13 +52,14 @@ const RewriteSchema = z.object({
  */
 export async function autoLinkEvidence(
   claims: ExtractedClaim[],
-  evidenceByClaimId: Map<string, EvidenceCandidate[]>
+  evidenceByClaimId: Map<string, EvidenceCandidate[]>,
+  options: AutoLinkEvidenceOptions = {}
 ): Promise<LinkedEvidence[]> {
   const linkedEvidence: LinkedEvidence[] = [];
   
   for (const claim of claims) {
     const evidence = evidenceByClaimId.get(claim.id) || [];
-    const linked = await linkEvidenceToClaim(claim, evidence);
+    const linked = await linkEvidenceToClaim(claim, evidence, options);
     linkedEvidence.push(linked);
   }
   
@@ -66,11 +71,12 @@ export async function autoLinkEvidence(
  */
 async function linkEvidenceToClaim(
   claim: ExtractedClaim,
-  evidence: EvidenceCandidate[]
+  evidence: EvidenceCandidate[],
+  options: AutoLinkEvidenceOptions
 ): Promise<LinkedEvidence> {
   // If no evidence found, mark as unsupported
   if (evidence.length === 0) {
-    const rewrite = await generateRewrite(claim);
+    const rewrite = options.skipRewriteGeneration ? getFallbackRewrite(claim) : await generateRewrite(claim);
     return {
       claimId: claim.id,
       evidenceIds: [],
@@ -103,7 +109,7 @@ async function linkEvidenceToClaim(
   const evaluatedLinks = await evaluateEvidenceLinks(claim, evidence);
   
   if (evaluatedLinks.length === 0) {
-    const rewrite = await generateRewrite(claim);
+    const rewrite = options.skipRewriteGeneration ? getFallbackRewrite(claim) : await generateRewrite(claim);
     return {
       claimId: claim.id,
       evidenceIds: [],
@@ -127,10 +133,22 @@ async function linkEvidenceToClaim(
   
   // Add rewrite suggestion for weak evidence
   if (status === 'weak') {
-    result.suggestedRewrite = await generateRewrite(claim);
+    result.suggestedRewrite = options.skipRewriteGeneration ? getFallbackRewrite(claim) : await generateRewrite(claim);
   }
   
   return result;
+}
+
+function getFallbackRewrite(claim: ExtractedClaim): string {
+  if (claim.suggestedRewrite?.trim()) {
+    return claim.suggestedRewrite.trim();
+  }
+
+  return claim.text
+    .replace(/\b(best|#1|number one|leading|top|first|only|most|fastest|largest|biggest)\b/gi, 'well-regarded')
+    .replace(/\b(always|never|guarantee(?:d)?|100%)\b/gi, 'can help')
+    .replace(/(\d+%|\d+x|\d+\+)/g, 'meaningful')
+    .trim();
 }
 
 /**

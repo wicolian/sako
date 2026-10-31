@@ -4,7 +4,7 @@
 #
 #   Landing      http://localhost:3000
 #   API          http://localhost:3001
-#   GTM app      http://localhost:3002  (opt-in: --profile gtm, build broken)
+#   GTM app      http://localhost:3002  (opt-in: --profile gtm, needs Supabase)
 #   Waitlist     http://localhost:3003
 #   Wall         http://localhost:3004
 #   Studio       http://localhost:3100
@@ -83,15 +83,18 @@ services:
     depends_on: [api]
 
   gtm:
-    <<: *db
-    profiles: [gtm]   # build is broken, see issues. Start with: docker compose --profile gtm up
+    profiles: [gtm]   # needs a Supabase project. See apps/gtm/README.md. Start with: docker compose --profile gtm up -d
     image: ghcr.io/${SAKO_IMAGE_OWNER:-wicolian}/sako-gtm:${SAKO_VERSION:-latest}
-    build: { context: ./apps/gtm }
+    build:
+      context: ./apps/gtm
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+        NEXT_PUBLIC_APP_URL: http://localhost:3002
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
     restart: unless-stopped
     env_file: .env
     environment:
-      DATABASE_URL: postgresql://sako:${POSTGRES_PASSWORD:-sako}@postgres:5432/gtm
-      DATABASE_URL_UNPOOLED: postgresql://sako:${POSTGRES_PASSWORD:-sako}@postgres:5432/gtm
       NEXT_PUBLIC_APP_URL: http://localhost:3002
       SAKO_V1_API_URL: http://api:3001
     ports: ["3002:3000"]

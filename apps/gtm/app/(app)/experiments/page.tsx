@@ -1,10 +1,7 @@
 import { Suspense } from 'react'
-import { createServiceClient } from '@/lib/supabase/service'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ABTestPanel } from '@/components/experiments/ab-test-panel'
 import { FlaskConical } from 'lucide-react'
-import { Database } from '@/lib/supabase/types'
-
-type WorkspaceRow = Database['public']['Tables']['workspaces']['Row']
 
 export const metadata = {
   title: 'A/B Experiments | Sako Composer',
@@ -12,13 +9,13 @@ export const metadata = {
 }
 
 export default async function ExperimentsPage() {
-  const supabase = await createServiceClient()
+  const supabase = await createServerSupabaseClient()
 
   // Get current workspace
   const { data: workspace } = await supabase
     .from('workspaces')
     .select('id')
-    .maybeSingle()
+    .single()
 
   if (!workspace) {
     return (
@@ -44,7 +41,7 @@ export default async function ExperimentsPage() {
             </div>
           </div>
         }>
-          <ABTestPanel workspaceId={workspace.id as string} />
+          <ABTestPanel workspaceId={workspace.id} />
         </Suspense>
       </div>
     </div>

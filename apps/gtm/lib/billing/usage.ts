@@ -1,9 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { getPlanLimits } from './plans'
-import { Database } from '@/lib/supabase/types'
-
-type SubscriptionRow = Database['public']['Tables']['subscriptions']['Row']
-type CampaignRow = Database['public']['Tables']['campaigns']['Row']
 
 export interface LimitCheckResult {
   allowed: boolean
@@ -22,7 +18,7 @@ export async function checkLimit(
     .from('subscriptions')
     .select('plan_id')
     .eq('workspace_id', workspaceId)
-    .maybeSingle()
+    .single()
 
   const planLimits = getPlanLimits(subscription?.plan_id || 'free')
   const limitKey =
@@ -67,7 +63,7 @@ export async function checkLimit(
       .eq('workspace_id', workspaceId)
       .eq('metric_type', metricType)
       .eq('period_start', periodStart)
-      .maybeSingle()
+      .single()
 
     const current = usage?.count || 0
 

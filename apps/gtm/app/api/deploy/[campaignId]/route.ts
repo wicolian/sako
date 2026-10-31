@@ -6,6 +6,8 @@ import { getProvider, getDefaultFormFields, batchDeploy } from '@/lib/providers/
 import type { ProviderType, PageMetadata } from '@/lib/providers/types'
 import { checkCampaignComplianceGate } from '@/lib/claims/compliance-gate'
 import { requireWorkspaceEntitlement } from '@/lib/billing/entitlements'
+import { exportToHtml } from '@/lib/export/html-exporter'
+import { mapWebsiteDesignRow } from '@/lib/campaigns/landing-design'
 
 export async function POST(
   request: NextRequest,
@@ -67,12 +69,43 @@ export async function POST(
       .select('*')
       .eq('campaign_id', campaignId)
 
-    // Get page blocks for payload
-    const { data: blocks } = await supabase
-      .from('page_blocks')
-      .select('*')
-      .eq('campaign_id', campaignId)
-      .order('order')
+    let blocks: Record<string, unknown>[] = []
+    let htmlContent: string
+
+    if (campaign.landing_design_id) {
+      const { data: designRow } = await supabase
+        .from('website_designs')
+        .select('*')
+        .eq('id', campaign.landing_design_id)
+        .maybeSingle()
+
+      if (designRow) {
+        const design = mapWebsiteDesignRow(designRow as Record<string, unknown>)
+        // Prefer canonical render_html for campaign-linked (controlled) designs.
+        htmlContent =
+          design.renderHtml && design.renderHtml.length > 0
+            ? design.renderHtml
+            : exportToHtml(design)
+      } else {
+        const { data: legacyBlocks } = await supabase
+          .from('page_blocks')
+          .select('*')
+          .eq('campaign_id', campaignId)
+          .order('order')
+        blocks = (legacyBlocks ?? []) as Record<string, unknown>[]
+        const heroBlock = legacyBlocks?.find((block: { type?: string }) => block.type === 'hero')
+        htmlContent = generateLandingPageHtml(campaign, legacyBlocks || [], heroBlock)
+      }
+    } else {
+      const { data: legacyBlocks } = await supabase
+        .from('page_blocks')
+        .select('*')
+        .eq('campaign_id', campaignId)
+        .order('order')
+      blocks = (legacyBlocks ?? []) as Record<string, unknown>[]
+      const heroBlock = legacyBlocks?.find((block: { type?: string }) => block.type === 'hero')
+      htmlContent = generateLandingPageHtml(campaign, legacyBlocks || [], heroBlock)
+    }
 
     // Generate idempotency key
     const payloadHash = createHash('sha256')
@@ -114,8 +147,6 @@ export async function POST(
 
     // Generate HTML from blocks
     const heroBlock = blocks?.find((b: any) => b.type === 'hero')
-    const htmlContent = generateLandingPageHtml(campaign, blocks || [], heroBlock)
-
     // Prepare metadata for deployment
     const pageMetadata: PageMetadata = {
       name: campaign.name,

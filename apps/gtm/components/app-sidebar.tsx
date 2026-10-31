@@ -3,7 +3,6 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { useUser, useClerk } from "@clerk/nextjs"
 import {
   Layers,
   Settings,
@@ -19,8 +18,14 @@ import {
   BadgeCheck,
   FileSearch,
   ChevronDown,
+  MessageSquare,
+  ClipboardList,
 } from "lucide-react"
+import { signOut } from "@/lib/supabase/auth"
+import { createClient } from "@/lib/supabase/client"
+import type { User as SupabaseUser } from "@supabase/supabase-js"
 import { useTheme } from "next-themes"
+import { Button } from "@/components/ui/button"
 import {
   Sidebar,
   SidebarContent,
@@ -78,6 +83,7 @@ const navSections: NavSection[] = [
     items: [
       { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, highlight: false, description: "See the next best step" },
       { name: "Import Brand", href: "/import", icon: Globe, highlight: true, description: "Turn a URL into brand context" },
+      { name: "Ask Sako", href: "/agent", icon: MessageSquare, highlight: false, description: "Chat with your GTM brain and run agent tasks" },
       { name: "Campaigns", href: "/campaigns", icon: Layers, highlight: false, description: "Open generated assets and next actions" },
       { name: "Claims Review", href: "/claims", icon: FileSearch, highlight: false, description: "Review risky language before shipping" },
     ],
@@ -86,6 +92,8 @@ const navSections: NavSection[] = [
     label: "Ship",
     items: [
       { name: "Validator", href: "/gate", icon: BadgeCheck, highlight: false, description: "Check copy before export or deploy" },
+      { name: "Requests", href: "/requests", icon: ClipboardList, highlight: false, description: "Track and manage campaign requests" },
+      { name: "Comments", href: "/comments", icon: MessageSquare, highlight: false, description: "Review mentions, replies, and workspace feedback" },
       { name: "Settings", href: "/settings", icon: Settings, highlight: false, description: "Plans, connections, and API access" },
     ],
   },
@@ -103,9 +111,8 @@ function SidebarNav() {
   const pathname = usePathname()
   const router = useRouter()
   const { theme, setTheme } = useTheme()
-  const { user, isLoaded } = useUser()
-  const { signOut } = useClerk()
   const [workspace, setWorkspace] = useState<{ name: string } | null>(null)
+  const [user, setUser] = useState<SupabaseUser | null>(null)
   const [signingOut, setSigningOut] = useState(false)
   const [mounted, setMounted] = useState(false)
   const { state, toggleSidebar } = useSidebar()
@@ -115,24 +122,34 @@ function SidebarNav() {
     setMounted(true)
   }, [])
 
-  // Fetch workspace name
   useEffect(() => {
-    const fetchWorkspace = async () => {
-      try {
-        const res = await fetch("/api/workspace")
-        if (!res.ok) return
-        const data = await res.json()
-        const name = data?.workspace?.name ?? data?.name
-        if (name) setWorkspace({ name })
-      } catch (error) {
-        console.error("Failed to fetch workspace:", error)
+    const fetchData = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+
+      if (user) {
+        const { data } = await supabase
+          .from("workspace_members")
+          .select("workspaces(name)")
+          .eq("user_id", user.id)
+          .maybeSingle()
+
+        const workspaceData = data as {
+          workspaces: { name: string } | { name: string }[] | null
+        } | null
+        if (workspaceData?.workspaces) {
+          const ws = Array.isArray(workspaceData.workspaces)
+            ? workspaceData.workspaces[0]
+            : workspaceData.workspaces
+          if (ws?.name) {
+            setWorkspace({ name: ws.name })
+          }
+        }
       }
     }
-
-    if (isLoaded && user) {
-      fetchWorkspace()
-    }
-  }, [user, isLoaded])
+    fetchData()
+  }, [])
 
   const handleSignOut = async () => {
     setSigningOut(true)
@@ -151,10 +168,8 @@ function SidebarNav() {
     return pathname.startsWith(href)
   }
 
-  // Get display name from Clerk user
-  const displayName = user?.firstName || user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] || "User"
-  const userEmail = user?.emailAddresses?.[0]?.emailAddress || ""
-  const userInitial = displayName.charAt(0).toUpperCase()
+  const userName = user?.email?.split("@")[0] || "User"
+  const displayName = userName.charAt(0).toUpperCase() + userName.slice(1)
 
   const cycleTheme = () => {
     if (theme === "light") setTheme("dark")
@@ -265,9 +280,8 @@ function SidebarNav() {
                   tooltip={displayName}
                 >
                   <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarImage src={user?.imageUrl} alt={displayName} />
                     <AvatarFallback className="rounded-lg bg-gradient-to-br from-primary to-emerald-400 text-primary-foreground">
-                      {userInitial}
+                      {displayName.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-xs leading-tight">

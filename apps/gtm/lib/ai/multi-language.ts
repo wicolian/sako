@@ -310,7 +310,7 @@ export async function saveLocalizedContent(
       is_approved: false,
     }, { onConflict: 'campaign_id,locale' })
     .select()
-    .maybeSingle()
+    .single()
 
   if (error) {
     console.error('Failed to save localized content:', error)
@@ -442,7 +442,7 @@ export async function getWorkspaceLanguages(workspaceId: string): Promise<string
     .from('workspaces')
     .select('settings')
     .eq('id', workspaceId)
-    .maybeSingle()
+    .single()
 
   const settings = (workspace?.settings || {}) as Record<string, unknown>
   const enabledLanguages = settings.enabled_languages as string[] | undefined

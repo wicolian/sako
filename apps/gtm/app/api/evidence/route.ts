@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getWorkspaceIdWithFallback } from '@/lib/workspace'
-import { Database } from '@/lib/supabase/types'
-
-type EvidenceRow = Database['public']['Tables']['evidence']['Row']
 
 export async function GET(request: NextRequest) {
   const supabase = createServiceClient()
@@ -39,7 +36,7 @@ export async function POST(request: NextRequest) {
       source_type: body.source_type,
     })
     .select()
-    .maybeSingle()
+    .single()
   
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })

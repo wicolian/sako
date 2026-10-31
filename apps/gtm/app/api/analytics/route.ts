@@ -228,10 +228,6 @@ async function getClaimAnalytics(
     return [];
   }
 
-  // Type the events
-  type ClaimEvent = { claim_id: string; event_type: string; value: number | null };
-  const typedEvents = claimEvents as ClaimEvent[];
-
   // Aggregate by claim
   const claimMap = new Map<string, {
     impressions: number;
@@ -239,7 +235,7 @@ async function getClaimAnalytics(
     conversions: number;
   }>();
 
-  for (const event of typedEvents) {
+  for (const event of claimEvents) {
     if (!claimMap.has(event.claim_id)) {
       claimMap.set(event.claim_id, {
         impressions: 0,
@@ -313,10 +309,6 @@ async function getAssetAnalytics(
     return [];
   }
 
-  // Type the events
-  type AssetEvent = { asset_id: string; event_type: string; value: number | null };
-  const typedAssetEvents = assetEvents as AssetEvent[];
-
   // Aggregate by asset
   const assetMap = new Map<string, {
     impressions: number;
@@ -324,7 +316,7 @@ async function getAssetAnalytics(
     conversions: number;
   }>();
 
-  for (const event of typedAssetEvents) {
+  for (const event of assetEvents) {
     if (!assetMap.has(event.asset_id)) {
       assetMap.set(event.asset_id, {
         impressions: 0,

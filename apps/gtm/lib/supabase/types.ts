@@ -306,6 +306,8 @@ export interface Database {
           cta: string | null
           constraints: Json | null
           selected_angle_id: string | null
+          /** FK → website_designs.id. Canonical landing-page design for this campaign. */
+          landing_design_id: string | null
           version: number
           created_at: string
           updated_at: string
@@ -322,6 +324,7 @@ export interface Database {
           cta?: string | null
           constraints?: Json | null
           selected_angle_id?: string | null
+          landing_design_id?: string | null
           version?: number
           created_at?: string
           updated_at?: string
@@ -338,6 +341,7 @@ export interface Database {
           cta?: string | null
           constraints?: Json | null
           selected_angle_id?: string | null
+          landing_design_id?: string | null
           version?: number
           created_at?: string
           updated_at?: string

@@ -43,6 +43,16 @@ interface IQStats {
   }
 }
 
+interface LearningInsight {
+  id: string
+  statement: string
+  confidence: number
+  status: string
+  averageConversionRate: number
+  citations: number
+  confidenceDelta: number
+}
+
 export default function IQDashboardPage() {
   const router = useRouter()
   const [stats, setStats] = useState<IQStats | null>(null)
@@ -54,6 +64,13 @@ export default function IQDashboardPage() {
     action: string
     time: string
   }>>([])
+  const [learningInsights, setLearningInsights] = useState<{
+    topClaims: LearningInsight[]
+    claimsToReview: LearningInsight[]
+  }>({
+    topClaims: [],
+    claimsToReview: [],
+  })
 
   useEffect(() => {
     fetchStats()
@@ -85,7 +102,7 @@ export default function IQDashboardPage() {
       const workspaceId = typedMembership.workspace_id
 
       // Fetch counts
-      const [brandsResult, audiencesResult, knowledgeResult] = await Promise.all([
+      const [brandsResult, audiencesResult, knowledgeResult, learningResponse] = await Promise.all([
         supabase
           .from('brands')
           .select('*', { count: 'exact' })
@@ -99,6 +116,7 @@ export default function IQDashboardPage() {
           .select('*')
           .eq('workspace_id', workspaceId)
           .is('parent_id', null),
+        fetch('/api/brain/feedback').then((response) => response.ok ? response.json() : null),
       ])
 
       // Calculate knowledge by type
@@ -122,6 +140,13 @@ export default function IQDashboardPage() {
           recentlyUpdated: Math.min(knowledgeResult.data?.length || 0, 5),
         },
       })
+
+      if (learningResponse) {
+        setLearningInsights({
+          topClaims: learningResponse.topClaims || [],
+          claimsToReview: learningResponse.claimsToReview || [],
+        })
+      }
 
       // Mock recent activity
       setRecentActivity([
@@ -315,6 +340,58 @@ export default function IQDashboardPage() {
           </CardContent>
         </Card>
       )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Top Performing Claims</CardTitle>
+            <CardDescription>Facts whose confidence improved after live campaign data.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {learningInsights.topClaims.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Publish campaigns and sync performance to start improving fact confidence.
+              </p>
+            ) : (
+              learningInsights.topClaims.map((claim) => (
+                <div key={claim.id} className="rounded-lg border p-3">
+                  <p className="text-sm font-medium">{claim.statement}</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Badge variant="secondary">{claim.averageConversionRate}% CVR</Badge>
+                    <Badge variant="secondary">{claim.citations} campaigns</Badge>
+                    <Badge variant="secondary">+{claim.confidenceDelta.toFixed(3)} confidence</Badge>
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Claims To Review</CardTitle>
+            <CardDescription>Facts flagged because they underperform your workspace average.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {learningInsights.claimsToReview.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No claims are currently flagged for review.
+              </p>
+            ) : (
+              learningInsights.claimsToReview.map((claim) => (
+                <div key={claim.id} className="rounded-lg border p-3">
+                  <p className="text-sm font-medium">{claim.statement}</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Badge variant="outline">{claim.averageConversionRate}% CVR</Badge>
+                    <Badge variant="outline">{claim.citations} citations</Badge>
+                    <Badge variant="outline" className="text-amber-600">Review required</Badge>
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Recent Activity */}
       <Card>

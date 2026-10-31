@@ -1,10 +1,7 @@
 import { Suspense } from 'react'
-import { createServiceClient } from '@/lib/supabase/service'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { VisualWorkflowBuilder } from '@/components/workflows/visual-workflow-builder'
 import { GitBranch } from 'lucide-react'
-import { Database } from '@/lib/supabase/types'
-
-type WorkspaceRow = Database['public']['Tables']['workspaces']['Row']
 
 export const metadata = {
   title: 'Workflows | Sako Composer',
@@ -12,13 +9,13 @@ export const metadata = {
 }
 
 export default async function WorkflowsPage() {
-  const supabase = await createServiceClient()
+  const supabase = await createServerSupabaseClient()
 
   // Get current workspace
   const { data: workspace } = await supabase
     .from('workspaces')
     .select('id')
-    .maybeSingle()
+    .single()
 
   if (!workspace) {
     return (
@@ -54,7 +51,7 @@ export default async function WorkflowsPage() {
             </div>
           </div>
         }>
-          <VisualWorkflowBuilder workspaceId={workspace.id as string} />
+          <VisualWorkflowBuilder workspaceId={workspace.id} />
         </Suspense>
       </div>
     </div>

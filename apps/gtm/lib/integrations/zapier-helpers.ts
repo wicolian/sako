@@ -1,10 +1,7 @@
 /**
  * Zapier Integration Helpers (Phase 4.2)
  * 
- * Webhook triggers and actions for Zapimport { Database } from '@/lib/supabase/types'
-
-type CampaignRow = Database['public']['Tables']['campaigns']['Row']
-ier integration.
+ * Webhook triggers and actions for Zapier integration.
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
@@ -75,7 +72,7 @@ export async function registerZapierWebhook(
       trigger_count: 0,
     })
     .select()
-    .maybeSingle()
+    .single()
 
   if (error) {
     console.error('Failed to register Zapier webhook:', error)
@@ -248,7 +245,7 @@ export async function handleZapierAction(
             status: 'draft',
           })
           .select()
-          .maybeSingle()
+          .single()
 
         if (error) throw error
         return { success: true, result: campaign }

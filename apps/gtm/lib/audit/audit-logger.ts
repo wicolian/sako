@@ -2,9 +2,7 @@
  * Audit Logger
  * 
  * Comprehensive audit logging for enterprise compliance.
- * Tracks all signimport { Database } from '@/lib/supabase/types'
-
-ificant actions with full context.
+ * Tracks all significant actions with full context.
  */
 
 import { createServiceClient } from '@/lib/supabase/service'

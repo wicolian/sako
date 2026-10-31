@@ -81,10 +81,10 @@ export class FramerProvider implements DeploymentProvider {
         workspace_id: workspaceId,
         provider: 'framer',
         access_token: encrypt(tokens.access_token),
-        external_id: userId,
+        external_id: user.id,
         external_name: user.name || user.email,
         metadata: {
-          userId: userId,
+          userId: user.id,
           email: user.email,
           refreshToken: tokens.refresh_token,
         },
@@ -93,7 +93,7 @@ export class FramerProvider implements DeploymentProvider {
           : null,
       }, { onConflict: 'workspace_id,provider' })
       .select()
-      .maybeSingle()
+      .single()
 
     if (error) throw error
 
@@ -102,7 +102,7 @@ export class FramerProvider implements DeploymentProvider {
       workspaceId,
       provider: 'framer',
       isConnected: true,
-      externalId: userId,
+      externalId: user.id,
       externalName: user.name || user.email,
     }
   }
@@ -206,7 +206,7 @@ export class FramerProvider implements DeploymentProvider {
       .select('workspace_id, metadata')
       .eq('campaign_id', campaignId)
       .eq('provider', 'framer')
-      .maybeSingle()
+      .single()
 
     if (!deployment?.metadata?.projectId) return null
 
@@ -293,7 +293,7 @@ export class FramerProvider implements DeploymentProvider {
       .select('*')
       .eq('workspace_id', workspaceId)
       .eq('provider', 'framer')
-      .maybeSingle()
+      .single()
 
     if (!data) return null
 

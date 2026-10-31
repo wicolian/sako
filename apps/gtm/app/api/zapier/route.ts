@@ -5,8 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase/service'
-import { auth } from '@clerk/nextjs/server'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import {
   registerZapierWebhook,
   unregisterZapierWebhook,
@@ -19,10 +18,10 @@ import {
 } from '@/lib/integrations/zapier-helpers'
 
 export async function GET(request: NextRequest) {
-  const supabase = await createServiceClient()
-  const { userId } = await auth()
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  if (!userId) {
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -30,8 +29,8 @@ export async function GET(request: NextRequest) {
   const { data: member } = await supabase
     .from('workspace_members')
     .select('workspace_id')
-    .eq('user_id', userId)
-    .maybeSingle()
+    .eq('user_id', user.id)
+    .single()
 
   if (!member) {
     return NextResponse.json({ error: 'No workspace' }, { status: 400 })
@@ -60,10 +59,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = await createServiceClient()
-  const { userId } = await auth()
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  if (!userId) {
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -71,8 +70,8 @@ export async function POST(request: NextRequest) {
   const { data: member } = await supabase
     .from('workspace_members')
     .select('workspace_id')
-    .eq('user_id', userId)
-    .maybeSingle()
+    .eq('user_id', user.id)
+    .single()
 
   if (!member) {
     return NextResponse.json({ error: 'No workspace' }, { status: 400 })
@@ -120,12 +119,12 @@ export async function PUT(request: NextRequest) {
   const { workspaceId, action, data, apiKey } = body
 
   // Verify API key
-  const supabase = await createServiceClient()
+  const supabase = await createServerSupabaseClient()
   const { data: keyRecord } = await supabase
     .from('api_keys')
     .select('workspace_id')
     .eq('key_hash', apiKey) // Would need proper hashing
-    .maybeSingle()
+    .single()
 
   if (!keyRecord || keyRecord.workspace_id !== workspaceId) {
     return NextResponse.json({ error: 'Invalid API key' }, { status: 401 })

@@ -6,9 +6,7 @@
  * PURPOSE:
  * - Templates are REFERENCE patterns for AI generation (never exposed directly)
  * - Users apply their own brand, fonts, colors, and content
- * - AI uses template patterns to generate faster + cheaper than pure genimport { Database } from '@/lib/supabase/types'
-
-eration
+ * - AI uses template patterns to generate faster + cheaper than pure generation
  * - Output is exportable to Figma/Webflow/Framer/HubSpot
  * 
  * DESIGN PRINCIPLES (per frontend.mdc + design-principles-follow-ux.mdc):

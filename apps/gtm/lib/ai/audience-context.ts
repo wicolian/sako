@@ -1,9 +1,7 @@
 /**
  * Audience Context (Phase 1.5)
  * 
- * Structured audiencimport { Database } from '@/lib/supabase/types'
-
-e/persona management for targeted messaging.
+ * Structured audience/persona management for targeted messaging.
  * "One brand, many voices" - adapt content for different audience segments.
  */
 
@@ -49,7 +47,7 @@ export async function getAudience(audienceId: string): Promise<Audience | null> 
     .from('audiences')
     .select('*')
     .eq('id', audienceId)
-    .maybeSingle()
+    .single()
 
   if (error || !data) {
     return null
@@ -69,7 +67,7 @@ export async function getPrimaryAudience(workspaceId: string): Promise<Audience 
     .select('*')
     .eq('workspace_id', workspaceId)
     .eq('is_primary', true)
-    .maybeSingle()
+    .single()
 
   if (error || !data) {
     return null
@@ -251,7 +249,7 @@ export async function createAudience(
       is_active: true,
     })
     .select()
-    .maybeSingle()
+    .single()
 
   if (error) {
     console.error('Failed to create audience:', error)
@@ -276,7 +274,7 @@ export async function updateAudience(
       .from('audiences')
       .select('workspace_id')
       .eq('id', audienceId)
-      .maybeSingle()
+      .single()
 
     if (existing) {
       await supabase
@@ -292,7 +290,7 @@ export async function updateAudience(
     .update(audienceData)
     .eq('id', audienceId)
     .select()
-    .maybeSingle()
+    .single()
 
   if (error) {
     console.error('Failed to update audience:', error)

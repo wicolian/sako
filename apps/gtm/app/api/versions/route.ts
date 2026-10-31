@@ -5,8 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase/service'
-import { auth } from '@clerk/nextjs/server'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import {
   createCampaignVersion,
   getCampaignVersions,
@@ -18,10 +17,10 @@ import {
 } from '@/lib/versioning/campaign-versions'
 
 export async function GET(request: NextRequest) {
-  const supabase = await createServiceClient()
-  const { userId } = await auth()
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  if (!userId) {
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -67,10 +66,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = await createServiceClient()
-  const { userId } = await auth()
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  if (!userId) {
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -98,7 +97,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'versionNumber required' }, { status: 400 })
       }
       try {
-        const version = await restoreCampaignVersion(campaignId, versionNumber, userId)
+        const version = await restoreCampaignVersion(campaignId, versionNumber, user.id)
         return NextResponse.json({ version })
       } catch (error) {
         return NextResponse.json({ error: (error as Error).message }, { status: 404 })

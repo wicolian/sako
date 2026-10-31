@@ -14,6 +14,7 @@
 import { NextRequest } from 'next/server';
 import { streamText } from '@/lib/ai/langsmith-ai';
 import { z } from 'zod';
+import { createServerSupabaseClient as createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { getBrandContext, formatBrandPrompt } from '@/lib/ai/brand-context';
 import { MODELS, generateLandingPageContent, generateMarketingAngles, quickClaimCheck } from '@/lib/ai/ai-sdk-client';
@@ -446,9 +447,10 @@ function createTools(workspaceId: string) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!userId) {
+    if (!user) {
       return new Response('Unauthorized', { status: 401 });
     }
 

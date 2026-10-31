@@ -96,7 +96,7 @@ export const backgroundIdeasSchedule = schedules.task({
           .select('id, name, industry, tone')
           .eq('workspace_id', workspace.id)
           .eq('is_default', true)
-          .maybeSingle()
+          .single()
 
         if (!brand) {
           console.log(`[Background Ideas] Skipping ${workspace.name} - no brand`)
@@ -257,7 +257,7 @@ export const generateVariationsTask = task({
       .from('content_ideas')
       .select('*')
       .eq('id', ideaId)
-      .maybeSingle()
+      .single()
 
     if (error || !originalIdea) {
       throw new Error(`Idea not found: ${ideaId}`)

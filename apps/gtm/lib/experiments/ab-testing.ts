@@ -2,11 +2,7 @@
  * A/B Testing Service
  * 
  * Manages experiments, variant assignment, event tracking,
- * import { Database } from '@/lib/supabase/types'
-
-type ExperimentRow = Database['public']['Tables']['experiments']['Row']
-type ExperimentEventRow = Database['public']['Tables']['experiment_events']['Row']
-and statistical analysis for campaign optimization.
+ * and statistical analysis for campaign optimization.
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
@@ -115,7 +111,7 @@ class ABTestingService {
         created_by: data.createdBy,
       })
       .select()
-      .maybeSingle()
+      .single()
 
     if (error) throw error
 
@@ -154,7 +150,7 @@ class ABTestingService {
         html: data.html,
       })
       .select()
-      .maybeSingle()
+      .single()
 
     if (error) throw error
 
@@ -257,7 +253,7 @@ class ABTestingService {
       .select('variant_id')
       .eq('experiment_id', experimentId)
       .eq('visitor_id', visitorId)
-      .maybeSingle()
+      .single()
 
     let variantId = assignment?.variant_id
 
@@ -273,7 +269,7 @@ class ABTestingService {
       .from('experiment_variants')
       .select('*')
       .eq('id', variantId)
-      .maybeSingle()
+      .single()
 
     return variant ? this.mapVariant(variant) : null
   }
@@ -372,7 +368,7 @@ class ABTestingService {
       .from('experiments')
       .select('primary_metric, confidence_level')
       .eq('id', experimentId)
-      .maybeSingle()
+      .single()
 
     if (!experiment) return []
 
@@ -531,7 +527,7 @@ class ABTestingService {
       .from('experiments')
       .select('*')
       .eq('id', experimentId)
-      .maybeSingle()
+      .single()
 
     return data ? this.mapExperiment(data) : null
   }

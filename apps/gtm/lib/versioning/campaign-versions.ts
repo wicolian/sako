@@ -1,9 +1,7 @@
 /**
  * Campaign Version Control (Phase 6.1)
  * 
- * Full vers
-
-on history with diff view and rollback capability.
+ * Full version history with diff view and rollback capability.
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
@@ -51,7 +49,7 @@ export async function createCampaignVersion(
     .from('campaigns')
     .select('*')
     .eq('id', campaignId)
-    .maybeSingle()
+    .single()
 
   if (campaignError || !campaign) {
     console.error('Failed to get campaign for versioning:', campaignError)
@@ -74,7 +72,7 @@ export async function createCampaignVersion(
     .select('snapshot')
     .eq('campaign_id', campaignId)
     .eq('is_current', true)
-    .maybeSingle()
+    .single()
 
   // Calculate diff
   let diff: Record<string, VersionDiff[]> | undefined
@@ -108,7 +106,7 @@ export async function createCampaignVersion(
       is_published: campaign.status === 'published',
     })
     .select()
-    .maybeSingle()
+    .single()
 
   if (versionError) {
     console.error('Failed to create campaign version:', versionError)
@@ -161,7 +159,7 @@ export async function getCampaignVersion(
     .select('*')
     .eq('campaign_id', campaignId)
     .eq('version_number', versionNumber)
-    .maybeSingle()
+    .single()
 
   if (error) {
     return null
@@ -362,7 +360,7 @@ export async function getCampaignVersionByTag(
     .select('*')
     .eq('campaign_id', campaignId)
     .eq('version_tag', tag)
-    .maybeSingle()
+    .single()
 
   if (error) {
     return null
@@ -398,7 +396,7 @@ export async function autoSaveWithVersion(
     .eq('campaign_id', campaignId)
     .order('created_at', { ascending: false })
     .limit(1)
-    .maybeSingle()
+    .single()
 
   const shouldCreateVersion = !lastVersion ||
     (Date.now() - new Date(lastVersion.created_at).getTime()) > 10 * 60 * 1000 // 10 minutes

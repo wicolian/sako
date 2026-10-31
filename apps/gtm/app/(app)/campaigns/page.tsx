@@ -73,32 +73,22 @@ const statusConfig: Record<string, {
     bgColor: 'bg-muted',
     borderColor: 'border-border',
   },
+  failed: {
+    label: 'Failed',
+    variant: 'destructive',
+    icon: FileText,
+    color: 'text-destructive',
+    bgColor: 'bg-destructive/10',
+    borderColor: 'border-destructive/20',
+  },
 }
 
 export default async function CampaignsPage() {
-  const { userId } = await auth()
+  const supabase = await createServerSupabaseClient()
   
-  if (!userId) {
-    redirect('/login')
-  }
-
-  const db = createServiceClient()
-  
-  // Get user's workspace
-  const { data: membership } = await db
-    .from('workspace_members')
-    .select('workspace_id')
-    .eq('user_id', userId)
-    .maybeSingle()
-  
-  if (!membership) {
-    redirect('/onboarding')
-  }
-  
-  const { data } = await db
+  const { data } = await supabase
     .from('campaigns')
     .select('*')
-    .eq('workspace_id', membership.workspace_id)
     .order('updated_at', { ascending: false })
   
   const campaigns = data as Campaign[] | null
@@ -119,8 +109,13 @@ export default async function CampaignsPage() {
               <GlobeIcon className="w-4 h-4" /> Import URL
             </Link>
           </Button>
-          <Button asChild className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20">
+          <Button variant="outline" asChild className="gap-2">
             <Link href="/kit/new">
+              <Sparkles className="w-4 h-4" /> Launch Kit
+            </Link>
+          </Button>
+          <Button asChild className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20">
+            <Link href="/campaigns/new">
               <Sparkles className="w-4 h-4" /> Create Campaign
             </Link>
           </Button>
@@ -137,7 +132,7 @@ export default async function CampaignsPage() {
           />
         </div>
         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-          {['all', 'draft', 'generating', 'ready', 'live', 'archived'].map(f => (
+          {['all', 'draft', 'generating', 'ready', 'failed', 'live', 'archived'].map(f => (
             <Badge 
               key={f}
               variant={f === 'all' ? "default" : "secondary"}
@@ -225,6 +220,12 @@ export default async function CampaignsPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg" className="h-12 px-8 rounded-xl shadow-lg shadow-primary/20">
+                <Link href="/campaigns/new">
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Create Campaign
+                </Link>
+              </Button>
+              <Button variant="outline" asChild size="lg" className="h-12 px-8 rounded-xl bg-background/50 backdrop-blur">
                 <Link href="/kit/new">
                   <Sparkles className="w-4 h-4 mr-2" />
                   Launch Kit

@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { encrypt } from '@/lib/encryption'
-import { Database } from '@/lib/supabase/types'
-
-type ProviderConnectionRow = Database['public']['Tables']['provider_connections']['Row']
 
 const WEBFLOW_CLIENT_ID = process.env.WEBFLOW_CLIENT_ID
 const WEBFLOW_CLIENT_SECRET = process.env.WEBFLOW_CLIENT_SECRET

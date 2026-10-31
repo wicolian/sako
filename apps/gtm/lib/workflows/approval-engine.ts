@@ -1,10 +1,7 @@
 /**
  * Approval Workflow Engine (Phase 3.4)
  * 
- * Configurabimport { Database } from '@/lib/supabase/types'
-
-type CampaignRow = Database['public']['Tables']['campaigns']['Row']
-le approval workflows for enterprise governance.
+ * Configurable approval workflows for enterprise governance.
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
@@ -79,7 +76,7 @@ export async function getApprovalTemplate(templateId: string): Promise<ApprovalT
     .from('approval_templates')
     .select('*')
     .eq('id', templateId)
-    .maybeSingle()
+    .single()
 
   if (error || !data) {
     return null
@@ -100,7 +97,7 @@ export async function getDefaultApprovalTemplate(workspaceId: string): Promise<A
     .eq('workspace_id', workspaceId)
     .eq('is_default', true)
     .eq('is_active', true)
-    .maybeSingle()
+    .single()
 
   if (error || !data) {
     return null
@@ -185,7 +182,7 @@ export async function createApprovalInstance(params: {
       started_at: new Date().toISOString(),
     })
     .select()
-    .maybeSingle()
+    .single()
 
   if (error) {
     console.error('Failed to create approval instance:', error)
@@ -221,7 +218,7 @@ export async function recordApprovalDecision(params: {
     .from('approval_instances')
     .select('*')
     .eq('id', params.instanceId)
-    .maybeSingle()
+    .single()
 
   if (fetchError || !instance) {
     return { success: false, error: 'Approval instance not found' }
@@ -342,7 +339,7 @@ export async function getCampaignApprovalStatus(campaignId: string): Promise<{
     .eq('campaign_id', campaignId)
     .order('started_at', { ascending: false })
     .limit(1)
-    .maybeSingle()
+    .single()
 
   if (!instance) {
     return { hasApproval: false }
@@ -378,7 +375,7 @@ export async function cancelApprovalWorkflow(instanceId: string, reason?: string
     .from('approval_instances')
     .select('campaign_id')
     .eq('id', instanceId)
-    .maybeSingle()
+    .single()
 
   const { error } = await supabase
     .from('approval_instances')

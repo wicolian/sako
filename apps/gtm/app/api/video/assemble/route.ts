@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
         .select('content')
         .eq('id', assetId)
         .eq('workspace_id', workspaceId)
-        .maybeSingle()
+        .single()
       
       if (assetError || !asset) {
         return NextResponse.json({ error: 'Script asset not found' }, { status: 404 })
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
         .eq('asset_type', 'video_script')
         .order('created_at', { ascending: false })
         .limit(1)
-        .maybeSingle()
+        .single()
       
       if (assetError || !asset) {
         return NextResponse.json({ error: 'Script not found' }, { status: 404 })
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
         status: assembledVideo.status === 'complete' ? 'draft' : 'processing',
       })
       .select()
-      .maybeSingle()
+      .single()
     
     if (saveError) {
       console.error('Failed to save render job:', saveError)

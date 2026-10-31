@@ -4,9 +4,6 @@ import { getWorkspaceContext, handleWorkspaceError } from '@/lib/workspace'
 import { requireWorkspaceEntitlement } from '@/lib/billing/entitlements'
 import crypto from 'crypto'
 import { nanoid } from 'nanoid'
-import { Database } from '@/lib/supabase/types'
-
-
 
 // GET /api/api-keys - List all API keys for workspace
 export async function GET(request: NextRequest) {
@@ -70,7 +67,7 @@ export async function POST(request: NextRequest) {
         is_active: true,
       })
       .select('id, name, key_prefix, is_active, created_at')
-      .maybeSingle()
+      .single()
 
     if (error) {
       console.error('Error creating API key:', error)

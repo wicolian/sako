@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { checkCampaignComplianceGate, checkComplianceGate } from '@/lib/claims/compliance-gate'
+import { exportToHtml } from '@/lib/export/html-exporter'
+import { mapWebsiteDesignRow } from '@/lib/campaigns/landing-design'
 
 const CODE_TO_DESIGN_API_KEY = process.env.CODE_TO_DESIGN_API_KEY
 
@@ -48,7 +50,7 @@ export async function POST(request: NextRequest) {
       // Backward-compatible campaign export flow
       const { data: campaign } = await supabase
         .from('campaigns')
-        .select('id, name, workspace_id')
+        .select('id, name, workspace_id, landing_design_id, offer')
         .eq('id', campaignId)
         .eq('workspace_id', member.workspace_id)
         .single()
@@ -60,13 +62,27 @@ export async function POST(request: NextRequest) {
       const complianceBlock = await checkCampaignComplianceGate(campaignId, campaign.workspace_id)
       if (complianceBlock) return complianceBlock
 
-      const { data: blocks } = await supabase
-        .from('page_blocks')
-        .select('*')
-        .eq('campaign_id', campaignId)
-        .order('order')
+      if (campaign.landing_design_id) {
+        const { data: designRow } = await supabase
+          .from('website_designs')
+          .select('*')
+          .eq('id', campaign.landing_design_id)
+          .maybeSingle()
 
-      payloadHtml = generateLandingPageHTML(campaign, blocks || [])
+        if (designRow) {
+          payloadHtml = exportToHtml(mapWebsiteDesignRow(designRow as Record<string, unknown>))
+        }
+      }
+
+      if (!payloadHtml) {
+        const { data: blocks } = await supabase
+          .from('page_blocks')
+          .select('*')
+          .eq('campaign_id', campaignId)
+          .order('order')
+
+        payloadHtml = generateLandingPageHTML(campaign, blocks || [])
+      }
       layerName = `${campaign.name} - Landing Page`
     }
 

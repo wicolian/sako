@@ -13,6 +13,7 @@
 import { createServiceClient } from '@/lib/supabase/service';
 import { formatCents, getWalletBalance } from '@/lib/billing/ai-wallet';
 import { getWorkspaceCosts } from '@/lib/ai/tracing';
+import { sendBudgetAlertEmail } from '@/lib/email';
 
 // ============================================================================
 // Types
@@ -327,6 +328,11 @@ async function triggerBudgetAlert(
   config: BudgetConfig
 ): Promise<void> {
   const supabase = createServiceClient();
+  const { data: workspace } = await supabase
+    .from('workspaces')
+    .select('name')
+    .eq('id', workspaceId)
+    .single()
   
   // Record the alert
   await supabase.from('budget_alerts').insert({
@@ -344,13 +350,15 @@ async function triggerBudgetAlert(
     console.log(`  - Hard cap: ${formatCents(hardCap)}`);
     console.log(`  - Notify: ${config.notifyEmails.join(', ')}`);
     
-    // TODO: Integrate with email service (SendGrid, Resend, etc.)
-    // await sendBudgetAlertEmail(config.notifyEmails, {
-    //   threshold,
-    //   currentSpend,
-    //   hardCap,
-    //   workspaceId,
-    // });
+    void sendBudgetAlertEmail({
+      to: config.notifyEmails,
+      workspaceName: workspace?.name || 'Sako workspace',
+      threshold,
+      currentSpend,
+      hardCap,
+    }).catch((error) => {
+      console.error('Failed to send budget alert email:', error)
+    })
   }
 }
 

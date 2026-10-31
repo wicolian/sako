@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { Database } from '@/lib/supabase/types'
-
-type FollowupFlowRow = Database['public']['Tables']['followup_flows']['Row']
 
 export async function PATCH(
   request: NextRequest,
@@ -20,7 +17,7 @@ export async function PATCH(
     })
     .eq('id', id)
     .select()
-    .maybeSingle()
+    .single()
   
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })

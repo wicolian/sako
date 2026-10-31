@@ -2,10 +2,7 @@
  * Research Agent (Phase 1.6)
  * 
  * Deep research agent for competitive analysis and market research.
- * One of three named specialist agents (Optimization, Personalization, Reseimport { Database } from '@/lib/supabase/types'
-
-type EvidenceRow = Database['public']['Tables']['evidence']['Row']
-arch).
+ * One of three named specialist agents (Optimization, Personalization, Research).
  * Formalizes existing evidence-researcher.ts functionality.
  */
 

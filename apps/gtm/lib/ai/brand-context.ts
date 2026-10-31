@@ -1,10 +1,7 @@
 /**
  * Brand Context for AI Generation
  * 
- * Provides brand-import { Database } from '@/lib/supabase/types'
-
-
-specific context to AI generation pipelines.
+ * Provides brand-specific context to AI generation pipelines.
  * Ensures all generated content adheres to brand guidelines.
  */
 
@@ -87,7 +84,7 @@ export async function getBrandContext(
     query = query.eq('is_default', true)
   }
 
-  const { data: brand, error } = await query.maybeSingle()
+  const { data: brand, error } = await query.single()
 
   if (error || !brand) {
     console.warn(`⚠️ No brand found for workspace ${workspaceId}${brandId ? ` (brandId: ${brandId})` : ' (no default brand set)'}`)

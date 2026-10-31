@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { encrypt } from '@/lib/encryption'
 import { getWorkspaceId } from '@/lib/workspace'
-import { Database } from '@/lib/supabase/types'
-
-type HubspotConnectionRow = Database['public']['Tables']['hubspot_connections']['Row']
 
 const HUBSPOT_CLIENT_ID = process.env.HUBSPOT_CLIENT_ID
 const HUBSPOT_CLIENT_SECRET = process.env.HUBSPOT_CLIENT_SECRET

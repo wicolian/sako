@@ -122,7 +122,7 @@ export async function createAudienceProfile(
       is_default: profile.is_default,
     })
     .select()
-    .maybeSingle()
+    .single()
 
   if (error) {
     console.error('Failed to create audience profile:', error)
@@ -226,7 +226,7 @@ export async function getAudienceById(audienceId: string): Promise<AudienceProfi
     .from('audiences')
     .select('*')
     .eq('id', audienceId)
-    .maybeSingle()
+    .single()
 
   if (error) {
     return null
@@ -258,7 +258,7 @@ export async function updateAudienceProfile(
     })
     .eq('id', audienceId)
     .select()
-    .maybeSingle()
+    .single()
 
   if (error) {
     console.error('Failed to update audience:', error)

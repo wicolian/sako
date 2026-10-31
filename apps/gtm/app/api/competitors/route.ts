@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
         last_updated: competitorData.lastUpdated,
       })
       .select()
-      .maybeSingle();
+      .single();
 
     if (error) {
       throw new Error(error.message);

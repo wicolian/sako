@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { getHubSpotClient, getHubSpotAnalytics } from '@/lib/hubspot/client'
 import { getWorkspaceId } from '@/lib/workspace'
+import { getProvider } from '@/lib/providers/registry'
+import type { PerformanceMetrics } from '@/lib/providers/types'
 
 export async function GET(
   request: NextRequest,
@@ -25,16 +26,9 @@ export async function GET(
       new Date(existingPerformance.captured_at).getTime() < Date.now() - 60 * 60 * 1000
 
     if (needsFreshData) {
-      // Get campaign and deployment info
-      const { data: campaign } = await supabase
-        .from('campaigns')
-        .select('*')
-        .eq('id', campaignId)
-        .single()
-
       const { data: deployment } = await supabase
-        .from('deployments')
-        .select('*')
+      .from('deployments')
+      .select('*')
         .eq('campaign_id', campaignId)
         .eq('status', 'success')
         .order('created_at', { ascending: false })
@@ -42,95 +36,29 @@ export async function GET(
         .single()
 
       if (deployment) {
-        // Try to get real HubSpot data
-        const workspaceId = getWorkspaceId(request)
-        const hubspotClient = await getHubSpotClient(workspaceId)
-        
-        if (hubspotClient) {
-          try {
-            // Get form submissions if form was created
-            const hubspotResult = deployment.hubspot_result as any
-            const formId = hubspotResult?.form?.id
+        try {
+          const workspaceId = getWorkspaceId(request)
+          const provider = getProvider('hubspot')
+          const isConnected = await provider.isConnected(workspaceId)
 
-            let metricsData: Record<string, unknown> = {}
+          if (isConnected && provider.getPerformance) {
+            const metrics = await provider.getPerformance(campaignId)
+            if (metrics) {
+              const newPerformance = await savePerformanceSnapshot(
+                supabase,
+                campaignId,
+                deployment.id,
+                metrics
+              )
 
-            if (formId) {
-              // Get form analytics
-              const analytics = await getHubSpotAnalytics(hubspotClient, formId, 'form')
-              
-              if (analytics) {
-                metricsData = {
-                  contactsCreated: analytics.contactsCreated,
-                  formSubmissions: analytics.contactsCreated, // Approximation
-                  pageViews: null, // Would need CMS Hub
-                  emailOpens: null,
-                  emailClicks: null,
-                  conversionRate: null,
-                }
-              }
-            }
-
-            // Also try to get contacts created recently
-            try {
-              const contactsResponse = await hubspotClient.crm.contacts.searchApi.doSearch({
-                filterGroups: [
-                  {
-                    filters: [
-                      {
-                        propertyName: 'createdate',
-                        operator: 'GTE' as any,
-                        value: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-                      },
-                    ],
-                  },
-                ],
-                limit: 1,
-                properties: ['email'],
-              })
-              
-              metricsData.totalContacts = contactsResponse.total
-            } catch (err) {
-              console.error('Failed to get contacts:', err)
-            }
-
-            // Calculate metrics
-            const formSubmissions = (metricsData.formSubmissions as number) || 0
-            const pageViews = (metricsData.pageViews as number) || formSubmissions * 10 // Estimate if not available
-            const conversionRate = pageViews > 0 ? ((formSubmissions / pageViews) * 100).toFixed(1) : '0'
-
-            // Save performance snapshot
-            const { data: newPerformance, error: insertError } = await supabase
-              .from('performance')
-              .insert({
-                campaign_id: campaignId,
-                deployment_id: deployment.id,
-                captured_at: new Date().toISOString(),
-                metrics: {
-                  pageViews,
-                  formSubmissions,
-                  contactsCreated: metricsData.contactsCreated || formSubmissions,
-                  emailsSent: 0,
-                  emailOpens: 0,
-                  emailClicks: 0,
-                  conversionRate: parseFloat(conversionRate),
-                },
-                notes: {
-                  source: 'hubspot_api',
-                  lastPulled: new Date().toISOString(),
-                },
-              })
-              .select()
-              .single()
-
-            if (!insertError && newPerformance) {
               return NextResponse.json({
                 data: formatPerformanceData(newPerformance),
-                source: 'live',
+                source: metrics.dataSource === 'hubspot_api' ? 'live' : 'estimated',
               })
             }
-          } catch (error) {
-            console.error('Failed to fetch HubSpot analytics:', error)
           }
+        } catch (error) {
+          console.error('Failed to fetch provider performance:', error)
         }
       }
     }
@@ -178,81 +106,32 @@ export async function POST(
     }
 
     const workspaceId = getWorkspaceId(request)
-    const hubspotClient = await getHubSpotClient(workspaceId)
+    const provider = getProvider('hubspot')
+    const isConnected = await provider.isConnected(workspaceId)
 
-    if (!hubspotClient) {
+    if (!isConnected || !provider.getPerformance) {
       return NextResponse.json({
         error: 'HubSpot not connected',
       }, { status: 400 })
     }
 
-    // Pull fresh data
-    const hubspotResult = deployment.hubspot_result as any
-    const formId = hubspotResult?.form?.id
-
-    // Get contacts created in last 30 days
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-    
-    let contactsCreated = 0
-    try {
-      const contactsResponse = await hubspotClient.crm.contacts.searchApi.doSearch({
-        filterGroups: [
-          {
-            filters: [
-              {
-                propertyName: 'createdate',
-                operator: 'GTE' as any,
-                value: thirtyDaysAgo.toISOString(),
-              },
-            ],
-          },
-        ],
-        limit: 1,
-        properties: ['email'],
-      })
-      contactsCreated = contactsResponse.total
-    } catch (err) {
-      console.error('Failed to search contacts:', err)
+    const metrics = await provider.getPerformance(campaignId)
+    if (!metrics) {
+      return NextResponse.json({
+        error: 'No performance data available for this deployment',
+      }, { status: 404 })
     }
 
-    // Get form submissions (if form API is available)
-    let formSubmissions = contactsCreated // Default to contacts as proxy
-
-    // Calculate estimates
-    const pageViews = formSubmissions * 8 // Industry average ~12% conversion
-    const conversionRate = pageViews > 0 ? ((formSubmissions / pageViews) * 100) : 0
-
-    // Save new snapshot
-    const { data: performance, error } = await supabase
-      .from('performance')
-      .insert({
-        campaign_id: campaignId,
-        deployment_id: deployment.id,
-        captured_at: new Date().toISOString(),
-        metrics: {
-          pageViews,
-          formSubmissions,
-          contactsCreated,
-          emailsSent: 0,
-          emailOpens: 0,
-          emailClicks: 0,
-          conversionRate: parseFloat(conversionRate.toFixed(1)),
-        },
-        notes: {
-          source: 'hubspot_api',
-          refreshedAt: new Date().toISOString(),
-        },
-      })
-      .select()
-      .single()
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+    const performance = await savePerformanceSnapshot(
+      supabase,
+      campaignId,
+      deployment.id,
+      metrics
+    )
 
     return NextResponse.json({
       data: formatPerformanceData(performance),
-      source: 'refreshed',
+      source: metrics.dataSource === 'hubspot_api' ? 'live' : 'estimated',
     })
   } catch (error) {
     console.error('Failed to refresh performance:', error)
@@ -260,8 +139,56 @@ export async function POST(
   }
 }
 
-function formatPerformanceData(performance: any) {
-  const metrics = performance.metrics as Record<string, unknown>
+async function savePerformanceSnapshot(
+  supabase: ReturnType<typeof createServiceClient>,
+  campaignId: string,
+  deploymentId: string,
+  metrics: PerformanceMetrics
+) {
+  const { data, error } = await supabase
+    .from('performance')
+    .insert({
+      campaign_id: campaignId,
+      deployment_id: deploymentId,
+      captured_at: new Date().toISOString(),
+      metrics: {
+        pageViews: metrics.pageViews ?? null,
+        formSubmissions: metrics.formSubmissions ?? 0,
+        contactsCreated: metrics.contactsCreated ?? 0,
+        emailsSent: metrics.emailsSent ?? 0,
+        emailOpens: metrics.emailOpens ?? 0,
+        emailClicks: metrics.emailClicks ?? 0,
+        conversionRate: metrics.conversionRate ?? 0,
+        dataSource: metrics.dataSource ?? 'estimated',
+        lastUpdated: metrics.lastUpdated ?? new Date().toISOString(),
+      },
+      notes: {
+        source: metrics.dataSource ?? 'estimated',
+        lastPulled: metrics.lastUpdated ?? new Date().toISOString(),
+      },
+    })
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return data
+}
+
+function formatPerformanceData(performance: {
+  id: string
+  campaign_id: string
+  captured_at: string
+  metrics: Record<string, unknown>
+  notes?: Record<string, unknown> | null
+}) {
+  const metrics = performance.metrics
+  const dataSource =
+    metrics.dataSource === 'hubspot_api' || performance.notes?.source === 'hubspot_api'
+      ? 'hubspot_api'
+      : 'estimated'
   
   return {
     id: performance.id,
@@ -289,6 +216,8 @@ function formatPerformanceData(performance: any) {
         change: null,
       },
     ],
+    dataSource,
+    lastUpdated: (metrics.lastUpdated as string | undefined) || performance.captured_at,
     notes: performance.notes,
   }
 }

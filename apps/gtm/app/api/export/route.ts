@@ -28,6 +28,8 @@ import {
 } from '@/lib/html/export'
 import { generateLandingPageHtml } from '@/lib/html/generator'
 import { incrementUsage } from '@/lib/billing/usage'
+import { exportToHtml } from '@/lib/export/html-exporter'
+import { mapWebsiteDesignRow } from '@/lib/campaigns/landing-design'
 
 interface ExportRequestBody {
   campaignId?: string
@@ -120,16 +122,43 @@ export async function POST(request: NextRequest) {
       const complianceBlock = await checkCampaignComplianceGate(campaignId, member.workspace_id)
       if (complianceBlock) return complianceBlock
 
-      // Get page blocks
-      const { data: blocks } = await supabase
-        .from('page_blocks')
-        .select('*')
-        .eq('campaign_id', campaignId)
-        .order('order')
+      let generatedHtml: string
 
-      // Generate HTML from blocks
-      const heroBlock = blocks?.find((b: { type: string }) => b.type === 'hero')
-      const generatedHtml = generateLandingPageHtml(campaign, blocks || [], heroBlock)
+      if (campaign.landing_design_id) {
+        const { data: designRow } = await supabase
+          .from('website_designs')
+          .select('*')
+          .eq('id', campaign.landing_design_id)
+          .maybeSingle()
+
+        if (designRow) {
+          const design = mapWebsiteDesignRow(designRow as Record<string, unknown>)
+          // Prefer canonical render_html for campaign-linked designs (fidelity-first).
+          // Fall back to re-rendering from sections only for freeform/legacy designs.
+          generatedHtml =
+            design.renderHtml && design.renderHtml.length > 0
+              ? design.renderHtml
+              : exportToHtml(design)
+        } else {
+          const { data: blocks } = await supabase
+            .from('page_blocks')
+            .select('*')
+            .eq('campaign_id', campaignId)
+            .order('order')
+
+          const heroBlock = blocks?.find((b: { type: string }) => b.type === 'hero')
+          generatedHtml = generateLandingPageHtml(campaign, blocks || [], heroBlock)
+        }
+      } else {
+        const { data: blocks } = await supabase
+          .from('page_blocks')
+          .select('*')
+          .eq('campaign_id', campaignId)
+          .order('order')
+
+        const heroBlock = blocks?.find((b: { type: string }) => b.type === 'hero')
+        generatedHtml = generateLandingPageHtml(campaign, blocks || [], heroBlock)
+      }
       
       html = generatedHtml
       css = '' // CSS is inlined in the generated HTML

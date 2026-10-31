@@ -8,11 +8,33 @@
 ![LangGraph](https://img.shields.io/badge/LangGraph-1.x-green)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)
 ![Bun](https://img.shields.io/badge/Bun-1.3.6-orange)
-![License](https://img.shields.io/badge/license-Private-red)
+![License](https://img.shields.io/badge/license-Sako%20Source-B6F36A)
 
 <p align="center">
   <img src="./public/favicon.svg" alt="Sako Composer Logo" width="120" height="120">
 </p>
+
+> **Sako Composer is the GTM app of the [Sako monorepo](../../README.md).** It uses Supabase for the
+> database and sign-in.
+
+## Run it
+
+**Local Supabase (easiest):**
+
+```bash
+cd apps/gtm
+supabase start                       # starts Postgres + Auth in Docker, applies supabase/migrations
+supabase status -o env               # copy API_URL, ANON_KEY, SERVICE_ROLE_KEY
+cp .env.example .env.local           # set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
+bun install && bun run build && bun run start -- -p 3002
+```
+
+**Supabase cloud:** make a project, run `supabase link` and `supabase db push`, put its URL and keys in
+the root `.env`, then `docker compose --profile gtm up -d --build` from the repo root.
+
+`supabase/migrations/20260101000000_baseline.sql` is the whole schema in one file (188 tables). The
+original 82 migrations are in `supabase/legacy-migrations/` for reference. Some of them do not apply
+cleanly in order, which is why the baseline exists.
 
 ---
 
@@ -21,7 +43,7 @@
 1. [What is Sako Composer?](#-what-is-sako-composer)
 2. [Key Differentiators](#-key-differentiators)
 3. [Complete Feature Set](#-complete-feature-set)
-4. [Tech Stack (January 2026)](#-tech-stack-january-2026)
+4. [Tech Stack (March 2026)](#-tech-stack-march-2026)
 5. [Getting Started](#-getting-started)
 6. [Environment Variables](#-environment-variables)
 7. [Project Structure](#-project-structure)
@@ -296,16 +318,16 @@ When AI isn't enough, escalate to expert designers:
 
 ---
 
-## 🛠️ Tech Stack (January 2026)
+## 🛠️ Tech Stack (March 2026)
 
 ### AI Infrastructure
 
 ```
 OpenRouter (Unified Model Routing via @openrouter/ai-sdk-provider)
 ├── Model Allowlist (per .cursor/rules/latest-models-only.mdc):
-│   ├── OpenAI: gpt-5.2, gpt-5.2-chat
+│   ├── OpenAI: gpt-5.4, gpt-5.3-chat, gpt-5.2 (legacy fallback)
 │   ├── Anthropic: claude-sonnet-4.6, claude-opus-4.6
-│   ├── Google: gemini-3.1-pro, gemini-3.1-pro-preview
+│   ├── Google: gemini-3.1-pro-preview, gemini-3.1-pro-preview-customtools
 │   ├── DeepSeek: deepseek-v3.2, deepseek-v3.2-thinking
 │   ├── xAI: grok-4.1-fast, grok-4
 │   ├── Meta: llama-4-maverick, llama-4-scout
@@ -455,6 +477,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 # Evidence Research
 TAVILY_API_KEY=...           # Auto evidence research
+BRANDFETCH_SECRET_API_KEY=... # Brandfetch-first domain import metadata
 
 # Video Generation
 ELEVENLABS_API_KEY=...       # AI voiceovers
@@ -1245,12 +1268,12 @@ This software is proprietary. Unauthorized copying, distribution, or use is proh
 
 | File | Purpose |
 |------|---------|
-| [CLAUDE.md](./CLAUDE.md) | Claude Code instructions |
-| [AGENTS.md](./AGENTS.md) | AI agent guidelines |
+| [CLAUDE.md](./CLAUDE.md) | Claude Code / agent instructions |
+| [AGENTS.md](./AGENTS.md) | AI agent guidelines (Cursor, Codex, Devin) |
+| [docs/FEATURES.md](./docs/FEATURES.md) | Full feature inventory with priority tiers |
+| [docs/USER_FLOWS.md](./docs/USER_FLOWS.md) | User journeys and product flows |
+| [docs/plans/](./docs/plans/) | Active implementation plans |
 | [infra/README.md](./infra/README.md) | AWS deployment guide |
-| [docs/plans/](./docs/plans/) | Active implementation plans (model picker, etc.) |
-| [docs/SEND_TO_SAKO_IMPLEMENTATION.md](./docs/SEND_TO_SAKO_IMPLEMENTATION.md) | Send to Sako feature |
-| [plans/sako-composer-2026-implementation-plan.md](./plans/sako-composer-2026-implementation-plan.md) | 2026 roadmap (reference) |
 
 ---
 

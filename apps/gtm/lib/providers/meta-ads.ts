@@ -5,9 +5,7 @@
  * Supports various ad formats including image, video, carousel, and collection ads.
  */
 
-import { encrypt, decrypt }
-
-from '@/lib/encryption'
+import { encrypt, decrypt } from '@/lib/encryption'
 import { createServiceClient } from '@/lib/supabase/service'
 import type {
   DeploymentProvider,
@@ -132,10 +130,10 @@ export class MetaAdsProvider implements DeploymentProvider {
         workspace_id: workspaceId,
         provider: 'meta-ads',
         access_token: encrypt(longLivedTokens.access_token),
-        external_id: userId,
+        external_id: user.id,
         external_name: user.name,
         metadata: {
-          userId: userId,
+          userId: user.id,
           userName: user.name,
           adAccountId: defaultAccount?.id,
           adAccountName: defaultAccount?.name,
@@ -144,7 +142,7 @@ export class MetaAdsProvider implements DeploymentProvider {
         expires_at: expiresAt.toISOString(),
       }, { onConflict: 'workspace_id,provider' })
       .select()
-      .maybeSingle()
+      .single()
 
     if (error) throw error
 
@@ -153,7 +151,7 @@ export class MetaAdsProvider implements DeploymentProvider {
       workspaceId,
       provider: 'meta-ads',
       isConnected: true,
-      externalId: userId,
+      externalId: user.id,
       externalName: user.name,
     }
   }
@@ -344,7 +342,7 @@ export class MetaAdsProvider implements DeploymentProvider {
       .select('workspace_id, metadata')
       .eq('campaign_id', campaignId)
       .eq('provider', 'meta-ads')
-      .maybeSingle()
+      .single()
 
     if (!deployment?.metadata?.metaCampaignId) return null
 
@@ -390,7 +388,7 @@ export class MetaAdsProvider implements DeploymentProvider {
       .select('*')
       .eq('workspace_id', workspaceId)
       .eq('provider', 'meta-ads')
-      .maybeSingle()
+      .single()
 
     if (!data) return null
 

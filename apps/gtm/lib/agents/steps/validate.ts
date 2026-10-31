@@ -1,9 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { validateClaims, parsePolicyFromDatabase, createDefaultPolicyContext } from '@/lib/claims/rules-engine'
 import type { AgentState, StepResult, ClaimValidationResult } from '../state'
-import { Database } from '@/lib/supabase/types'
-
-type PolicyRow = Database['public']['Tables']['policies']['Row']
 
 export async function validateClaimsStep(state: AgentState): Promise<Partial<AgentState>> {
   const startTime = Date.now()
@@ -24,7 +21,7 @@ export async function validateClaimsStep(state: AgentState): Promise<Partial<Age
     .eq('workspace_id', state.workspaceId)
     .order('version', { ascending: false })
     .limit(1)
-    .maybeSingle()
+    .single()
 
   const policyConfig = policy ? parsePolicyFromDatabase(policy) : createDefaultPolicyContext().policy
 

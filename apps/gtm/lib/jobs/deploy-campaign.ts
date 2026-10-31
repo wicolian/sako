@@ -3,11 +3,6 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { getProvider } from "@/lib/providers/registry";
 import type { ProviderType } from "@/lib/providers/types";
 import { createHash } from "crypto";
-import { Database } from '@/lib/supabase/types'
-
-type DeploymentRow = Database['public']['Tables']['deployments']['Row']
-type CampaignRow = Database['public']['Tables']['campaigns']['Row']
-type PageBlockRow = Database['public']['Tables']['page_blocks']['Row']
 
 export interface DeployCampaignPayload {
   campaignId: string;
@@ -38,10 +33,10 @@ export const deployCampaignTask = task({
 
     // Check for existing successful deployment
     const { data: existingDeployment } = await supabase
-      .from('deployments')
+      .from("deployments")
       .select("*")
       .eq("idempotency_key", idempotencyKey)
-      .maybeSingle();
+      .single();
 
     if (existingDeployment?.status === "success") {
       console.log(`[Job ${ctx.run.id}] Campaign already deployed (idempotent)`);
@@ -54,11 +49,11 @@ export const deployCampaignTask = task({
 
     // Get campaign data
     const { data: campaign, error: campaignError } = await supabase
-      .from('campaigns')
+      .from("campaigns")
       .select("*")
       .eq("id", campaignId)
       .eq("workspace_id", workspaceId)
-      .maybeSingle();
+      .single();
 
     if (campaignError || !campaign) {
       throw new Error(`Campaign not found: ${campaignId}`);
@@ -78,7 +73,7 @@ export const deployCampaignTask = task({
 
     // Create/update deployment record
     const { data: deployment, error: deployError } = await supabase
-      .from('deployments')
+      .from("deployments")
       .upsert({
         campaign_id: campaignId,
         angle_id: campaign.selected_angle_id,
@@ -86,7 +81,7 @@ export const deployCampaignTask = task({
         status: "in_progress",
       })
       .select()
-      .maybeSingle();
+      .single();
 
     if (deployError) {
       throw new Error(`Failed to create deployment record: ${deployError.message}`);
@@ -134,7 +129,7 @@ export const deployCampaignTask = task({
     if (provider.deployPage) {
       try {
         const { data: blocks } = await supabase
-          .from('page_blocks')
+          .from("page_blocks")
           .select("*")
           .eq("campaign_id", campaignId)
           .order("order");
@@ -165,7 +160,7 @@ export const deployCampaignTask = task({
 
     // Update deployment record
     await supabase
-      .from('deployments')
+      .from("deployments")
       .update({
         status,
         hubspot_result: deployResults,
@@ -175,7 +170,7 @@ export const deployCampaignTask = task({
     // Update campaign status
     if (status === "success" || status === "partial") {
       await supabase
-        .from('campaigns')
+        .from("campaigns")
         .update({ status: "published" })
         .eq("id", campaignId);
     }

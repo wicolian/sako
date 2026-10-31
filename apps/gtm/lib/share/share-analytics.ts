@@ -1,9 +1,7 @@
 /**
  * Share Analytics (Phase 2.4)
  * 
- * Track views and engagement on shared campaign limport { Database } from '@/lib/supabase/types'
-
-inks.
+ * Track views and engagement on shared campaign links.
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
@@ -93,7 +91,7 @@ export async function createShareLink(
       created_by: userId,
     })
     .select()
-    .maybeSingle()
+    .single()
 
   if (error) {
     console.error('Failed to create share link:', error)
@@ -114,7 +112,7 @@ export async function getShareLinkByToken(token: string): Promise<ShareLink | nu
     .select('*')
     .eq('token', token)
     .eq('is_active', true)
-    .maybeSingle()
+    .single()
 
   if (error) {
     return null
@@ -189,7 +187,7 @@ export async function recordShareView(
     .eq('visitor_id', visitorId)
     .gte('viewed_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
     .limit(1)
-    .maybeSingle()
+    .single()
 
   const isUnique = !existingView
 
@@ -208,7 +206,7 @@ export async function recordShareView(
     .from('share_links')
     .select('view_count, unique_views')
     .eq('id', shareId)
-    .maybeSingle()
+    .single()
 
   await supabase
     .from('share_links')
@@ -416,7 +414,7 @@ export async function updateShareLink(
     .update(updateData)
     .eq('id', shareId)
     .select()
-    .maybeSingle()
+    .single()
 
   if (error) {
     console.error('Failed to update share link:', error)

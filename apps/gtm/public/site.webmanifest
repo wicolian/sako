@@ -1,25 +1,21 @@
 {
-  "name": "Sako Composer",
+  "name": "Sako",
   "short_name": "Sako",
-  "description": "Ship GTM campaigns in 60 minutes with AI",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#1a1a1a",
-  "theme_color": "#1a1a1a",
   "icons": [
     {
-      "src": "/web-app-manifest-192x192.png",
+      "src": "/favicons/favicon/web-app-manifest-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     },
     {
-      "src": "/web-app-manifest-512x512.png",
+      "src": "/favicons/favicon/web-app-manifest-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     }
   ],
-  "categories": ["productivity", "business"],
-  "lang": "en-US"
+  "theme_color": "#1a1a1a",
+  "background_color": "#1a1a1a",
+  "display": "standalone"
 }

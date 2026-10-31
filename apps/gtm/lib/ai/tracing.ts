@@ -1,9 +1,7 @@
 /**
  * AI Tracing & Cost Tracking (Jan 2026)
  * 
- * OpenTelemeimport { Database } from '@/lib/supabase/types'
-
-try-compatible tracing for AI operations with:
+ * OpenTelemetry-compatible tracing for AI operations with:
  * - Request/response logging
  * - Token usage and cost tracking
  * - Latency metrics

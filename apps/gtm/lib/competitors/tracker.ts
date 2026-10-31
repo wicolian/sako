@@ -1,14 +1,11 @@
 /**
  * Competitor Tracker (Jan 2026)
  * 
- * Track public metrics for competitors using G2, Capterraimport { Database } from '@/lib/supabase/types'
-
-type CompetitorRow = Database['public']['Tables']['competitors']['Row']
-,
+ * Track public metrics for competitors using G2, Capterra,
  * LinkedIn, and other public data sources. NO content scraping.
  */
 
-import { createServiceClient } from '@/lib/supabase/service';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface Competitor {
@@ -51,7 +48,7 @@ export async function trackCompetitor(
   workspaceId: string,
   domain: string
 ): Promise<Competitor> {
-  const supabase = await createServiceClient();
+  const supabase = await createServerSupabaseClient();
   
   // Normalize domain
   const normalizedDomain = normalizeDomain(domain);
@@ -62,7 +59,7 @@ export async function trackCompetitor(
     .select('*')
     .eq('workspace_id', workspaceId)
     .eq('domain', normalizedDomain)
-    .maybeSingle();
+    .single();
   
   if (existing) {
     return formatCompetitor(existing);
@@ -108,7 +105,7 @@ export async function trackCompetitor(
  * Get all tracked competitors
  */
 export async function getCompetitors(workspaceId: string): Promise<Competitor[]> {
-  const supabase = await createServiceClient();
+  const supabase = await createServerSupabaseClient();
   
   const { data, error } = await supabase
     .from('competitors')
@@ -127,13 +124,13 @@ export async function getCompetitors(workspaceId: string): Promise<Competitor[]>
  * Refresh competitor metrics
  */
 export async function refreshCompetitorData(competitorId: string): Promise<Competitor> {
-  const supabase = await createServiceClient();
+  const supabase = await createServerSupabaseClient();
   
   const { data: existing, error: fetchError } = await supabase
     .from('competitors')
     .select('*')
     .eq('id', competitorId)
-    .maybeSingle();
+    .single();
   
   if (fetchError || !existing) {
     throw new Error('Competitor not found');
@@ -162,7 +159,7 @@ export async function refreshCompetitorData(competitorId: string): Promise<Compe
  * Delete a competitor
  */
 export async function deleteCompetitor(competitorId: string): Promise<void> {
-  const supabase = await createServiceClient();
+  const supabase = await createServerSupabaseClient();
   
   const { error } = await supabase
     .from('competitors')

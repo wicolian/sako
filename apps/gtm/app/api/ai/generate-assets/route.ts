@@ -7,7 +7,6 @@ import {
   generateSalesOnePager,
   generateTalkTrack,
 } from '@/lib/ai/multi-asset'
-import type { Campaign } from '@/lib/supabase/types'
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,18 +22,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Get campaign
-    const { data: campaignData, error: campaignError } = await supabase
+    const { data: campaign, error: campaignError } = await supabase
       .from('campaigns')
       .select('*')
       .eq('id', campaignId)
       .eq('workspace_id', workspaceId)
       .single()
 
-    if (campaignError || !campaignData) {
+    if (campaignError || !campaign) {
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
     }
 
-    const campaign = campaignData as Campaign
     let result
 
     switch (assetType) {

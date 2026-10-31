@@ -82,6 +82,8 @@ export interface SectionStyles {
   customClasses?: string
 }
 
+export type EditorMode = 'freeform' | 'controlled'
+
 export interface WebsiteDesign {
   id: string
   workspace_id: string
@@ -95,6 +97,22 @@ export interface WebsiteDesign {
   
   // Meta
   seoMeta: SEOMeta
+
+  /**
+   * Canonical HTML artifact from generateLandingPage().
+   * Set for campaign-linked (controlled) designs; empty string for freeform designs.
+   * Export, publish, and deploy prefer this over re-rendering from sections.
+   */
+  renderHtml: string
+
+  /** Generation metadata: archetype, designDirection, templateRefs, claims, flags. */
+  renderManifest: Record<string, unknown>
+
+  /**
+   * 'freeform'   – generic WebsiteSection editor (default for standalone designs)
+   * 'controlled' – campaign builder where edits trigger a full regeneration
+   */
+  editorMode: EditorMode
   
   // Status
   status: 'draft' | 'published'
@@ -488,6 +506,7 @@ async function saveDesign(design: WebsiteDesign): Promise<void> {
 
   if (error) {
     console.error('Failed to save design:', error)
+    throw new Error(error.message)
   }
 }
 

@@ -1,25 +1,45 @@
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { NextResponse, type NextRequest } from 'next/server'
-
-/**
- * Auth Callback Route
- * 
- * MIGRATED: Clerk handles auth callbacks internally via its middleware.
- * This route now just redirects to the appropriate page.
- * 
- * For OAuth callbacks (Google, GitHub, etc.), Clerk handles them automatically.
- * This route is kept for compatibility with any old links.
- */
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
-  const next = requestUrl.searchParams.get('next') || '/dashboard'
+  const code = requestUrl.searchParams.get('code')
+  const next = requestUrl.searchParams.get('next') || '/campaigns'
   const type = requestUrl.searchParams.get('type')
 
-  // Handle password recovery redirect
-  if (type === 'recovery') {
-    return NextResponse.redirect(new URL('/reset-password', requestUrl.origin))
+  if (code) {
+    const cookieStore = await cookies()
+    
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          },
+        },
+      }
+    )
+
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    
+    if (!error) {
+      // If this is a password recovery, redirect to reset password page
+      if (type === 'recovery') {
+        return NextResponse.redirect(new URL('/reset-password', requestUrl.origin))
+      }
+      
+      return NextResponse.redirect(new URL(next, requestUrl.origin))
+    }
   }
-  
-  // Default redirect to next page or dashboard
-  return NextResponse.redirect(new URL(next, requestUrl.origin))
+
+  // Something went wrong, redirect to login with error
+  return NextResponse.redirect(new URL('/login?error=auth_callback_error', requestUrl.origin))
 }

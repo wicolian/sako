@@ -22,7 +22,7 @@ export async function GET(
     .eq('id', assetId)
     .eq('campaign_id', campaignId)
     .eq('workspace_id', workspaceId)
-    .maybeSingle()
+    .single()
   
   if (error || !asset) {
     return NextResponse.json({ error: 'Asset not found' }, { status: 404 })
@@ -67,7 +67,7 @@ export async function PUT(
     .eq('campaign_id', campaignId)
     .eq('workspace_id', workspaceId)
     .select()
-    .maybeSingle()
+    .single()
   
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })

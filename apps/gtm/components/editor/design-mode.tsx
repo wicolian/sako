@@ -18,6 +18,8 @@ interface DesignModeProps {
   onSelectSection: (id: string | null) => void
   onUpdateSection: (id: string, updates: Partial<WebsiteSection>) => void
   onReorderSections: (sections: WebsiteSection[]) => void
+  onDeleteSection: (id: string) => void
+  onDuplicateSection: (id: string) => void
 }
 
 const VIEWPORT_WIDTHS: Record<ViewportSize, string> = {
@@ -33,6 +35,8 @@ export function DesignMode({
   onSelectSection,
   onUpdateSection,
   onReorderSections,
+  onDeleteSection,
+  onDuplicateSection,
 }: DesignModeProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [hoveredSectionId, setHoveredSectionId] = useState<string | null>(null)
@@ -94,6 +98,8 @@ export function DesignMode({
                   onHover={() => setHoveredSectionId(section.id)}
                   onLeave={() => setHoveredSectionId(null)}
                   onUpdate={(updates) => onUpdateSection(section.id, updates)}
+                  onDelete={() => onDeleteSection(section.id)}
+                  onDuplicate={() => onDuplicateSection(section.id)}
                 />
               ))
             )}
@@ -113,6 +119,8 @@ interface SortableSectionProps {
   onHover: () => void
   onLeave: () => void
   onUpdate: (updates: Partial<WebsiteSection>) => void
+  onDelete: () => void
+  onDuplicate: () => void
 }
 
 function SortableSection({
@@ -123,7 +131,9 @@ function SortableSection({
   onSelect,
   onHover,
   onLeave,
-  onUpdate,
+  onUpdate: _onUpdate,
+  onDelete,
+  onDuplicate,
 }: SortableSectionProps) {
   const {
     attributes,
@@ -185,13 +195,18 @@ function SortableSection({
           <Button variant="ghost" size="icon" className="h-7 w-7">
             <Pencil className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(event) => { event.stopPropagation(); onDuplicate() }}>
             <Copy className="h-3.5 w-3.5" />
           </Button>
           <Button variant="ghost" size="icon" className="h-7 w-7">
             <RefreshCw className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-destructive hover:text-destructive"
+            onClick={(event) => { event.stopPropagation(); onDelete() }}
+          >
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </motion.div>

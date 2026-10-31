@@ -93,7 +93,7 @@ export class MailchimpProvider implements DeploymentProvider {
         },
       }, { onConflict: 'workspace_id,provider' })
       .select()
-      .maybeSingle()
+      .single()
 
     if (error) throw error
 
@@ -319,7 +319,7 @@ export class MailchimpProvider implements DeploymentProvider {
       .select('workspace_id, metadata')
       .eq('campaign_id', campaignId)
       .eq('provider', 'mailchimp')
-      .maybeSingle()
+      .single()
 
     if (!deployment?.metadata?.mcCampaignId) return null
 
@@ -360,7 +360,7 @@ export class MailchimpProvider implements DeploymentProvider {
       .select('*')
       .eq('workspace_id', workspaceId)
       .eq('provider', 'mailchimp')
-      .maybeSingle()
+      .single()
 
     if (!data) return null
 

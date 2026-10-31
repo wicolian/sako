@@ -1,9 +1,7 @@
 /**
  * Video Render Service (Phase 2.2)
  * 
- * Abstraction foimport { Database } from '@/lib/supabase/types'
-
-r external video rendering APIs.
+ * Abstraction for external video rendering APIs.
  * Supports Creatomate and Shotstack.
  */
 

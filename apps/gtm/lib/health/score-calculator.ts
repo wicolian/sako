@@ -1,12 +1,7 @@
 /**
  * Campaign Health Score Calculator (Jan 2026)
  * 
- * Calcimport { Database } from '@/lib/supabase/types'
-
-type MessageRow = Database['public']['Tables']['messages']['Row']
-type EvidenceRow = Database['public']['Tables']['evidence']['Row']
-type CampaignAssetRow = Database['public']['Tables']['campaign_assets']['Row']
-ulates a comprehensive health score for campaigns based on:
+ * Calculates a comprehensive health score for campaigns based on:
  * - Compliance: Claims validation status, evidence coverage
  * - Freshness: Evidence age, link validity, data currency
  * - Performance: CTR, conversions, engagement metrics

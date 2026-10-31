@@ -1,9 +1,7 @@
 /**
  * HubSpot Sync Service (Phase 4.4)
  * 
- * Synchronizes Himport { Database } from '@/lib/supabase/types'
-
-ubSpot contacts, companies, and lists
+ * Synchronizes HubSpot contacts, companies, and lists
  * for personalization and targeting.
  */
 
@@ -74,7 +72,7 @@ export class HubSpotSyncService {
       .select('*')
       .eq('workspace_id', this.workspaceId)
       .eq('provider', 'hubspot')
-      .maybeSingle()
+      .single()
 
     if (!credentials?.access_token) {
       return false

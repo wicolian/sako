@@ -1,34 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import { createServiceClient } from '@/lib/supabase/service'
-import { getWorkspaceId } from '@/lib/workspace'
+import { createServerSupabaseClient as createClient } from '@/lib/supabase/server'
+import { getWorkspaceContext } from '@/lib/workspace'
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth()
+    const supabase = await createClient()
+    const { userId, workspaceId } = await getWorkspaceContext(request)
     
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const db = createServiceClient()
-    
-    // Try to get workspace from header, or from db
-    let workspaceId: string
-    try {
-      workspaceId = getWorkspaceId(request)
-    } catch {
-      // Get from membership
-      const { data: membership } = await db
-        .from('workspace_members')
-        .select('workspace_id')
-        .eq('user_id', userId)
-        .single()
-      
-      if (!membership) {
-        return NextResponse.json({ error: 'No workspace found' }, { status: 404 })
-      }
-      workspaceId = membership.workspace_id
     }
 
     const data = await request.json()
@@ -41,20 +21,18 @@ export async function POST(request: NextRequest) {
     } = data
 
     // Update workspace with onboarding data
-    const settings = {
-      industry,
-      primaryGoal,
-      selectedProviders: connectedProviders || [],
-      defaultPolicyTemplate: policyTemplateId || 'default',
-      onboarding_completed: true,
-      onboarding_completed_at: new Date().toISOString(),
-    }
-
-    const { error: workspaceError } = await db
+    const { error: workspaceError } = await supabase
       .from('workspaces')
       .update({
         name: workspaceName,
-        settings: JSON.stringify(settings),
+        settings: {
+          industry,
+          primaryGoal,
+          selectedProviders: connectedProviders || [],
+          defaultPolicyTemplate: policyTemplateId || 'default',
+          onboarding_completed: true,
+          onboarding_completed_at: new Date().toISOString(),
+        },
         updated_at: new Date().toISOString(),
       })
       .eq('id', workspaceId)
@@ -85,12 +63,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Mark user's onboarding as complete
-    const { error: userError } = await db
+    const { error: userError } = await supabase
       .from('workspace_members')
       .update({
-        metadata: JSON.stringify({
+        metadata: {
           onboarding_completed: true,
-        }),
+        },
       })
       .eq('workspace_id', workspaceId)
       .eq('user_id', userId)
@@ -120,45 +98,21 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth()
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const db = createServiceClient()
-    
-    // Get workspace from membership
-    const { data: membership } = await db
-      .from('workspace_members')
-      .select('workspace_id')
-      .eq('user_id', userId)
-      .single()
-    
-    if (!membership) {
-      return NextResponse.json({
-        completed: false,
-        settings: {},
-      })
-    }
+    const supabase = await createClient()
+    const { workspaceId } = await getWorkspaceContext(request)
 
     // Check if onboarding is complete
-    const { data: workspace } = await db
+    const { data: workspace } = await supabase
       .from('workspaces')
       .select('settings')
-      .eq('id', membership.workspace_id)
+      .eq('id', workspaceId)
       .single()
 
-    // Parse settings if it's a string
-    const settings = typeof workspace?.settings === 'string' 
-      ? JSON.parse(workspace.settings) 
-      : workspace?.settings
-
-    const onboardingCompleted = settings?.onboarding_completed === true
+    const onboardingCompleted = workspace?.settings?.onboarding_completed === true
 
     return NextResponse.json({
       completed: onboardingCompleted,
-      settings: settings || {},
+      settings: workspace?.settings || {},
     })
   } catch (error) {
     console.error('Error checking onboarding status:', error)

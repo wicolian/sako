@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getProvider } from '@/lib/providers/registry'
 import type { ProviderType } from '@/lib/providers/types'
+import { parseTwitterAuthState, TwitterProvider } from '@/lib/providers/twitter'
 
 /**
  * GET /api/providers/[provider]/callback
@@ -34,9 +35,16 @@ export async function GET(
 
     // Parse workspace ID from state
     let workspaceId: string
+    let codeVerifier: string | undefined
     try {
-      const stateData = JSON.parse(atob(state || ''))
-      workspaceId = stateData.workspaceId
+      if (providerType === 'twitter' && state) {
+        const stateData = parseTwitterAuthState(state)
+        workspaceId = stateData.workspaceId
+        codeVerifier = stateData.codeVerifier
+      } else {
+        const stateData = JSON.parse(atob(state || ''))
+        workspaceId = stateData.workspaceId
+      }
     } catch {
       return NextResponse.redirect(
         `${request.nextUrl.origin}/settings?tab=integrations&error=invalid_state`
@@ -44,8 +52,13 @@ export async function GET(
     }
 
     // Get provider and handle callback
-    const provider = getProvider(providerType as ProviderType)
-    await provider.handleOAuthCallback(code, workspaceId)
+    if (providerType === 'twitter') {
+      const provider = getProvider('twitter') as TwitterProvider
+      await provider.handleOAuthCallback(code, workspaceId, codeVerifier)
+    } else {
+      const provider = getProvider(providerType as ProviderType)
+      await provider.handleOAuthCallback(code, workspaceId)
+    }
 
     // Redirect to settings with success
     return NextResponse.redirect(
