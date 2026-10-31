@@ -4,7 +4,7 @@
 #
 #   Landing      http://localhost:3000
 #   API          http://localhost:3001
-#   GTM app      http://localhost:3002
+#   GTM app      http://localhost:3002  (opt-in: --profile gtm, build broken)
 #   Waitlist     http://localhost:3003
 #   Wall         http://localhost:3004
 #   Studio       http://localhost:3100
@@ -40,6 +40,7 @@ services:
 
   api:
     <<: *db
+    image: ghcr.io/${SAKO_IMAGE_OWNER:-wicolian}/sako-api:${SAKO_VERSION:-latest}
     build: { context: ./platform/services/api, target: production }
     restart: unless-stopped
     env_file: .env
@@ -53,6 +54,7 @@ services:
     ports: ["3001:3001"]
 
   client:
+    image: ghcr.io/${SAKO_IMAGE_OWNER:-wicolian}/sako-client:${SAKO_VERSION:-latest}
     build:
       context: ./platform
       dockerfile: apps/client/Dockerfile
@@ -66,6 +68,7 @@ services:
     depends_on: [api]
 
   studio:
+    image: ghcr.io/${SAKO_IMAGE_OWNER:-wicolian}/sako-studio:${SAKO_VERSION:-latest}
     build:
       context: ./platform
       dockerfile: apps/studio/Dockerfile
@@ -74,12 +77,15 @@ services:
         VITE_API_BASE_URL: http://localhost:3001/api/v1
         VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY}
         VITE_COMPOSER_URL: http://localhost:3002
+        VITE_STUDIO_ALLOWED_DOMAINS: ${ALLOWED_STUDIO_DOMAINS:-}
     restart: unless-stopped
     ports: ["3100:80"]
     depends_on: [api]
 
   gtm:
     <<: *db
+    profiles: [gtm]   # build is broken, see issues. Start with: docker compose --profile gtm up
+    image: ghcr.io/${SAKO_IMAGE_OWNER:-wicolian}/sako-gtm:${SAKO_VERSION:-latest}
     build: { context: ./apps/gtm }
     restart: unless-stopped
     env_file: .env
@@ -91,18 +97,21 @@ services:
     ports: ["3002:3000"]
 
   landing:
+    image: ghcr.io/${SAKO_IMAGE_OWNER:-wicolian}/sako-landing:${SAKO_VERSION:-latest}
     build: { context: ./apps/landing }
     restart: unless-stopped
     env_file: .env
     ports: ["3000:3000"]
 
   waitlist:
+    image: ghcr.io/${SAKO_IMAGE_OWNER:-wicolian}/sako-waitlist:${SAKO_VERSION:-latest}
     build: { context: ./apps/waitlist }
     restart: unless-stopped
     ports: ["3003:80"]
 
   wall:
     <<: *db
+    image: ghcr.io/${SAKO_IMAGE_OWNER:-wicolian}/sako-wall:${SAKO_VERSION:-latest}
     build: { context: ./apps/wall }
     restart: unless-stopped
     env_file: .env
@@ -112,6 +121,7 @@ services:
 
   n8n:
     <<: *db
+    image: ghcr.io/${SAKO_IMAGE_OWNER:-wicolian}/sako-n8n:${SAKO_VERSION:-latest}
     build: { context: ./n8n }
     restart: unless-stopped
     environment:

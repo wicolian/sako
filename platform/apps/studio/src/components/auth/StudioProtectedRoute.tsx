@@ -1,7 +1,10 @@
 import { SignedIn, SignedOut, RedirectToSignIn, useUser } from "@clerk/clerk-react";
 import React from "react";
 
-const allowedDomains = ['trysako.com', 'sako.design', 'sako.agency'];
+const allowedDomains = (import.meta.env.VITE_STUDIO_ALLOWED_DOMAINS || 'trysako.com,sako.design,sako.agency')
+    .split(',')
+    .map((d: string) => d.trim().toLowerCase())
+    .filter(Boolean);
 const allowedEmails = [
     'demo@trysako.com',
     'admin@trysako.com',
@@ -49,7 +52,7 @@ const DomainGate = ({ children }: { children: React.ReactNode }) => {
                         Access to SAKO Studio is restricted to internal team members.
                     </p>
                     <p className="text-sm text-gray-500">
-                        Please use your @trysako.com, @sako.design, or @sako.agency email address.
+                        Please use an email address on one of these domains: {allowedDomains.map((d: string) => '@' + d).join(', ')}.
                     </p>
                 </div>
             </div>

@@ -28,7 +28,7 @@ COPY apps/studio/package*.json apps/studio/
 COPY services/api/package*.json services/api/
 COPY packages/review-ui/package*.json packages/review-ui/
 
-RUN npm install --legacy-peer-deps
+RUN npm install --legacy-peer-deps --ignore-scripts --no-audit --no-fund
 
 # Copy entire repo
 COPY . .
@@ -60,7 +60,7 @@ COPY apps/studio/package*.json apps/studio/
 COPY services/api/package*.json services/api/
 COPY packages/review-ui/package*.json packages/review-ui/
 
-RUN npm install --legacy-peer-deps
+RUN npm install --legacy-peer-deps --ignore-scripts --no-audit --no-fund
 
 COPY . .
 
