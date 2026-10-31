@@ -96,16 +96,16 @@
         "documentId": {
           "__rl": true,
           "mode": "list",
-          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "value": "YOUR_GOOGLE_SHEET_ID",
           "cachedResultName": "Sako Marketing Automations",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit?usp=drivesdk"
         },
         "sheetName": {
           "__rl": true,
           "mode": "list",
           "value": 1096236767,
           "cachedResultName": "warm_opens",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=1096236767"
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=1096236767"
         },
         "filters": {
           "filter": [

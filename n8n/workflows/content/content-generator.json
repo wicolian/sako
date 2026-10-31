@@ -30,7 +30,7 @@
           "mode": "list",
           "value": 1620036434,
           "cachedResultName": "content_backlog",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=1620036434"
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=1620036434"
         },
         "filters": {
           "filter": [
@@ -46,9 +46,9 @@
         "documentId": {
           "__rl": true,
           "mode": "list",
-          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "value": "YOUR_GOOGLE_SHEET_ID",
           "cachedResultName": "Sako Marketing Automations",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit?usp=drivesdk"
         }
       },
       "id": "fetch-backlog",
@@ -138,7 +138,7 @@
           "mode": "list",
           "value": 1620036434,
           "cachedResultName": "content_backlog",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=1620036434"
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=1620036434"
         },
         "filters": {
           "filter": [
@@ -159,9 +159,9 @@
         "documentId": {
           "__rl": true,
           "mode": "list",
-          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "value": "YOUR_GOOGLE_SHEET_ID",
           "cachedResultName": "Sako Marketing Automations",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit?usp=drivesdk"
         }
       },
       "id": "update-sheet",

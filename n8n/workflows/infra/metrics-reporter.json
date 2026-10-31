@@ -112,7 +112,7 @@
           "mode": "list",
           "value": 100000008,
           "cachedResultName": "workflow_metrics",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=100000008"
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=100000008"
         },
         "columns": {
           "mappingMode": "autoMapInputData",
@@ -122,9 +122,9 @@
         "documentId": {
           "__rl": true,
           "mode": "list",
-          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "value": "YOUR_GOOGLE_SHEET_ID",
           "cachedResultName": "Sako Marketing Automations",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit?usp=drivesdk"
         }
       },
       "id": "store-metrics",

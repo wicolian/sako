@@ -2,7 +2,7 @@
  * Google Apps Script to create all missing sheet tabs for n8n-sako
  * 
  * HOW TO USE:
- * 1. Open your Google Sheet: https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/
+ * 1. Open your Google Sheet: https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/
  * 2. Go to Extensions → Apps Script
  * 3. Delete any existing code and paste this entire file
  * 4. Click "Run" (play button) to execute createAllSheets()
