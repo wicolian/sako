@@ -17,7 +17,7 @@ export function CalEmbed({
   title, 
   subtitle,
   namespace = "sako-fit-check",
-  calLink = "koushik-venkatesan-mmvnbd/sako-fit-check"
+  calLink = "your-handle/intro-call"
 }: CalEmbedProps) {
   useEffect(() => {
     // Cal.com inline embed script

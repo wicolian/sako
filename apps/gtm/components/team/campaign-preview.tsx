@@ -141,7 +141,7 @@ function LandingPagePreview({
                 {onEdit && (
                     <Button variant="outline" size="sm" onClick={onEdit} className="gap-2">
                         <Edit3 className="h-4 w-4" />
-                        Edit in Aura
+                        Edit in editor
                     </Button>
                 )}
             </div>

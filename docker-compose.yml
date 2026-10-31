@@ -1,0 +1,144 @@
+# Sako — everything in one command:
+#   cp .env.example .env   (fill in your keys)
+#   docker compose up -d
+#
+#   Landing      http://localhost:3000
+#   API          http://localhost:3001
+#   GTM app      http://localhost:3002  (opt-in: --profile gtm, build broken)
+#   Waitlist     http://localhost:3003
+#   Wall         http://localhost:3004
+#   Studio       http://localhost:3100
+#   Client       http://localhost:5173
+#   n8n          http://localhost:5678
+
+x-db: &db
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sako
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sako}
+      POSTGRES_DB: sako
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - ./docker/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "sako"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes: [redis-data:/data]
+
+  api:
+    <<: *db
+    image: ghcr.io/${SAKO_IMAGE_OWNER:-wicolian}/sako-api:${SAKO_VERSION:-latest}
+    build: { context: ./platform/services/api, target: production }
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://sako:${POSTGRES_PASSWORD:-sako}@postgres:5432/platform
+      REDIS_URL: redis://redis:6379
+      PORT: 3001
+      FRONTEND_URL: http://localhost:5173
+      STUDIO_URL: http://localhost:3100
+      CORS_ORIGINS: http://localhost:5173,http://localhost:3100,http://localhost:3002
+    ports: ["3001:3001"]
+
+  client:
+    image: ghcr.io/${SAKO_IMAGE_OWNER:-wicolian}/sako-client:${SAKO_VERSION:-latest}
+    build:
+      context: ./platform
+      dockerfile: apps/client/Dockerfile
+      target: production
+      args:
+        VITE_API_BASE_URL: http://localhost:3001/api/v1
+        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY}
+        VITE_COMPOSER_URL: http://localhost:3002
+    restart: unless-stopped
+    ports: ["5173:80"]
+    depends_on: [api]
+
+  studio:
+    image: ghcr.io/${SAKO_IMAGE_OWNER:-wicolian}/sako-studio:${SAKO_VERSION:-latest}
+    build:
+      context: ./platform
+      dockerfile: apps/studio/Dockerfile
+      target: production
+      args:
+        VITE_API_BASE_URL: http://localhost:3001/api/v1
+        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY}
+        VITE_COMPOSER_URL: http://localhost:3002
+        VITE_STUDIO_ALLOWED_DOMAINS: ${ALLOWED_STUDIO_DOMAINS:-}
+    restart: unless-stopped
+    ports: ["3100:80"]
+    depends_on: [api]
+
+  gtm:
+    <<: *db
+    profiles: [gtm]   # build is broken, see issues. Start with: docker compose --profile gtm up
+    image: ghcr.io/${SAKO_IMAGE_OWNER:-wicolian}/sako-gtm:${SAKO_VERSION:-latest}
+    build: { context: ./apps/gtm }
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://sako:${POSTGRES_PASSWORD:-sako}@postgres:5432/gtm
+      DATABASE_URL_UNPOOLED: postgresql://sako:${POSTGRES_PASSWORD:-sako}@postgres:5432/gtm
+      NEXT_PUBLIC_APP_URL: http://localhost:3002
+      SAKO_V1_API_URL: http://api:3001
+    ports: ["3002:3000"]
+
+  landing:
+    image: ghcr.io/${SAKO_IMAGE_OWNER:-wicolian}/sako-landing:${SAKO_VERSION:-latest}
+    build: { context: ./apps/landing }
+    restart: unless-stopped
+    env_file: .env
+    ports: ["3000:3000"]
+
+  waitlist:
+    image: ghcr.io/${SAKO_IMAGE_OWNER:-wicolian}/sako-waitlist:${SAKO_VERSION:-latest}
+    build: { context: ./apps/waitlist }
+    restart: unless-stopped
+    ports: ["3003:80"]
+
+  wall:
+    <<: *db
+    image: ghcr.io/${SAKO_IMAGE_OWNER:-wicolian}/sako-wall:${SAKO_VERSION:-latest}
+    build: { context: ./apps/wall }
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://sako:${POSTGRES_PASSWORD:-sako}@postgres:5432/wall
+    ports: ["3004:3000"]
+
+  n8n:
+    <<: *db
+    image: ghcr.io/${SAKO_IMAGE_OWNER:-wicolian}/sako-n8n:${SAKO_VERSION:-latest}
+    build: { context: ./n8n }
+    restart: unless-stopped
+    environment:
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_DATABASE: n8n
+      DB_POSTGRESDB_USER: sako
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD:-sako}
+      N8N_HOST: localhost
+      WEBHOOK_URL: http://localhost:5678/
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-change-me}
+    volumes:
+      - ./n8n/workflows:/workflows:ro
+      - n8n-data:/home/node/.n8n
+    ports: ["5678:5678"]
+
+volumes:
+  pg-data:
+  redis-data:
+  n8n-data:

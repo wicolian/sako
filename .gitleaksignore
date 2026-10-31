@@ -1,0 +1,3 @@
+apps/gtm/app/(app)/settings/page.tsx:curl-auth-header:479
+apps/gtm/app/api/v1/validate/route.ts:curl-auth-header:12
+platform/README.md:curl-auth-header:606

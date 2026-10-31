@@ -189,7 +189,7 @@ export function processMDXLinks(content: string, campaign: string = 'content') {
       replacement: process.env.NEXT_PUBLIC_APP_URL!
     },
     {
-      pattern: /https:\/\/cal\.com\/koushik-venkatesan-mmvnbd\/sako-fit-check(?![?&])/g,
+      pattern: /https:\/\/cal\.com\/your-handle\/intro-call(?![?&])/g,
       replacement: process.env.NEXT_PUBLIC_BOOKING_URL!
     }
   ];

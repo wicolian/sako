@@ -1,0 +1,148 @@
+---
+alwaysApply: true
+---
+
+---
+alwaysApply: true
+---
+# Latest Models Only (Jan 2026) + Setup Sanity Checks
+
+This rule is a hard allowlist. If you see older/legacy model IDs in code, replace them with the latest allowlisted IDs below.
+
+## Hard rules (do not break)
+- Use ONLY the model IDs listed in this file.
+- Prefer Vercel AI Gateway routing via the AI SDK (do not wire provider SDKs directly unless explicitly required).
+- If the codebase references older model families (GPT-4.x, Claude 3.x, Gemini 1.x/2.x, etc.), upgrade to the allowlist.
+- If a model is missing from Vercel AI Gateway, do not invent slugs. Use only what Vercel exposes, or add via Vercel if supported.
+
+---
+
+# 1) Latest flagship models by provider (Vercel AI Gateway IDs)
+
+## OpenAI (GPT-5.2 family)
+- openai/gpt-5.2
+- openai/gpt-5.2-chat
+- openai/gpt-5.2-pro
+
+Notes:
+- If you see gpt-5, gpt-5.1, gpt-5-mini, gpt-5.1-thinking/instant, etc. in code, those are not “latest-only” for this rule.
+
+## Anthropic (Claude 4.5 family)
+- anthropic/claude-opus-4.5
+- anthropic/claude-sonnet-4.5
+- anthropic/claude-haiku-4.5
+
+## Google (Gemini 3 family)
+- google/gemini-3-flash
+- google/gemini-3-pro-preview
+- google/gemini-3-pro-image
+
+## DeepSeek (V3.2 family)
+- deepseek/deepseek-v3.2
+- deepseek/deepseek-v3.2-thinking
+- deepseek/deepseek-v3.2-speciale
+- deepseek/deepseek-v3.2-exp   # experimental, only if explicitly requested
+
+## xAI (Grok 4.1 family + coding fast)
+- xai/grok-4.1-fast-reasoning
+- xai/grok-4.1-fast-non-reasoning
+- xai/grok-code-fast-1
+
+## Meta (Llama 4 family)
+- meta/llama-4-maverick
+- meta/llama-4-scout
+
+## Moonshot (Kimi K2 family)
+- moonshotai/kimi-k2
+- moonshotai/kimi-k2-thinking
+- moonshotai/kimi-k2-turbo
+- moonshotai/kimi-k2-thinking-turbo
+
+---
+
+# 2) Embeddings (latest only)
+
+## OpenAI
+- openai/text-embedding-3-large
+- openai/text-embedding-3-small
+
+## Google
+- google/gemini-embedding-001
+- google/text-embedding-005
+
+---
+
+# 3) Image generation (latest only)
+- google/gemini-3-pro-image
+
+---
+
+If we use any AI Gateway then
+# 4) Vercel AI SDK + AI Gateway: required setup checks
+
+## Required packages (TypeScript/JS)
+- Use AI SDK 6.x (not 5.x) for new work.
+- If upgrading from 5.x, follow the 6.0 migration guide.
+
+## Required env
+- Local/dev must set:
+  - AI_GATEWAY_API_KEY=...
+- On Vercel, set the same env var in Project Settings.
+
+## Required runtime behavior (verify it’s actually using Gateway)
+- All model calls must pass the model string exactly like:
+  - "openai/gpt-5.2"
+  - "anthropic/claude-opus-4.5"
+  - etc.
+- Do NOT pass provider API keys in app code unless you intentionally bypass Gateway.
+
+### Minimal “is it wired” smoke test (should work)
+```ts
+import { streamText } from "ai";
+
+export async function testGateway() {
+  const result = await streamText({
+    model: "openai/gpt-5.2-chat",
+    prompt: "Return the string: OK",
+  });
+
+  return result.text;
+}
+````
+
+### If this fails, check in this order
+
+1. AI_GATEWAY_API_KEY exists in the running environment
+2. The AI SDK version is 6.x
+3. You are using a valid allowlisted model string from this file
+4. Network/runtime (edge/node) restrictions in your deployment target
+
+---
+
+# 5) LangChain + LangGraph: sanity checks (only if used)
+
+## JavaScript/TypeScript
+
+* Prefer LangChain v1.x and LangGraph v1.x.
+* Ensure Node.js >= 20 (LangGraph v1 requires this).
+
+## Python
+
+* Prefer LangChain v1.x and LangGraph with Python >= 3.10.
+
+If the repo does not use LangChain/LangGraph, do not add them “just because”.
+Add them only if you need agent graphs, durable execution, HITL, or complex orchestration.
+
+---
+
+# 6) “Anything else I should add?” (strongly recommended, not required)
+
+If you’re building production AI features, add:
+
+* Tracing + cost tracking (LangSmith or OpenTelemetry-style traces)
+* A provider/model failover strategy (fallback to another allowlisted model)
+* Rate limiting + retries with circuit breaking
+* Eval harness (regression tests for prompts and tools)
+* Prompt + tool versioning (so changes are reviewable)
+
+---

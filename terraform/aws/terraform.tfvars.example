@@ -1,0 +1,12 @@
+# Copy to terraform.tfvars and fill in. Never commit terraform.tfvars.
+project_name = "sako"
+db_password  = "change-me-to-a-long-random-string"
+
+app_env = {
+  CLERK_SECRET_KEY      = ""
+  STRIPE_SECRET_KEY     = ""
+  STRIPE_WEBHOOK_SECRET = ""
+  OPENAI_API_KEY        = ""
+  RESEND_API_KEY        = ""
+  ENCRYPTION_SECRET     = ""
+}

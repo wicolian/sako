@@ -1,5 +1,5 @@
 -- Website Pages and Designs Migration
--- Phase 3: Aura-style website builder
+-- Phase 3: Website builder
 
 -- Website designs table
 CREATE TABLE IF NOT EXISTS website_designs (
