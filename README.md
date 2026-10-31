@@ -164,13 +164,19 @@ and they will help your agents work on it too.
 |:---:|
 | ![Preview](./docs/screens/wall.png) |
 
+| Preview (Client portal: sign up) |
+|:---:|
+| ![Preview](./docs/screens/client-sign-up.png) |
+
 | Preview (Client portal: plans) |
 |:---:|
 | ![Preview](./docs/screens/client-pricing.png) |
 
-<!-- before-and-after:end -->
+| Preview (Studio: sign in) |
+|:---:|
+| ![Preview](./docs/screens/studio-sign-in.png) |
 
-The client portal and studio sign-in screens need a real Clerk key to render, so they are not shown.
+<!-- before-and-after:end -->
 
 ## Contributing
 
