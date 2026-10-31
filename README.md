@@ -16,7 +16,7 @@ One `docker compose up`. Deploy to AWS, GCP, Azure or Vercel with Terraform.
   <img alt="Next.js" src="https://img.shields.io/badge/Next.js-16-000?logo=nextdotjs" />
   <img alt="NestJS" src="https://img.shields.io/badge/NestJS-10-E0234E?logo=nestjs&logoColor=white" />
   <img alt="n8n" src="https://img.shields.io/badge/n8n-44%20workflows-EA4B71?logo=n8n&logoColor=white" />
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Sako%20Source-B6F36A" /></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-free%20under%20%24100K%20revenue-B6F36A" /></a>
 </p>
 
 [The story](#the-story) · [Playbooks](docs/playbooks/) · [Product docs](docs/product/) · [What you get](#what-you-get) · [Screens](#screens) · [Architecture](#architecture) · [Run it](#run-it-in-one-command) · [Self-host](#self-host-with-prebuilt-images) · [Deploy](#deploy-to-any-cloud) · [Configuration](#configuration) · [Known issues](#known-issues) · [Support](#support-and-hire-me) · [License](#license)
@@ -71,9 +71,10 @@ software locked up. So the whole stack is here, **landing page included**.
 If you want to run a design subscription, a creative agency, a productized service, or any
 "unlimited requests for a monthly fee" business, start here instead of from zero.
 
-> [!WARNING]
-> **Not maintained.** This is shared as-is. Some parts work end to end, some do not (see
-> [Known issues](#known-issues)). Do your own security review before you take real money with it.
+> [!NOTE]
+> **Free for small teams, paid for bigger ones.** If your company makes under **$100K a year**, Sako is
+> free to use and run your business on. Above that, you need a [commercial license](#commercial-license).
+> It is maintained by the author. Some parts still have gaps, see [Known issues](#known-issues).
 
 ## What you get
 
@@ -644,13 +645,29 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) first. Security problems: see [SECURITY.
 
 ## License
 
-[Sako Source License](LICENSE). In short:
+[Sako License 1.1](LICENSE). In short:
 
-- ✅ Fork it, study it, use it as a reference, change it, and run your own business on it.
-- ✅ Open pull requests.
-- ❌ Do not sell this code as it is (as a template, boilerplate or product), in whole or in part.
+| You are | You can |
+|---|---|
+| A company making **under $100K a year** | ✅ Use it, change it, run your business on it. Free |
+| An individual, student, non-profit or school | ✅ Free |
+| Anyone trying it out | ✅ Free for 30 days |
+| A company making **$100K a year or more** | 💼 Needs a [commercial license](#commercial-license) |
+| Anyone | ❌ Do not sell this code as it is (as a template, boilerplate or hosted product) |
 
+Version 1.0.0 stays under the [Sako Source License 1.0](https://github.com/wicolian/sako/blob/v1.0.0/LICENSE).
 This is a source-available license, not an OSI open-source license.
+
+## Commercial license
+
+For agencies and studios making **$100K a year or more**. You get:
+
+- The right to run Sako in your business, for one company and its own brands
+- Updates and security fixes for the length of the license
+- Priority help with issues
+- Optional paid setup: I deploy it on your cloud, connect your Stripe, Clerk and Slack, and import your workflows
+
+**Get one:** [contact@kelashik.com](mailto:contact@kelashik.com) · [kelashik.com](https://kelashik.com)
 
 ---
 

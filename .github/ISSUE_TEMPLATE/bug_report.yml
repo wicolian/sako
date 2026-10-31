@@ -4,7 +4,7 @@ labels: [bug]
 body:
   - type: markdown
     attributes:
-      value: "Check the [known issues](https://github.com/wicolian/sako/issues?q=label%3A%22known+issue%22) first. Sako is not actively maintained, so a pull request with the fix is the fastest way."
+      value: "Check the [known issues](https://github.com/wicolian/sako/issues?q=label%3A%22known+issue%22) first. A pull request with the fix is the fastest way. Commercial licensees get priority."
   - type: dropdown
     id: app
     attributes:

@@ -1,12 +1,12 @@
 # Security
 
-Sako is shared as-is and is **not actively maintained**. Do your own security review before you run it
-with real customers or real money.
+Sako is maintained by the author. Still, do your own security review before you run it with real
+customers or real money.
 
 ## Reporting a problem
 
 Please do not open a public issue for a security problem. Use GitHub's private reporting instead:
-**Security → Report a vulnerability** on this repo. I will read it, but I can't promise a fix or a timeline.
+**Security → Report a vulnerability** on this repo. I aim to reply within a week. Commercial licensees get priority.
 
 ## What is already in place
 
