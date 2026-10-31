@@ -640,7 +640,7 @@ Get in touch: **[kelashik.com](https://kelashik.com)** · **[LinkedIn](https://w
 ## Contributing
 
 Pull requests are welcome. `main` is protected, and every PR is reviewed by the owner before it is merged.
-Read [CONTRIBUTING.md](CONTRIBUTING.md) first.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) first. Security problems: see [SECURITY.md](SECURITY.md).
 
 ## License
 

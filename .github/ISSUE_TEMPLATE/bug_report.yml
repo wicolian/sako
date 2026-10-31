@@ -1,0 +1,29 @@
+name: Bug report
+description: Something in Sako does not work
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Check the [known issues](https://github.com/wicolian/sako/issues?q=label%3A%22known+issue%22) first. Sako is not actively maintained, so a pull request with the fix is the fastest way."
+  - type: dropdown
+    id: app
+    attributes:
+      label: Which app?
+      options: [Landing, Waitlist, Client portal, Studio, API, GTM app, Wall, n8n, Terraform, Docker / self-host, Docs]
+    validations: { required: true }
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations: { required: true }
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. docker compose up -d\n2. Open http://localhost:5173\n3. ..."
+    validations: { required: true }
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs (remove any keys or personal data)
+      render: shell
