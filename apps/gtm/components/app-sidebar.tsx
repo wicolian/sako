@@ -117,34 +117,18 @@ function SidebarNav() {
 
   // Fetch workspace name
   useEffect(() => {
-    const fetchData = async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-
-      if (user) {
-        const { data } = await supabase
-          .from("workspace_members")
-          .select("workspaces(name)")
-          .eq("user_id", user.id)
-          .maybeSingle()
-
-        const workspaceData = data as {
-          workspaces: { name: string } | { name: string }[] | null
-        } | null
-        if (workspaceData?.workspaces) {
-          const ws = Array.isArray(workspaceData.workspaces)
-            ? workspaceData.workspaces[0]
-            : workspaceData.workspaces
-          if (ws?.name) {
-            setWorkspace({ name: ws.name })
-          }
-        }
+    const fetchWorkspace = async () => {
+      try {
+        const res = await fetch("/api/workspace")
+        if (!res.ok) return
+        const data = await res.json()
+        const name = data?.workspace?.name ?? data?.name
+        if (name) setWorkspace({ name })
       } catch (error) {
-        console.error('Failed to fetch workspace:', error)
+        console.error("Failed to fetch workspace:", error)
       }
     }
-    
+
     if (isLoaded && user) {
       fetchWorkspace()
     }
