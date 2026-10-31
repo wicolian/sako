@@ -61,7 +61,7 @@
             "zod": "^3.22.4"
       },
       "devDependencies": {
-            "@types/node": "^20.10.0",
+            "@types/node": "^26.6.6",
             "@vitejs/plugin-react-swc": "^3.10.2",
             "vite": "6.3.5"
       },
