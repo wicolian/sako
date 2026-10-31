@@ -30,7 +30,7 @@
     "@nestjs/jwt": "^11.0.1",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^10.3.0",
-    "@nestjs/platform-socket.io": "^10.4.20",
+    "@nestjs/platform-socket.io": "^12.3.2",
     "@nestjs/schedule": "^6.0.1",
     "@nestjs/swagger": "^7.1.17",
     "@nestjs/throttler": "^6.4.0",
