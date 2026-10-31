@@ -1,0 +1,15 @@
+name: Idea or improvement
+description: Suggest a change
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you change, and why?
+    validations: { required: true }
+  - type: checkboxes
+    id: pr
+    attributes:
+      label: Can you send a pull request?
+      options:
+        - label: Yes, I can work on this
