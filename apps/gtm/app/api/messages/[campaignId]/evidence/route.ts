@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { Database } from '@/lib/supabase/types'
-
-type MessageRow = Database['public']['Tables']['messages']['Row']
-type MessageEvidenceRow = Database['public']['Tables']['message_evidence']['Row']
 
 export async function GET(
   request: NextRequest,

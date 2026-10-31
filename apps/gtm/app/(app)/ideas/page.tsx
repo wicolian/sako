@@ -2,9 +2,6 @@ import { Suspense } from 'react'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { IdeasExperience } from '@/components/ideas/ideas-experience'
 import { Lightbulb } from 'lucide-react'
-import { Database } from '@/lib/supabase/types'
-
-type WorkspaceRow = Database['public']['Tables']['workspaces']['Row']
 
 export const metadata = {
   title: 'Content Ideas | Sako Composer',
@@ -18,7 +15,7 @@ export default async function IdeasPage() {
   const { data: workspace } = await supabase
     .from('workspaces')
     .select('id')
-    .maybeSingle()
+    .single()
 
   if (!workspace) {
     return (

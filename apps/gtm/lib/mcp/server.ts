@@ -12,11 +12,7 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   CallToolRequestSchema,
-  ListToolsRequestScimport { Database } from '@/lib/supabase/types'
-
-type EvidenceRow = Database['public']['Tables']['evidence']['Row']
-type CampaignRow = Database['public']['Tables']['campaigns']['Row']
-hema,
+  ListToolsRequestSchema,
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
@@ -412,7 +408,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             claims:messages(id, status, risk_score)
           `)
           .eq('id', campaign_id)
-          .maybeSingle();
+          .single();
 
         if (!campaign) {
           return {

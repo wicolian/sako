@@ -1,9 +1,7 @@
 /**
  * A/B Test Runner (Phase 5.2)
  * 
- * Framework for runn
-
-ng experiments and analyzing results.
+ * Framework for running experiments and analyzing results.
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
@@ -112,7 +110,7 @@ export async function createExperiment(
       confidence_level: params.confidenceLevel || 95,
     })
     .select()
-    .maybeSingle()
+    .single()
 
   if (error) {
     console.error('Failed to create experiment:', error)
@@ -185,7 +183,7 @@ export async function recordImpression(
     .from('experiments')
     .select('variants, current_sample_size')
     .eq('id', experimentId)
-    .maybeSingle()
+    .single()
 
   if (!experiment) return
 
@@ -237,7 +235,7 @@ export async function recordConversion(
     .from('experiments')
     .select('variants')
     .eq('id', experimentId)
-    .maybeSingle()
+    .single()
 
   if (!experiment) return
 
@@ -287,14 +285,14 @@ export async function getVariantForVisitor(
     .eq('experiment_id', experimentId)
     .eq('visitor_id', visitorId)
     .limit(1)
-    .maybeSingle()
+    .single()
 
   // Get experiment
   const { data: experiment } = await supabase
     .from('experiments')
     .select('variants, traffic_split, status')
     .eq('id', experimentId)
-    .maybeSingle()
+    .single()
 
   if (!experiment || experiment.status !== 'running') {
     return null
@@ -400,7 +398,7 @@ export async function getExperimentResults(experimentId: string): Promise<Experi
     .from('experiments')
     .select('variants, metrics')
     .eq('id', experimentId)
-    .maybeSingle()
+    .single()
 
   if (!experiment) return []
 

@@ -10,6 +10,7 @@ import {
   createComment,
   getAssetComments,
   getProjectComments,
+  getWorkspaceComments,
   updateComment,
   deleteComment,
   resolveComment,
@@ -33,6 +34,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('projectId')
     const assetId = searchParams.get('assetId')
+    const workspaceId = searchParams.get('workspaceId')
     const type = searchParams.get('type') // 'comments' | 'notifications'
 
     if (type === 'notifications') {
@@ -41,9 +43,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ notifications })
     }
 
+    if (workspaceId) {
+      const { data: membership } = await supabase
+        .from('workspace_members')
+        .select('workspace_id')
+        .eq('user_id', user.id)
+        .eq('workspace_id', workspaceId)
+        .maybeSingle()
+
+      if (!membership) {
+        return NextResponse.json({ error: 'Unauthorized workspace access' }, { status: 403 })
+      }
+
+      const comments = await getWorkspaceComments(workspaceId)
+      return NextResponse.json({ comments })
+    }
+
     if (!projectId) {
       return NextResponse.json(
-        { error: 'projectId is required' },
+        { error: 'projectId or workspaceId is required' },
         { status: 400 }
       )
     }

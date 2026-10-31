@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import { getWorkspaceIdWithFallback } from '@/lib/workspace'
-import { db } from '@/lib/db'
+import { createServerSupabaseClient as createClient } from '@/lib/supabase/server'
+import { getWorkspaceContext } from '@/lib/workspace'
 import { z } from 'zod'
-import { Database } from '@/lib/supabase/types'
-
-
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/
 
@@ -73,19 +69,10 @@ const CreateBrandSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth()
+    const supabase = await createClient()
+    const { workspaceId } = await getWorkspaceContext(request)
 
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const workspaceId = getWorkspaceIdWithFallback(request)
-
-    if (!workspaceId) {
-      return NextResponse.json({ error: 'No workspace' }, { status: 400 })
-    }
-
-    const { data: brands, error } = await db
+    const { data: brands, error } = await supabase
       .from('brands')
       .select('*')
       .eq('workspace_id', workspaceId)
@@ -138,17 +125,8 @@ function mapOnboardingToBrand(body: {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth()
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const workspaceId = getWorkspaceIdWithFallback(request)
-
-    if (!workspaceId) {
-      return NextResponse.json({ error: 'No workspace' }, { status: 400 })
-    }
+    const supabase = await createClient()
+    const { workspaceId } = await getWorkspaceContext(request)
 
     const body = await request.json()
 
@@ -170,14 +148,14 @@ export async function POST(request: NextRequest) {
 
     // If this is set as default, unset other defaults first
     if (validatedData.is_default) {
-      await db
+      await supabase
         .from('brands')
         .update({ is_default: false })
         .eq('workspace_id', workspaceId)
         .eq('is_default', true)
     }
 
-    const { data: brand, error } = await db
+    const { data: brand, error } = await supabase
       .from('brands')
       .insert({
         workspace_id: workspaceId,
@@ -185,7 +163,7 @@ export async function POST(request: NextRequest) {
         primary_color,
       })
       .select()
-      .maybeSingle()
+      .single()
 
     if (error) {
       console.error('Failed to create brand:', error)

@@ -27,6 +27,7 @@ import type { DesignSkeleton } from '@/lib/templates/design-system-compiler';
 import { createAssetDocument, type AssetDocument, type ClaimRef } from '@/lib/assets/asset-document';
 import type { GenerationPlan } from '@/lib/planning/types';
 import { buildPlanPromptContext, buildVisualTastePrompt, getSelectedCreativeRoute } from '@/lib/planning/generation-plan';
+import type { GlobalStyles, SectionContent, SectionStyles, SectionType as WebsiteSectionType, WebsiteSection, SEOMeta } from '@/lib/website/ai-designer';
 
 // Lazy initialization to avoid build-time errors
 let _supabase: ReturnType<typeof createServiceClient> | null = null;
@@ -61,6 +62,9 @@ export interface GeneratedPage {
     html: string;
     templateReference?: string;
   }>;
+  websiteSections: WebsiteSection[];
+  globalStyles: GlobalStyles;
+  seoMeta: SEOMeta;
   designTokens: {
     primaryColor: string;
     secondaryColor: string;
@@ -413,9 +417,23 @@ IMPORTANT: Generate CONTENT only. Layout and design will be handled separately.`
         fontFamily: `${effectiveBrandContext.typography.fontFamily}, system-ui, sans-serif`,
       };
 
+  const globalStyles = createGlobalStyles(effectiveBrandContext, designTokens, effectiveArchetype.prefersDark);
+  const seoMeta: SEOMeta = {
+    title: structure.headline,
+    description: structure.subheadline,
+  };
+  const websiteSections = structureToWebsiteSections(
+    structure,
+    globalStyles,
+    sectionsToGenerate,
+  );
+
   return {
     html: fullHtml,
     sections,
+    websiteSections,
+    globalStyles,
+    seoMeta,
     designTokens,
     claims: structure.claims,
   };
@@ -521,6 +539,216 @@ function structureToHtmlBlocks(
   }
 
   return blocks
+}
+
+function structureToWebsiteSections(
+  structure: z.infer<typeof PageStructureSchema>,
+  globalStyles: GlobalStyles,
+  sectionsToGenerate: string[],
+): WebsiteSection[] {
+  const sections: WebsiteSection[] = [
+    {
+      id: crypto.randomUUID(),
+      type: 'hero',
+      order: 0,
+      content: {
+        headline: structure.headline,
+        subheadline: structure.subheadline,
+        cta: {
+          text: structure.callToAction,
+          link: '#cta',
+          variant: 'primary',
+        },
+      },
+      styles: {
+        layout: 'centered',
+        alignment: 'center',
+        background: globalStyles.colorScheme === 'dark' ? 'dark' : 'gradient',
+        spacing: 'spacious',
+      },
+    },
+  ];
+
+  structure.sections.forEach((section, index) => {
+    const type = normalizeWebsiteSectionType(section.type);
+    const order = sections.length;
+    const content = mapStructureSectionToContent(type, section.content, structure.callToAction);
+
+    sections.push({
+      id: crypto.randomUUID(),
+      type,
+      order,
+      content,
+      styles: websiteSectionStyles(type, index),
+    });
+  });
+
+  const hasCta = sections.some((section) => section.type === 'cta');
+  if (!hasCta || !sectionsToGenerate.includes('cta')) {
+    sections.push({
+      id: crypto.randomUUID(),
+      type: 'cta',
+      order: sections.length,
+      content: {
+        headline: 'Take the next step',
+        subheadline: structure.subheadline,
+        cta: {
+          text: structure.callToAction,
+          link: '#cta',
+          variant: 'primary',
+        },
+      },
+      styles: {
+        layout: 'centered',
+        alignment: 'center',
+        background: 'gradient',
+        spacing: 'spacious',
+      },
+    });
+  }
+
+  return sections.map((section, index) => ({ ...section, order: index }));
+}
+
+function mapStructureSectionToContent(
+  type: WebsiteSectionType,
+  content: z.infer<typeof PageStructureSchema>['sections'][number]['content'],
+  callToAction: string,
+): SectionContent {
+  const items = content.items.map((item) => ({
+    title: item,
+    description: type === 'stats' ? content.body : '',
+  }));
+
+  switch (type) {
+    case 'features':
+      return {
+        headline: content.heading,
+        subheadline: content.body,
+        items,
+      };
+    case 'testimonials':
+      return {
+        headline: content.heading,
+        items: items.map((item) => ({
+          title: item.title,
+          description: item.description || content.body,
+        })),
+      };
+    case 'pricing':
+      return {
+        headline: content.heading,
+        subheadline: content.body,
+        items: items.map((item, index) => ({
+          title: item.title,
+          description: item.description || content.body,
+          link: index === 0 ? '#cta' : '#pricing',
+        })),
+      };
+    case 'faq':
+      return {
+        headline: content.heading,
+        items: items.map((item) => ({
+          title: item.title,
+          description: item.description || content.body,
+        })),
+      };
+    case 'stats':
+      return {
+        headline: content.heading,
+        items,
+      };
+    case 'logos':
+      return {
+        headline: content.heading,
+        items,
+      };
+    case 'cta':
+      return {
+        headline: content.heading || 'Ready to move?',
+        subheadline: content.body,
+        cta: {
+          text: callToAction,
+          link: '#cta',
+          variant: 'primary',
+        },
+      };
+    default:
+      return {
+        headline: content.heading,
+        description: content.body,
+        items: items.length > 0 ? items : undefined,
+      };
+  }
+}
+
+function websiteSectionStyles(type: WebsiteSectionType, index: number): SectionStyles {
+  if (type === 'cta') {
+    return {
+      layout: 'centered',
+      alignment: 'center',
+      background: 'gradient',
+      spacing: 'spacious',
+    };
+  }
+
+  if (type === 'logos' || type === 'stats') {
+    return {
+      layout: 'grid',
+      alignment: 'center',
+      background: index % 2 === 0 ? 'light' : 'white',
+      spacing: 'normal',
+      columns: type === 'stats' ? 4 : 5,
+    };
+  }
+
+  return {
+    layout: type === 'features' || type === 'comparison' || type === 'testimonials' ? 'cards' : 'centered',
+    alignment: 'center',
+    background: index % 2 === 0 ? 'white' : 'light',
+    spacing: 'normal',
+    columns: type === 'features' ? 3 : undefined,
+  };
+}
+
+function normalizeWebsiteSectionType(type: string): WebsiteSectionType {
+  switch (type) {
+    case 'hero':
+      return 'hero';
+    case 'features':
+      return 'features';
+    case 'testimonials':
+      return 'testimonials';
+    case 'pricing':
+      return 'pricing';
+    case 'faq':
+      return 'faq';
+    case 'cta':
+      return 'cta';
+    case 'stats':
+      return 'stats';
+    case 'logos':
+      return 'logos';
+    default:
+      return 'custom';
+  }
+}
+
+function createGlobalStyles(
+  brandContext: BrandContext,
+  designTokens: GeneratedPage['designTokens'],
+  prefersDark: boolean,
+): GlobalStyles {
+  return {
+    colorScheme: prefersDark ? 'dark' : 'light',
+    primaryColor: designTokens.primaryColor,
+    secondaryColor: designTokens.secondaryColor,
+    accentColor: brandContext.colors.accent ?? brandContext.colors.secondary ?? designTokens.secondaryColor,
+    fontHeading: brandContext.typography.fontFamily,
+    fontBody: brandContext.typography.fontFamily,
+    borderRadius: prefersDark ? 'large' : 'medium',
+    buttonStyle: 'solid',
+  };
 }
 
 /**
@@ -661,7 +889,7 @@ export async function generateSection(
       .from('brands')
       .select('*')
       .eq('id', brandId)
-      .maybeSingle();
+      .single();
 
     if (brand) {
       brandContext = `Apply these brand guidelines:

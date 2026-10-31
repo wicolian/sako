@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { Database } from '@/lib/supabase/types'
-
-type PageBlockRow = Database['public']['Tables']['page_blocks']['Row']
 
 export async function PATCH(
   request: NextRequest,
@@ -17,7 +14,7 @@ export async function PATCH(
     .update(body)
     .eq('id', id)
     .select()
-    .maybeSingle()
+    .single()
   
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })

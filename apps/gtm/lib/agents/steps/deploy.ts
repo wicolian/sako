@@ -1,12 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { getProvider } from '@/lib/providers/registry'
 import type { AgentState, StepResult, DeployResult } from '../state'
-import { Database } from '@/lib/supabase/types'
-
-type CampaignRow = Database['public']['Tables']['campaigns']['Row']
-type PageBlockRow = Database['public']['Tables']['page_blocks']['Row']
-type AngleRow = Database['public']['Tables']['angles']['Row']
-type DeploymentRow = Database['public']['Tables']['deployments']['Row']
 
 export async function deployStep(state: AgentState): Promise<Partial<AgentState>> {
   const startTime = Date.now()
@@ -35,7 +29,7 @@ export async function deployStep(state: AgentState): Promise<Partial<AgentState>
         status: 'deploying',
       })
       .select()
-      .maybeSingle()
+      .single()
 
     if (campaignError || !savedCampaign) {
       throw new Error(`Failed to save campaign: ${campaignError?.message}`)

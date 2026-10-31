@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getWorkspaceIdWithFallback } from '@/lib/workspace'
+import { attachCampaignBrandId, resolveCampaignBrandId } from '@/lib/campaigns/brand-link'
 import { generateSocialPosts, type Platform } from '@/lib/assets/social-generator'
 import { generateSalesDeck } from '@/lib/assets/deck-generator'
 import { generateVideoScript, type VideoStyle } from '@/lib/assets/video-script-generator'
@@ -29,6 +30,11 @@ import {
   upsertAssetDocument,
 } from '@/lib/assets/asset-document-adapter'
 import type { AssetDocument } from '@/lib/assets/asset-document'
+import {
+  createWebsiteDesignFromGeneratedPage,
+  persistCampaignLandingDesign,
+  projectDesignToPageBlocks,
+} from '@/lib/campaigns/landing-design'
 
 const GenerateAssetSchema = z.object({
   assetType: z.string().min(1),
@@ -67,11 +73,13 @@ export async function POST(
     .select('*')
     .eq('id', campaignId)
     .eq('workspace_id', workspaceId)
-    .maybeSingle()
+    .single()
   
   if (campaignError || !campaign) {
     return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
   }
+
+  const campaignRecord = attachCampaignBrandId(campaign as Record<string, unknown>)
   
   let body: unknown
   try {
@@ -98,9 +106,10 @@ export async function POST(
   } = parsed.data
 
   const campaignConstraints =
-    campaign.constraints && typeof campaign.constraints === 'object'
-      ? (campaign.constraints as Record<string, unknown>)
+    campaignRecord.constraints && typeof campaignRecord.constraints === 'object'
+      ? (campaignRecord.constraints as Record<string, unknown>)
       : {}
+  const resolvedCampaignBrandId = resolveCampaignBrandId(campaignRecord)
   const reviewedPlanInput = GenerationPlanSchema.safeParse(plan)
   const storedPlanInput = GenerationPlanSchema.safeParse(campaignConstraints.generation_plan)
   const basePlan =
@@ -110,14 +119,14 @@ export async function POST(
         ? storedPlanInput.data
         : await buildGenerationPlan({
             workspaceId,
-            brandId: brandId || campaign.brand_id || undefined,
+            brandId: brandId || resolvedCampaignBrandId,
             assetTypes: [normalizePlanAssetType(normalizedAssetType)],
             brief: {
-              name: campaign.name as string | null,
-              audience: campaign.audience as string | null,
-              goal: campaign.goal as string | null,
-              offer: campaign.offer as string | null,
-              cta: campaign.cta as string | null,
+              name: campaignRecord.name as string | null,
+              audience: campaignRecord.audience as string | null,
+              goal: campaignRecord.goal as string | null,
+              offer: campaignRecord.offer as string | null,
+              cta: campaignRecord.cta as string | null,
               constraints: {
                 mustInclude: Array.isArray(campaignConstraints.mustInclude)
                   ? campaignConstraints.mustInclude.filter((value): value is string => typeof value === 'string')
@@ -146,16 +155,16 @@ export async function POST(
     let result: unknown
     let assetData: Record<string, unknown>
     const canonicalDocs: AssetDocument[] = []
-    const effectiveBrandId = brandId || campaign.brand_id || ''
+    const effectiveBrandId = brandId || resolvedCampaignBrandId || ''
     
     switch (normalizedAssetType) {
       case 'landing': {
         const lpResult = await generateLandingPage({
-          brief: `Create a landing page for: ${campaign.name}. 
-Target audience: ${campaign.audience || 'general'}. 
-Goal: ${campaign.goal || 'conversions'}. 
-Offer: ${campaign.offer || campaign.name}.
-CTA: ${campaign.cta || 'Get Started'}`,
+          brief: `Create a landing page for: ${campaignRecord.name}. 
+Target audience: ${campaignRecord.audience || 'general'}. 
+Goal: ${campaignRecord.goal || 'conversions'}. 
+Offer: ${campaignRecord.offer || campaignRecord.name}.
+CTA: ${campaignRecord.cta || 'Get Started'}`,
           workspaceId,
           style: (styleProfile || options.style || { theme: 'dark', layout: 'centered' }) as {
             theme?: 'dark' | 'light' | 'gradient' | 'glass'
@@ -167,12 +176,41 @@ CTA: ${campaign.cta || 'Get Started'}`,
         })
         
         result = lpResult
+        const design = createWebsiteDesignFromGeneratedPage({
+          page: lpResult,
+          workspaceId,
+          campaign: campaignRecord,
+          brandId: effectiveBrandId,
+          designId: typeof campaignRecord.landing_design_id === 'string' ? campaignRecord.landing_design_id : undefined,
+        })
+
+        await persistCampaignLandingDesign({
+          supabase,
+          workspaceId,
+          campaignId,
+          design,
+        })
+
+        await supabase.from('page_blocks').delete().eq('campaign_id', campaignId)
+        const projectedBlocks = projectDesignToPageBlocks(design, campaignId)
+        if (projectedBlocks.length > 0) {
+          await supabase.from('page_blocks').insert(projectedBlocks)
+        }
+
         assetData = {
           campaign_id: campaignId,
           workspace_id: workspaceId,
           asset_type: 'landing_page',
           format: 'html',
-          content: { html: lpResult.html, sections: lpResult.sections, claims: lpResult.claims },
+          content: {
+            html: lpResult.html,
+            sections: lpResult.sections,
+            claims: lpResult.claims,
+            websiteSections: design.sections,
+            globalStyles: design.globalStyles,
+            seoMeta: design.seoMeta,
+            designId: design.id,
+          },
           html: lpResult.html,
           status: 'draft',
         }
@@ -203,7 +241,7 @@ CTA: ${campaign.cta || 'Get Started'}`,
           : ['linkedin', 'twitter']
         
         const socialResult = await generateSocialPosts(
-          campaign as Parameters<typeof generateSocialPosts>[0],
+          campaignRecord as Parameters<typeof generateSocialPosts>[0],
           workspaceId,
           platforms,
           {
@@ -230,7 +268,7 @@ CTA: ${campaign.cta || 'Get Started'}`,
               status: 'draft',
             })
             .select()
-            .maybeSingle()
+            .single()
           
           if (asset) assets.push(asset)
           canonicalDocs.push(
@@ -259,7 +297,7 @@ CTA: ${campaign.cta || 'Get Started'}`,
       
       case 'email': {
         const emailResult = await generateEmailSequence(
-          campaign as Parameters<typeof generateEmailSequence>[0],
+          campaignRecord as Parameters<typeof generateEmailSequence>[0],
           workspaceId,
           {
             sequenceLength: typeof options.emailCount === 'number' ? options.emailCount : 5,
@@ -302,7 +340,7 @@ CTA: ${campaign.cta || 'Get Started'}`,
       
       case 'deck': {
         const deckResult = await generateSalesDeck(
-          campaign as Parameters<typeof generateSalesDeck>[0],
+          campaignRecord as Parameters<typeof generateSalesDeck>[0],
           workspaceId,
           { plan: reviewedPlan, improvementContext }
         )
@@ -349,7 +387,7 @@ CTA: ${campaign.cta || 'Get Started'}`,
         const aspectRatio = (format.includes('9:16') ? '9:16' : format.includes('1:1') ? '1:1' : '16:9') as '16:9' | '9:16' | '1:1'
         
         const videoResult = await generateVideoScript(
-          campaign as Parameters<typeof generateVideoScript>[0],
+          campaignRecord as Parameters<typeof generateVideoScript>[0],
           workspaceId,
           aspectRatio,
           {

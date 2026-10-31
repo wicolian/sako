@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       authHeader?.replace('Bearer ', '')
     );
     
-    if (!userId) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       authHeader?.replace('Bearer ', '')
     );
     
-    if (!userId) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
       workspaceId,
       Math.round(amount * 100), // Convert dollars to cents
       source || 'manual',
-      { added_by: userId }
+      { added_by: user.id }
     );
     
     return NextResponse.json({

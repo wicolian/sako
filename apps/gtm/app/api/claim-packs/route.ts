@@ -2,10 +2,6 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { nanoid } from 'nanoid'
 import { getWorkspaceId } from '@/lib/workspace'
-import { Database } from '@/lib/supabase/types'
-
-type ClaimPackRow = Database['public']['Tables']['claim_packs']['Row']
-type ClaimRow = Database['public']['Tables']['claims']['Row']
 
 // GET /api/claim-packs - List all claim packs
 export async function GET(request: NextRequest) {
@@ -98,7 +94,7 @@ export async function POST(request: NextRequest) {
         expires_at: expiresAt,
       })
       .select()
-      .maybeSingle()
+      .single()
     
     if (error) {
       console.error('Error creating claim pack:', error)

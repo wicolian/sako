@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient as createClient } from '@/lib/supabase/server'
 import { getWorkspaceContext } from '@/lib/workspace'
-import { Database } from '@/lib/supabase/types'
-
-
 
 export async function GET(
   request: NextRequest,
@@ -19,7 +16,7 @@ export async function GET(
       .select('*, brand_assets(*)')
       .eq('id', id)
       .eq('workspace_id', workspaceId)
-      .maybeSingle()
+      .single()
 
     if (error || !brand) {
       return NextResponse.json({ error: 'Brand not found' }, { status: 404 })
@@ -59,7 +56,7 @@ export async function PATCH(
       .eq('id', id)
       .eq('workspace_id', workspaceId)
       .select()
-      .maybeSingle()
+      .single()
 
     if (error) {
       console.error('Failed to update brand:', error)

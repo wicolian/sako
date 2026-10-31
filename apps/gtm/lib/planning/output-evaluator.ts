@@ -8,7 +8,7 @@ import type {
   PlanAssetType,
   ReviewActionId,
 } from './types'
-import { getSelectedCreativeRoute } from './generation-plan'
+import { getSelectedCreativeRoute } from './plan-helpers'
 
 interface EvaluateOutputOptions {
   existingContent?: string

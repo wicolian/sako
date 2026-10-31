@@ -6,7 +6,45 @@
  */
 
 import { JSDOM } from 'jsdom';
-import { chromium, type Browser, type BrowserContext, type Page } from 'playwright-core';
+
+interface PlaywrightResponse {
+  status(): number;
+  headers(): Record<string, string>;
+}
+
+interface PlaywrightPage {
+  goto(
+    url: string,
+    options: { waitUntil: 'networkidle'; timeout: number }
+  ): Promise<PlaywrightResponse | null>;
+  waitForTimeout(ms: number): Promise<void>;
+  url(): string;
+  content(): Promise<string>;
+  title(): Promise<string>;
+  $eval<ElementShape>(
+    selector: string,
+    pageFunction: (element: ElementShape) => string
+  ): Promise<string>;
+  close(): Promise<void>;
+}
+
+interface PlaywrightBrowserContext {
+  newPage(): Promise<PlaywrightPage>;
+  close(): Promise<void>;
+}
+
+interface PlaywrightBrowser {
+  newContext(options: {
+    viewport: { width: number; height: number };
+    userAgent: string;
+  }): Promise<PlaywrightBrowserContext>;
+  close(): Promise<void>;
+}
+
+async function connectPlaywrightBrowser(endpoint: string): Promise<PlaywrightBrowser> {
+  const { chromium } = await import('playwright-core');
+  return chromium.connect(endpoint) as Promise<PlaywrightBrowser>;
+}
 
 // Realistic browser user agents for rotation
 const USER_AGENTS = [
@@ -264,14 +302,14 @@ async function fetchWithBrowserless(
   const startTime = Date.now();
   const opts = { ...DEFAULT_OPTIONS, ...options };
   
-  let browser: Browser | null = null;
-  let context: BrowserContext | null = null;
-  let page: Page | null = null;
+  let browser: PlaywrightBrowser | null = null;
+  let context: PlaywrightBrowserContext | null = null;
+  let page: PlaywrightPage | null = null;
 
   try {
     // Connect to Browserless via WebSocket
     const wsEndpoint = `wss://production-sfo.browserless.io/chromium/playwright?token=${apiKey}`;
-    browser = await chromium.connect(wsEndpoint);
+    browser = await connectPlaywrightBrowser(wsEndpoint);
 
     if (!browser) {
       throw new Error('Failed to connect to Browserless');

@@ -3,9 +3,7 @@
  * 
  * Usage-based pricing with:
  * - Pre-paid credit system
- * - Realimport { Database } from '@/lib/supabase/types'
-
--time balance tracking
+ * - Real-time balance tracking
  * - Per-model cost calculation
  * - Low balance alerts
  * - Transaction history
@@ -72,7 +70,7 @@ export async function getWalletBalance(workspaceId: string): Promise<WalletBalan
     .from('workspace_wallets')
     .select('balance, low_balance_threshold')
     .eq('workspace_id', workspaceId)
-    .maybeSingle();
+    .single();
   
   // Create wallet if doesn't exist (new workspace gets $10 free credits)
   if (!wallet) {
@@ -84,7 +82,7 @@ export async function getWalletBalance(workspaceId: string): Promise<WalletBalan
         low_balance_threshold: DEFAULT_LOW_BALANCE_THRESHOLD,
       })
       .select('balance, low_balance_threshold')
-      .maybeSingle();
+      .single();
     
     wallet = newWallet;
     
@@ -214,7 +212,7 @@ async function debitWalletManual(
     .from('workspace_wallets')
     .select('balance')
     .eq('workspace_id', workspaceId)
-    .maybeSingle();
+    .single();
   
   if (!wallet || wallet.balance < amountCents) {
     throw new Error('Insufficient wallet balance');
@@ -265,7 +263,7 @@ export async function addCredits(
     .from('workspace_wallets')
     .select('balance')
     .eq('workspace_id', workspaceId)
-    .maybeSingle();
+    .single();
   
   const currentBalance = wallet?.balance ?? 0;
   const newBalance = currentBalance + amountCents;

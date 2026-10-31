@@ -42,6 +42,7 @@ export default function IntegrationsPage() {
   const [selectedIntegration, setSelectedIntegration] = useState<ProviderCatalogItem | null>(null)
   const [connectedIds, setConnectedIds] = useState<string[]>([])
   const [connectionsLoading, setConnectionsLoading] = useState(true)
+  const [actionPending, setActionPending] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -79,6 +80,51 @@ export default function IntegrationsPage() {
       cancelled = true
     }
   }, [])
+
+  const refreshConnections = async () => {
+    setConnectionsLoading(true)
+    try {
+      const response = await fetch('/api/providers/connected')
+      if (!response.ok) return
+      const data = await response.json() as { providers?: string[] }
+      setConnectedIds(data.providers || [])
+    } finally {
+      setConnectionsLoading(false)
+    }
+  }
+
+  const handleConnect = () => {
+    if (!selectedIntegration) return
+
+    const connectUrl =
+      selectedIntegration.id === 'twitter'
+        ? '/api/auth/twitter'
+        : `/api/providers/${selectedIntegration.id}/connect`
+
+    window.location.href = connectUrl
+  }
+
+  const handleDisconnect = async () => {
+    if (!selectedIntegration) return
+
+    setActionPending(true)
+    try {
+      const disconnectUrl =
+        selectedIntegration.id === 'twitter'
+          ? '/api/auth/twitter/disconnect'
+          : `/api/providers/${selectedIntegration.id}/disconnect`
+
+      const response = await fetch(disconnectUrl, { method: 'POST' })
+      if (!response.ok) {
+        throw new Error('Disconnect failed')
+      }
+
+      await refreshConnections()
+      setSelectedIntegration(null)
+    } finally {
+      setActionPending(false)
+    }
+  }
 
   const filteredIntegrations = useMemo(() => {
     let filtered = integrations
@@ -358,11 +404,11 @@ export default function IntegrationsPage() {
                     Coming Soon
                   </Button>
                 ) : connectedIds.includes(selectedIntegration.id) ? (
-                  <Button variant="destructive">
+                  <Button variant="destructive" onClick={() => void handleDisconnect()} disabled={actionPending}>
                     Disconnect
                   </Button>
                 ) : (
-                  <Button>
+                  <Button onClick={handleConnect} disabled={actionPending}>
                     <Plug className="h-4 w-4 mr-2" />
                     Connect
                   </Button>

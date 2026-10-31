@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { generateAngles, fetchPerformanceForFeedback, type Evidence } from '@/lib/ai/ai-sdk-client'
-import { Database } from '@/lib/supabase/types'
-
-type CampaignRow = Database['public']['Tables']['campaigns']['Row']
-type WorkspaceSettingsRow = Database['public']['Tables']['workspace_settings']['Row']
-type EvidenceRow = Database['public']['Tables']['evidence']['Row']
-type MessageRow = Database['public']['Tables']['messages']['Row']
-type AngleRow = Database['public']['Tables']['angles']['Row']
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,7 +21,7 @@ export async function POST(request: NextRequest) {
       .from('campaigns')
       .select('*')
       .eq('id', campaignId)
-      .maybeSingle()
+      .single()
 
     const campaign = campaignData as { 
       audience: string
@@ -50,7 +43,7 @@ export async function POST(request: NextRequest) {
       .from('workspace_settings')
       .select('industry')
       .eq('workspace_id', campaign.workspace_id)
-      .maybeSingle()
+      .single()
 
     if (settingsData) {
       industry = (settingsData as { industry?: string }).industry

@@ -3,11 +3,6 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { getProvider } from "@/lib/providers/registry";
 import type { ProviderType } from "@/lib/providers/types";
 import { recordClaimImpression, recordClaimConversion } from "@/lib/learning/claim-performance";
-import { Database } from '@/lib/supabase/types'
-
-type DeploymentRow = Database['public']['Tables']['deployments']['Row']
-type PerformanceRow = Database['public']['Tables']['performance']['Row']
-type AngleRow = Database['public']['Tables']['angles']['Row']
 
 /**
  * Scheduled job to sync performance metrics from deployed campaigns
@@ -26,7 +21,7 @@ export const syncPerformanceTask = schedules.task({
     const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
     
     const { data: deployments, error } = await supabase
-      .from('deployments')
+      .from("deployments")
       .select(`
         id,
         campaign_id,
@@ -90,7 +85,7 @@ export const syncPerformanceTask = schedules.task({
         }
 
         // Save performance snapshot
-        await supabase.from('performance').insert({
+        await supabase.from("performance").insert({
           campaign_id: campaign.id,
           deployment_id: deployment.id,
           captured_at: new Date().toISOString(),
@@ -109,10 +104,10 @@ export const syncPerformanceTask = schedules.task({
         // Update learning loop - record performance for claims used in this campaign
         if (deployment.angle_id) {
           const { data: angle } = await supabase
-            .from('angles')
+            .from("angles")
             .select("headline, subheadline, benefits")
             .eq("id", deployment.angle_id)
-            .maybeSingle();
+            .single();
 
           if (angle) {
             // Record impressions and conversions for headline

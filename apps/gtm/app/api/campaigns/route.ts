@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getWorkspaceIdWithFallback, handleWorkspaceError } from '@/lib/workspace'
+import {
+  isMissingCampaignBrandIdColumnError,
+  mergeCampaignBrandConstraint,
+} from '@/lib/campaigns/brand-link'
 import { z } from 'zod'
 
 const CreateCampaignSchema = z.object({
@@ -50,23 +54,36 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid campaign payload' }, { status: 400 })
   }
 
-  const constraints = parsed.data.constraints ?? null
-  
-  const { data, error } = await supabase
+  const constraints = mergeCampaignBrandConstraint(parsed.data.constraints ?? null, parsed.data.brandId ?? null)
+  const basePayload = {
+    workspace_id: workspaceId,
+    name: parsed.data.name,
+    audience: parsed.data.audience ?? null,
+    goal: parsed.data.goal ?? null,
+    offer: parsed.data.offer ?? null,
+    cta: parsed.data.cta ?? null,
+    constraints,
+    status: 'draft',
+  } satisfies Record<string, unknown>
+
+  let response = await supabase
     .from('campaigns')
     .insert({
-      workspace_id: workspaceId,
-      name: parsed.data.name,
-      audience: parsed.data.audience ?? null,
-      goal: parsed.data.goal ?? null,
-      offer: parsed.data.offer ?? null,
-      cta: parsed.data.cta ?? null,
+      ...basePayload,
       brand_id: parsed.data.brandId ?? null,
-      constraints,
-      status: 'draft',
     } as Record<string, unknown>)
     .select()
-    .maybeSingle()
+    .single()
+
+  if (response.error && isMissingCampaignBrandIdColumnError(response.error.message)) {
+    response = await supabase
+      .from('campaigns')
+      .insert(basePayload)
+      .select()
+      .single()
+  }
+
+  const { data, error } = response
   
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })

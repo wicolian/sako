@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { ClerkProvider } from '@clerk/nextjs'
 import '@fontsource/figtree/400.css'
 import '@fontsource/figtree/500.css'
 import '@fontsource/figtree/600.css'
@@ -31,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
       <body className="min-h-screen bg-background text-foreground font-sans antialiased">
         <ThemeProvider
           attribute="class"

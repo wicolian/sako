@@ -1,10 +1,7 @@
 /**
  * Multi-Language Support (Phase 1.4)
  * 
- * Support for import { Database } from '@/lib/supabase/types'
-
-
-95+ languages in content generation.
+ * Support for 95+ languages in content generation.
  */
 
 import { createServiceClient } from '@/lib/supabase/service'

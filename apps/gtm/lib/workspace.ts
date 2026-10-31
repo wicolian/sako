@@ -1,11 +1,7 @@
 /**
  * Workspace Resolution Utilities
  * 
- * Provides helpers for resolving and validating workspace coimport { Database } from '@/lib/supabase/types'
-
-type WorkspaceMemberRow = Database['public']['Tables']['workspace_members']['Row']
-type WorkspaceSettingsRow = Database['public']['Tables']['workspace_settings']['Row']
-ntext.
+ * Provides helpers for resolving and validating workspace context.
  * Replaces hardcoded DEMO_WORKSPACE_ID with session-based workspace resolution.
  */
 
@@ -142,7 +138,7 @@ export async function resolveWorkspaceMembership(userId: string): Promise<{
     .from('workspace_members')
     .select('workspace_id, role')
     .eq('user_id', userId)
-    .maybeSingle()
+    .single()
 
   if (error || !membership) {
     // User has no workspace - they should complete onboarding
@@ -165,7 +161,7 @@ export async function getWorkspaceSettings(workspaceId: string) {
     .from('workspace_settings')
     .select('*')
     .eq('workspace_id', workspaceId)
-    .maybeSingle()
+    .single()
 
   if (error) {
     // Return default settings if not found

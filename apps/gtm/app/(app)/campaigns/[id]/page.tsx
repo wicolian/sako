@@ -3,7 +3,6 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getWorkspaceFromHeaders } from '@/lib/workspace'
 import type { ClaimData } from '@/components/campaigns/compliance-sidebar'
 import { CampaignDetail } from './campaign-detail'
-import type { Campaign, Message, Angle, PageBlock, FollowupFlow } from '@/lib/supabase/types'
 
 function mapClaimStatusToRiskLevel(status: string, riskScore: number): ClaimData['riskLevel'] {
   if (status === 'approved') return 'safe'

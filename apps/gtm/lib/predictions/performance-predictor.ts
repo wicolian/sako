@@ -60,7 +60,7 @@ export async function predictCampaignPerformance(campaignId: string): Promise<Pe
     .from('campaigns')
     .select('*')
     .eq('id', campaignId)
-    .maybeSingle()
+    .single()
 
   if (error || !campaign) {
     throw new Error('Campaign not found')

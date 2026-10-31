@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getWorkspaceContext, handleWorkspaceError } from '@/lib/workspace'
 import { createServiceClient } from '@/lib/supabase/service'
-import { Database } from '@/lib/supabase/types'
-
-type ProviderConnectionRow = Database['public']['Tables']['provider_connections']['Row']
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,7 +12,7 @@ export async function GET(request: NextRequest) {
       .select('metadata, expires_at')
       .eq('workspace_id', workspaceId)
       .eq('provider_id', 'framer')
-      .maybeSingle()
+      .single()
 
     if (!connection) {
       return NextResponse.json({ connected: false })

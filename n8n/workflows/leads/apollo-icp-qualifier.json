@@ -32,7 +32,7 @@
           "mode": "list",
           "value": 0,
           "cachedResultName": "apollo_import",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=0"
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=0"
         },
         "options": {
           "outputFormatting": {
@@ -44,9 +44,9 @@
         "documentId": {
           "__rl": true,
           "mode": "list",
-          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "value": "YOUR_GOOGLE_SHEET_ID",
           "cachedResultName": "Sako Marketing Automations",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit?usp=drivesdk"
         }
       },
       "id": "read-apollo-contacts",
@@ -149,7 +149,7 @@
           "mode": "list",
           "value": 492604584,
           "cachedResultName": "qualified_leads",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=492604584"
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=492604584"
         },
         "columns": {
           "mappingMode": "defineBelow",
@@ -174,9 +174,9 @@
         "documentId": {
           "__rl": true,
           "mode": "list",
-          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "value": "YOUR_GOOGLE_SHEET_ID",
           "cachedResultName": "Sako Marketing Automations",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit?usp=drivesdk"
         }
       },
       "id": "save-qualified",
@@ -202,7 +202,7 @@
           "mode": "list",
           "value": 100000001,
           "cachedResultName": "disqualified_leads",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=100000001"
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=100000001"
         },
         "columns": {
           "mappingMode": "defineBelow",
@@ -223,9 +223,9 @@
         "documentId": {
           "__rl": true,
           "mode": "list",
-          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
+          "value": "YOUR_GOOGLE_SHEET_ID",
           "cachedResultName": "Sako Marketing Automations",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit?usp=drivesdk"
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit?usp=drivesdk"
         }
       },
       "id": "save-disqualified",

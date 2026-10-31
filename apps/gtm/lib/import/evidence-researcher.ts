@@ -157,6 +157,32 @@ export async function researchAllClaims(
   return results;
 }
 
+export async function isTavilyReachable(timeoutMs = 3000): Promise<boolean> {
+  const tavilyKey = process.env.TAVILY_API_KEY;
+  if (!tavilyKey) {
+    return false;
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch('https://api.tavily.com/search', {
+      method: 'OPTIONS',
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response.status < 500;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (isTavilyUnavailableError(error)) {
+      return false;
+    }
+
+    return false;
+  }
+}
+
 /**
  * Generate smart search queries for a claim
  */
@@ -223,12 +249,16 @@ async function executeSearches(queries: string[]): Promise<TavilySearchResult[]>
   
   // Execute searches in parallel
   const searchPromises = queries.map(async (query) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
     try {
       const response = await fetch('https://api.tavily.com/search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        signal: controller.signal,
         body: JSON.stringify({
           api_key: tavilyKey,
           query,
@@ -238,8 +268,14 @@ async function executeSearches(queries: string[]): Promise<TavilySearchResult[]>
           max_results: 5,
         }),
       });
+
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
+        if (response.status >= 500 || response.status === 401 || response.status === 403) {
+          throw new Error(`Tavily unavailable (${response.status})`);
+        }
+
         console.error(`Tavily search failed for "${query}": ${response.status}`);
         return [];
       }
@@ -247,6 +283,11 @@ async function executeSearches(queries: string[]): Promise<TavilySearchResult[]>
       const data: TavilyResponse = await response.json();
       return data.results || [];
     } catch (error) {
+      clearTimeout(timeoutId);
+      if (isTavilyUnavailableError(error)) {
+        throw new Error('Tavily search is unreachable right now');
+      }
+
       console.error(`Tavily search error for "${query}":`, error);
       return [];
     }
@@ -262,6 +303,22 @@ async function executeSearches(queries: string[]): Promise<TavilySearchResult[]>
     seen.add(r.url);
     return true;
   });
+}
+
+function isTavilyUnavailableError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const message = error.message.toLowerCase();
+  return (
+    message.includes('enotfound') ||
+    message.includes('eai_again') ||
+    message.includes('fetch failed') ||
+    message.includes('tavily unavailable') ||
+    message.includes('timed out') ||
+    message.includes('aborted')
+  );
 }
 
 /**

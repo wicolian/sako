@@ -69,7 +69,7 @@ export class ActiveCampaignProvider implements DeploymentProvider {
         workspace_id: workspaceId,
         provider: 'activecampaign',
         access_token: encrypt(apiKey),
-        external_id: user.userId.toString(),
+        external_id: user.user.id.toString(),
         external_name: user.user.email,
         metadata: {
           accountUrl,
@@ -78,7 +78,7 @@ export class ActiveCampaignProvider implements DeploymentProvider {
         },
       }, { onConflict: 'workspace_id,provider' })
       .select()
-      .maybeSingle()
+      .single()
 
     if (error) throw error
 
@@ -87,7 +87,7 @@ export class ActiveCampaignProvider implements DeploymentProvider {
       workspaceId,
       provider: 'activecampaign',
       isConnected: true,
-      externalId: user.userId.toString(),
+      externalId: user.user.id.toString(),
       externalName: user.user.email,
     }
   }
@@ -260,7 +260,7 @@ export class ActiveCampaignProvider implements DeploymentProvider {
       .select('workspace_id, metadata')
       .eq('campaign_id', campaignId)
       .eq('provider', 'activecampaign')
-      .maybeSingle()
+      .single()
 
     if (!deployment?.metadata?.acCampaignId) return null
 
@@ -300,7 +300,7 @@ export class ActiveCampaignProvider implements DeploymentProvider {
       .select('*')
       .eq('workspace_id', workspaceId)
       .eq('provider', 'activecampaign')
-      .maybeSingle()
+      .single()
 
     if (!data) return null
 

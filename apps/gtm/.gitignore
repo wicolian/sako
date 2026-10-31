@@ -34,10 +34,6 @@ bun-debug.log*
 .env.development.local
 .env.test.local
 .env.production.local
-.env.neon-clerk
-.env.supabase-backup
-.env.example
-.env.updating.md
 
 # Environment variables
 .env
@@ -78,3 +74,6 @@ supabase/.temp/
 
 
 .worktrees/
+
+# Archived / obsolete documentation
+docs/archive/

@@ -4,11 +4,7 @@
  * Upgraded to use AI SDK 6 native Agent abstraction with:
  * - Built-in tool orchestration
  * - Step limits and retries
- * - Streaimport { Database } from '@/lib/supabase/types'
-
-type EvidenceRow = Database['public']['Tables']['evidence']['Row']
-type CampaignRow = Database['public']['Tables']['campaigns']['Row']
-ming support
+ * - Streaming support
  * - Observability hooks
  * 
  * @see https://sdk.vercel.ai/docs/ai-sdk-core/agents
@@ -246,7 +242,7 @@ const agentTools = {
           status: 'draft',
         })
         .select('id, name, status')
-        .maybeSingle();
+        .single();
       
       if (error) {
         return { error: error.message };

@@ -112,7 +112,7 @@ export class WebflowProvider implements DeploymentProvider {
         domain: primarySite?.customDomains?.[0]?.url || primarySite?.shortName + '.webflow.io',
       }, { onConflict: 'workspace_id' })
       .select()
-      .maybeSingle()
+      .single()
 
     if (error) {
       throw new Error('Failed to save Webflow connection')
@@ -188,7 +188,7 @@ export class WebflowProvider implements DeploymentProvider {
       .from('webflow_connections')
       .select('*')
       .eq('workspace_id', workspaceId)
-      .maybeSingle()
+      .single()
 
     if (!data) return null
 
@@ -205,7 +205,7 @@ export class WebflowProvider implements DeploymentProvider {
       .from('webflow_connections')
       .select('access_token_encrypted')
       .eq('workspace_id', workspaceId)
-      .maybeSingle()
+      .single()
 
     if (!data?.access_token_encrypted) return null
     return decrypt(data.access_token_encrypted)

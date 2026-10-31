@@ -3,6 +3,8 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import JSZip from 'jszip'
 import { nanoid } from 'nanoid'
 import { requireWorkspaceEntitlement } from '@/lib/billing/entitlements'
+import { exportToHtml } from '@/lib/export/html-exporter'
+import { mapWebsiteDesignRow } from '@/lib/campaigns/landing-design'
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,6 +53,14 @@ export async function POST(request: NextRequest) {
     const angles = anglesRes.data || []
     const blocks = blocksRes.data || []
     const flow = flowRes.data
+    const designRow = campaign.landing_design_id
+      ? (await supabase
+          .from('website_designs')
+          .select('*')
+          .eq('id', campaign.landing_design_id)
+          .maybeSingle()).data
+      : null
+    const design = designRow ? mapWebsiteDesignRow(designRow as Record<string, unknown>) : null
     const { data: evidenceData } = await supabase
       .from('evidence')
       .select('*')
@@ -122,6 +132,9 @@ ${a.description}
 
     // Add page blocks as JSON
     zip.file('page-blocks.json', JSON.stringify(blocks, null, 2))
+    if (design) {
+      zip.file('website-design.json', JSON.stringify(design, null, 2))
+    }
 
     // Add workflow
     if (flow) {
@@ -145,7 +158,9 @@ ${evidence.map((e: any) => `
 
     // Add landing page HTML
     const heroBlock = blocks.find((b: any) => b.type === 'hero')
-    const landingPageHtml = generateLandingPageHtml(campaign, blocks, heroBlock)
+    const landingPageHtml = design
+      ? exportToHtml(design)
+      : generateLandingPageHtml(campaign, blocks, heroBlock)
     zip.file('landing-page.html', landingPageHtml)
 
     // Add README
@@ -159,6 +174,7 @@ This package contains all assets for the campaign.
 - \`messages.md\` - All generated messaging (headlines, supporting points, CTAs)
 - \`angles.md\` - Campaign angles with trust scores
 - \`page-blocks.json\` - Landing page block configuration
+- \`website-design.json\` - Canonical landing-page design model
 - \`workflow.json\` - Follow-up automation workflow
 - \`evidence.md\` - Supporting evidence and proof points
 - \`landing-page.html\` - Ready-to-use landing page HTML

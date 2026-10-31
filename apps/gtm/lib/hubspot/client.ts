@@ -1,9 +1,6 @@
 import { Client } from '@hubspot/api-client'
 import { decrypt } from '@/lib/encryption'
 import { createServiceClient } from '@/lib/supabase/service'
-import { Database } from '@/lib/supabase/types'
-
-type HubspotConnectionRow = Database['public']['Tables']['hubspot_connections']['Row']
 
 // Default workspace for backwards compatibility
 const DEFAULT_WORKSPACE_ID = '00000000-0000-0000-0000-000000000001'
@@ -26,7 +23,7 @@ export async function getHubSpotClient(workspaceId?: string): Promise<Client | n
     .from('hubspot_connections')
     .select('*')
     .eq('workspace_id', wsId)
-    .maybeSingle()
+    .single()
   
   if (!connection) {
     return null
@@ -56,7 +53,7 @@ export async function getHubSpotAccessToken(workspaceId?: string): Promise<strin
     .from('hubspot_connections')
     .select('*')
     .eq('workspace_id', wsId)
-    .maybeSingle()
+    .single()
   
   if (!connection) {
     return null
@@ -121,7 +118,7 @@ async function refreshHubSpotToken(connection: HubSpotConnection): Promise<HubSp
       })
       .eq('id', connection.id)
       .select()
-      .maybeSingle()
+      .single()
     
     if (error) {
       console.error('Failed to update refreshed token:', error)
@@ -276,19 +273,70 @@ export async function createHubSpotEmailDraft(
   }
 }
 
-export async function getHubSpotFormSubmissions(client: Client, formGuid: string) {
+export async function getHubSpotFormSubmissions(accessToken: string, formGuid: string): Promise<number | null> {
   try {
-    const response = await client.marketing.forms.formsApi.getById(formGuid)
-    
-    // Get form submissions through the submissions API
-    // Note: This requires the forms API scope
-    return {
-      formId: formGuid,
-      submissions: [], // Would need to use the form submissions API
+    const response = await fetch(
+      `https://api.hubapi.com/form-integrations/v1/submissions/forms/${formGuid}?limit=50`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    )
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Failed to get HubSpot form submissions:', response.status, errorText)
+      return null
     }
+
+    const result = await response.json() as { results?: unknown[] }
+    return result.results?.length ?? 0
   } catch (error: any) {
     console.error('Failed to get form submissions:', error.message)
     return null
+  }
+}
+
+export async function getHubSpotEmailStats(
+  accessToken: string,
+  emailId: string
+): Promise<{ emailOpens: number | null; emailClicks: number | null }> {
+  try {
+    const response = await fetch(`https://api.hubapi.com/marketing/v3/emails/${emailId}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Failed to get HubSpot email stats:', response.status, errorText)
+      return { emailOpens: null, emailClicks: null }
+    }
+
+    const result = await response.json() as {
+      stats?: {
+        counters?: {
+          open?: number
+          click?: number
+        }
+        open?: number
+        click?: number
+      }
+    }
+
+    const counters = result.stats?.counters
+
+    return {
+      emailOpens: counters?.open ?? result.stats?.open ?? null,
+      emailClicks: counters?.click ?? result.stats?.click ?? null,
+    }
+  } catch (error: any) {
+    console.error('Failed to get email stats:', error.message)
+    return { emailOpens: null, emailClicks: null }
   }
 }
 

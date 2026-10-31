@@ -105,7 +105,7 @@ export class GA4Provider implements DeploymentProvider {
         },
       }, { onConflict: 'workspace_id,provider' })
       .select()
-      .maybeSingle()
+      .single()
 
     if (error) throw error
 
@@ -143,7 +143,7 @@ export class GA4Provider implements DeploymentProvider {
       .from('deployments')
       .select('workspace_id')
       .eq('campaign_id', campaignId)
-      .maybeSingle()
+      .single()
 
     if (!deployment) return null
 
@@ -211,7 +211,7 @@ export class GA4Provider implements DeploymentProvider {
       .select('*')
       .eq('workspace_id', workspaceId)
       .eq('provider', 'ga4')
-      .maybeSingle()
+      .single()
 
     if (!data) return null
 
@@ -294,7 +294,7 @@ export class SegmentProvider implements DeploymentProvider {
         },
       }, { onConflict: 'workspace_id,provider' })
       .select()
-      .maybeSingle()
+      .single()
 
     if (error) throw error
 
@@ -407,7 +407,7 @@ export class SegmentProvider implements DeploymentProvider {
       .select('*')
       .eq('workspace_id', workspaceId)
       .eq('provider', 'segment')
-      .maybeSingle()
+      .single()
 
     if (!data) return null
 
@@ -477,7 +477,7 @@ export class AmplitudeProvider implements DeploymentProvider {
         },
       }, { onConflict: 'workspace_id,provider' })
       .select()
-      .maybeSingle()
+      .single()
 
     if (error) throw error
 
@@ -519,7 +519,7 @@ export class AmplitudeProvider implements DeploymentProvider {
       .select('*')
       .eq('workspace_id', workspaceId)
       .eq('provider', 'amplitude')
-      .maybeSingle()
+      .single()
 
     if (!data) return null
 
@@ -584,7 +584,7 @@ export class MixpanelProvider implements DeploymentProvider {
         },
       }, { onConflict: 'workspace_id,provider' })
       .select()
-      .maybeSingle()
+      .single()
 
     if (error) throw error
 
@@ -626,7 +626,7 @@ export class MixpanelProvider implements DeploymentProvider {
       .select('*')
       .eq('workspace_id', workspaceId)
       .eq('provider', 'mixpanel')
-      .maybeSingle()
+      .single()
 
     if (!data) return null
 

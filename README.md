@@ -19,7 +19,7 @@ One `docker compose up`. Deploy to AWS, GCP, Azure or Vercel with Terraform.
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Sako%20Source-B6F36A" /></a>
 </p>
 
-[The story](#the-story) · [What you get](#what-you-get) · [Screens](#screens) · [Architecture](#architecture) · [Run it](#run-it-in-one-command) · [Self-host](#self-host-with-prebuilt-images) · [Deploy](#deploy-to-any-cloud) · [Configuration](#configuration) · [Known issues](#known-issues) · [License](#license)
+[The story](#the-story) · [What you get](#what-you-get) · [Screens](#screens) · [Architecture](#architecture) · [Run it](#run-it-in-one-command) · [Self-host](#self-host-with-prebuilt-images) · [Deploy](#deploy-to-any-cloud) · [Configuration](#configuration) · [Known issues](#known-issues) · [Support](#support-and-hire-me) · [License](#license)
 
 </div>
 
@@ -35,8 +35,18 @@ work into campaigns, outbound and PR.
 |---|---|
 | **Revenue** | About **$7,000 a month, for 8 months** |
 | **Growth** | **10–40%** revenue growth |
-| **Team behind the software** | **One person.** No dev team. Built with AI agents: Cursor, Claude Code, Codex, GLM and friends |
+| **The software** | Built by **one person**, with AI agents: Cursor, Claude Code, Codex, GLM and friends. No dev team |
 | **What happened** | We sold the clients (**only the clients, not the code**) |
+
+### Who made it
+
+**Sako = *Sa*njay + *Ko*ushik**, the two founders.
+
+- **Sanjay** ran the clients and the design: delivery, quality, and a team of **4 designers**.
+- **Koushik** ([@wicolian](https://github.com/wicolian)) was the product and GTM person. He built every
+  line of this software, and ran **1 HR person and 1 growth hacker**.
+
+Almost 3 months of building with no funding and no backup.
 
 Then we learned that the hard part was not the software. It was distribution, and the design-agency model
 did not grow the way we wanted. When the agency side stops working, there is no point in keeping the
@@ -60,7 +70,7 @@ If you want to run a design subscription, a creative agency, a productized servi
 | **Waitlist** | `apps/waitlist` | 3003 | Launch waitlist with countdown | ✅ Works |
 | **Wall** | `apps/wall` | 3004 | Live business metrics for a TV screen: Stripe, PostHog, GA4, investor mode | ✅ Works |
 | **n8n** | `n8n` | 5678 | 44 workflows: leads, content, PR, analytics, recruiting, infra | ✅ Runs (import workflows yourself) |
-| **GTM app** | `apps/gtm` | 3002 | Campaigns, AI assets, brand DNA, website editor, browser extension | ⚠️ Build broken (opt-in) |
+| **GTM app (Composer)** | `apps/gtm` | 3002 | AI GTM workspace: agent, campaigns, brand DNA, claims and evidence, competitors, newsletters, landing-page playground, AI marketing team, integrations | ✅ Works (needs Supabase, opt-in) |
 
 <details>
 <summary><b>The n8n workflows (44)</b></summary>
@@ -102,6 +112,19 @@ demo data.
 <tr><td width="50%" valign="top"><img src="docs/screens/studio-admin-users.png" alt="User management" width="100%"><br><sub><b>User management</b></sub></td><td width="50%" valign="top"><img src="docs/screens/studio-settings.png" alt="Settings" width="100%"><br><sub><b>Settings</b></sub></td></tr>
 </table>
 
+### GTM app (Composer)
+
+<table>
+<tr><td width="50%" valign="top"><img src="docs/screens/gtm-dashboard.png" alt="Dashboard" width="100%"><br><sub><b>Dashboard</b></sub></td><td width="50%" valign="top"><img src="docs/screens/gtm-agent.png" alt="GTM agent" width="100%"><br><sub><b>GTM agent</b></sub></td></tr>
+<tr><td width="50%" valign="top"><img src="docs/screens/gtm-campaigns.png" alt="Campaigns" width="100%"><br><sub><b>Campaigns</b></sub></td><td width="50%" valign="top"><img src="docs/screens/gtm-playground.png" alt="Landing-page playground" width="100%"><br><sub><b>Landing-page playground</b></sub></td></tr>
+<tr><td width="50%" valign="top"><img src="docs/screens/gtm-team.png" alt="AI marketing team" width="100%"><br><sub><b>AI marketing team</b></sub></td><td width="50%" valign="top"><img src="docs/screens/gtm-brand-dna.png" alt="Brand DNA" width="100%"><br><sub><b>Brand DNA</b></sub></td></tr>
+<tr><td width="50%" valign="top"><img src="docs/screens/gtm-claims.png" alt="Claims review" width="100%"><br><sub><b>Claims review</b></sub></td><td width="50%" valign="top"><img src="docs/screens/gtm-competitors.png" alt="Competitor intelligence" width="100%"><br><sub><b>Competitor intelligence</b></sub></td></tr>
+<tr><td width="50%" valign="top"><img src="docs/screens/gtm-iq.png" alt="IQ" width="100%"><br><sub><b>IQ</b></sub></td><td width="50%" valign="top"><img src="docs/screens/gtm-newsletters.png" alt="Newsletter generator" width="100%"><br><sub><b>Newsletter generator</b></sub></td></tr>
+<tr><td width="50%" valign="top"><img src="docs/screens/gtm-automation.png" alt="Automation playbooks" width="100%"><br><sub><b>Automation playbooks</b></sub></td><td width="50%" valign="top"><img src="docs/screens/gtm-integrations.png" alt="Integrations" width="100%"><br><sub><b>Integrations</b></sub></td></tr>
+<tr><td width="50%" valign="top"><img src="docs/screens/gtm-analytics.png" alt="Analytics" width="100%"><br><sub><b>Analytics</b></sub></td><td width="50%" valign="top"><img src="docs/screens/gtm-onboarding.png" alt="Onboarding" width="100%"><br><sub><b>Onboarding</b></sub></td></tr>
+<tr><td width="50%" valign="top"><img src="docs/screens/gtm-settings.png" alt="Settings" width="100%"><br><sub><b>Settings</b></sub></td></tr>
+</table>
+
 ### Landing page
 
 <table>
@@ -119,120 +142,180 @@ demo data.
 </table>
 
 <details>
-<summary><b>Every screen, full size (30)</b></summary>
+<summary><b>Every screen, full size</b></summary>
 
 <!-- before-and-after:start -->
 | Preview (Landing: home) |
 |:---:|
 | ![Preview](./docs/screens/landing-home.png) |
 
-| Preview (Landing: Pricing) |
+| Preview (Landing: pricing) |
 |:---:|
 | ![Preview](./docs/screens/landing-pricing.png) |
 
-| Preview (Landing: How it works) |
+| Preview (Landing: how it works) |
 |:---:|
 | ![Preview](./docs/screens/landing-how-it-works.png) |
 
-| Preview (Landing: Services) |
+| Preview (Landing: services) |
 |:---:|
 | ![Preview](./docs/screens/landing-services.png) |
 
-| Preview (Landing: ROI calculator) |
+| Preview (Landing: roi calculator) |
 |:---:|
 | ![Preview](./docs/screens/landing-roi-calculator.png) |
 
-| Preview (Landing: Compare) |
+| Preview (Landing: compare) |
 |:---:|
 | ![Preview](./docs/screens/landing-compare.png) |
 
-| Preview (Landing: Enterprise) |
+| Preview (Landing: enterprise) |
 |:---:|
 | ![Preview](./docs/screens/landing-enterprise.png) |
 
-| Preview (Landing: Security) |
+| Preview (Landing: security) |
 |:---:|
 | ![Preview](./docs/screens/landing-security.png) |
 
-| Preview (Landing: About) |
+| Preview (Landing: about) |
 |:---:|
 | ![Preview](./docs/screens/landing-about.png) |
 
-| Preview (Landing: Blog) |
+| Preview (Landing: blog) |
 |:---:|
 | ![Preview](./docs/screens/landing-blog.png) |
 
-| Preview (Landing: Book a call) |
+| Preview (Landing: book a call) |
 |:---:|
 | ![Preview](./docs/screens/landing-book-a-call.png) |
 
-| Preview (Client: Dashboard: plan, credits, work in flight) |
+| Preview (Client: dashboard) |
 |:---:|
 | ![Preview](./docs/screens/client-dashboard.png) |
 
-| Preview (Client: Tasks) |
+| Preview (Client: tasks) |
 |:---:|
 | ![Preview](./docs/screens/client-tasks.png) |
 
-| Preview (Client: Task detail and review) |
+| Preview (Client: task detail) |
 |:---:|
 | ![Preview](./docs/screens/client-task-detail.png) |
 
-| Preview (Client: New request) |
+| Preview (Client: new task) |
 |:---:|
 | ![Preview](./docs/screens/client-new-task.png) |
 
-| Preview (Client: Calendar) |
+| Preview (Client: calendar) |
 |:---:|
 | ![Preview](./docs/screens/client-calendar.png) |
 
-| Preview (Client: Brands) |
+| Preview (Client: brands) |
 |:---:|
 | ![Preview](./docs/screens/client-brands.png) |
 
-| Preview (Client: Settings) |
+| Preview (Client: settings) |
 |:---:|
 | ![Preview](./docs/screens/client-settings.png) |
 
-| Preview (Client: Sign up) |
+| Preview (Client: sign up) |
 |:---:|
 | ![Preview](./docs/screens/client-sign-up.png) |
 
-| Preview (Studio: Operator overview) |
+| Preview (Studio: dashboard) |
 |:---:|
 | ![Preview](./docs/screens/studio-dashboard.png) |
 
-| Preview (Studio: All studio tasks) |
+| Preview (Studio: tasks) |
 |:---:|
 | ![Preview](./docs/screens/studio-tasks.png) |
 
-| Preview (Studio: Task workspace) |
+| Preview (Studio: tasks t2) |
 |:---:|
 | ![Preview](./docs/screens/studio-tasks-t2.png) |
 
-| Preview (Studio: Studio calendar) |
+| Preview (Studio: calendar) |
 |:---:|
 | ![Preview](./docs/screens/studio-calendar.png) |
 
-| Preview (Studio: Clients) |
+| Preview (Studio: clients) |
 |:---:|
 | ![Preview](./docs/screens/studio-clients.png) |
 
-| Preview (Studio: Billing inspector) |
+| Preview (Studio: billing) |
 |:---:|
 | ![Preview](./docs/screens/studio-billing.png) |
 
-| Preview (Studio: User management) |
+| Preview (Studio: admin users) |
 |:---:|
 | ![Preview](./docs/screens/studio-admin-users.png) |
 
-| Preview (Studio: Settings) |
+| Preview (Studio: settings) |
 |:---:|
 | ![Preview](./docs/screens/studio-settings.png) |
 
 | Preview (Studio: sign in) |
 |:---:|
 | ![Preview](./docs/screens/studio-sign-in.png) |
+
+| Preview (GTM: dashboard) |
+|:---:|
+| ![Preview](./docs/screens/gtm-dashboard.png) |
+
+| Preview (GTM: agent) |
+|:---:|
+| ![Preview](./docs/screens/gtm-agent.png) |
+
+| Preview (GTM: campaigns) |
+|:---:|
+| ![Preview](./docs/screens/gtm-campaigns.png) |
+
+| Preview (GTM: playground) |
+|:---:|
+| ![Preview](./docs/screens/gtm-playground.png) |
+
+| Preview (GTM: team) |
+|:---:|
+| ![Preview](./docs/screens/gtm-team.png) |
+
+| Preview (GTM: brand dna) |
+|:---:|
+| ![Preview](./docs/screens/gtm-brand-dna.png) |
+
+| Preview (GTM: claims) |
+|:---:|
+| ![Preview](./docs/screens/gtm-claims.png) |
+
+| Preview (GTM: competitors) |
+|:---:|
+| ![Preview](./docs/screens/gtm-competitors.png) |
+
+| Preview (GTM: iq) |
+|:---:|
+| ![Preview](./docs/screens/gtm-iq.png) |
+
+| Preview (GTM: newsletters) |
+|:---:|
+| ![Preview](./docs/screens/gtm-newsletters.png) |
+
+| Preview (GTM: automation) |
+|:---:|
+| ![Preview](./docs/screens/gtm-automation.png) |
+
+| Preview (GTM: integrations) |
+|:---:|
+| ![Preview](./docs/screens/gtm-integrations.png) |
+
+| Preview (GTM: analytics) |
+|:---:|
+| ![Preview](./docs/screens/gtm-analytics.png) |
+
+| Preview (GTM: onboarding) |
+|:---:|
+| ![Preview](./docs/screens/gtm-onboarding.png) |
+
+| Preview (GTM: settings) |
+|:---:|
+| ![Preview](./docs/screens/gtm-settings.png) |
 
 | Preview (Waitlist) |
 |:---:|
@@ -295,7 +378,10 @@ flowchart LR
     API --> SP & SL & RS & AI
     API -. verify JWT .-> CL
     WK --> R
-    G --> PG & AI
+    G --> SB[("Supabase<br/>Postgres + Auth")]
+    G --> AI
+    G -. send to Sako .-> API
+    CP -. Composer link .-> G
     WL --> PG
     N8N --> PG
     N8N --> SL & AI
@@ -341,7 +427,7 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-    IMG["Images on GHCR<br/>ghcr.io/&lt;owner&gt;/sako-*"]
+    IMG["Images on GHCR<br/>ghcr.io/&lt;owner&gt;/sako/*"]
     IMG --> DC["docker compose<br/>(one machine)"]
     IMG --> AWS["AWS<br/>App Runner + RDS + S3"]
     IMG --> GCP["GCP<br/>Cloud Run + Cloud SQL + GCS"]
@@ -370,7 +456,7 @@ Open http://localhost:3000. All URLs:
 | Studio | http://localhost:3100 |
 | Client portal | http://localhost:5173 |
 | n8n | http://localhost:5678 |
-| GTM app (opt-in) | `docker compose --profile gtm up -d` → http://localhost:3002 |
+| GTM app (opt-in, needs Supabase) | `docker compose --profile gtm up -d --build` → http://localhost:3002 |
 
 **The minimum keys to sign in:** a free [Clerk](https://clerk.com) development instance
 (`CLERK_SECRET_KEY`, `VITE_CLERK_PUBLISHABLE_KEY`) and `ALLOWED_STUDIO_DOMAINS` set to your team's email
@@ -508,19 +594,29 @@ cd apps/gtm && bun install && bun dev
 | Workflow | When | What |
 |---|---|---|
 | `ci.yml` | Every PR and push | Secret scan (gitleaks), `terraform fmt` + `validate` for all 4 clouds, `docker compose config` |
-| `images.yml` | Push to `main` | Builds 8 images, pushes `ghcr.io/<owner>/sako-*:latest` |
+| `images.yml` | Push to `main` | Builds 8 images, pushes `ghcr.io/<owner>/sako/*:latest` |
 
 ## Known issues
 
 These are tracked as [GitHub issues](https://github.com/wicolian/sako/issues). The big ones:
 
-- **GTM app does not build.** It was halfway through a move from Supabase to Clerk + Neon. Server-only
-  code (fs, net, child_process) is imported into client components and middleware. Opt-in only for now.
+- **GTM app needs Supabase**, not the shared Postgres. A few GTM pages (assets, editor, kit) give 404, and some show "No workspace found".
 - **Client pricing page is empty** until you set your own Stripe pricing table or plans.
 - **Studio "AI" page renders empty cards.**
 - **Pods page is a placeholder.**
 
 Fixes are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Support and hire me
+
+If Sako saved you months of work, you can say thanks:
+
+- ⭐ **Star the repo.** It helps other founders find it.
+- 💚 **Sponsor me** on [GitHub Sponsors](https://github.com/sponsors/wicolian) (the ♥ Sponsor button at the top of the repo).
+- 🤝 **Hire me:** I do paid **forward-deployed engineering (FDE)** and freelance sessions: I set up Sako
+  (or something like it) for your business, or build your product and GTM stack with AI agents.
+
+Get in touch: **[kelashik.com](https://kelashik.com)** · **[LinkedIn](https://www.linkedin.com/in/kelashik)**
 
 ## Contributing
 
@@ -541,6 +637,6 @@ This is a source-available license, not an OSI open-source license.
 
 <div align="center">
 
-**Built solo, with AI agents.** © 2026 Wicolian.
+**Built solo, with AI agents.** © 2026 Koushik Venkatesan ([@wicolian](https://github.com/wicolian)) · [kelashik.com](https://kelashik.com) · [LinkedIn](https://www.linkedin.com/in/kelashik)
 
 </div>

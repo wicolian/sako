@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getWorkspaceId } from '@/lib/workspace'
+import { extractFactCitations } from '@/lib/brain/learning'
 
 const ALLOWED_UPDATE_FIELDS = [
   'name',
@@ -56,6 +57,13 @@ export async function PATCH(
   const body = await request.json()
   const updates: Record<string, unknown> = {}
 
+  const { data: existingCampaign } = await supabase
+    .from('campaigns')
+    .select('status')
+    .eq('id', id)
+    .eq('workspace_id', workspaceId)
+    .single()
+
   for (const field of ALLOWED_UPDATE_FIELDS) {
     if (body[field] !== undefined) {
       updates[field] = body[field]
@@ -72,6 +80,15 @@ export async function PATCH(
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  if (
+    updates.status === 'published' &&
+    existingCampaign?.status !== 'published'
+  ) {
+    void extractFactCitations(id).catch((citationError) => {
+      console.error('Failed to extract fact citations on publish:', citationError)
+    })
   }
 
   return NextResponse.json(data)

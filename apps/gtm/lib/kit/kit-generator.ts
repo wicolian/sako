@@ -177,6 +177,7 @@ export async function generateLaunchKit(
     // Assemble the kit
     const kit: LaunchKit = {
       id: kitId,
+      campaignId: kitId,
       workspaceId,
       brandId: brief.brandId || undefined,
       brief,

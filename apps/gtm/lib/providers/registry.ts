@@ -35,6 +35,7 @@ import { ShopifyProvider } from './shopify'
 import { GoogleAdsProvider } from './google-ads'
 import { MetaAdsProvider } from './meta-ads'
 import { LinkedInAdsProvider } from './linkedin-ads'
+import { TwitterProvider } from './twitter'
 
 // Analytics Providers
 import { GA4Provider, AmplitudeProvider, MixpanelProvider, SegmentProvider } from './analytics'
@@ -72,6 +73,7 @@ function getRegistry(): Map<ProviderType, DeploymentProvider> {
     providerInstances.set('google-ads', new GoogleAdsProvider())
     providerInstances.set('meta-ads', new MetaAdsProvider())
     providerInstances.set('linkedin-ads', new LinkedInAdsProvider())
+    providerInstances.set('twitter', new TwitterProvider())
     
     // Analytics
     providerInstances.set('ga4', new GA4Provider())

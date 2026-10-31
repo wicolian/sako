@@ -7,7 +7,6 @@
 
 import { encrypt, decrypt } from '@/lib/encryption'
 import { createServiceClient } from '@/lib/supabase/service'
-
 import type {
   DeploymentProvider,
   ProviderCapabilities,
@@ -73,17 +72,17 @@ export class WordPressProvider implements DeploymentProvider {
         workspace_id: workspaceId,
         provider: 'wordpress',
         access_token: encrypt(JSON.stringify({ username, applicationPassword })),
-        external_id: userId.toString(),
+        external_id: user.id.toString(),
         external_name: user.name || user.username,
         metadata: {
           siteUrl,
           siteName: user.name,
-          userId: userId,
+          userId: user.id,
           capabilities: user.capabilities,
         },
       }, { onConflict: 'workspace_id,provider' })
       .select()
-      .maybeSingle()
+      .single()
 
     if (error) throw error
 
@@ -92,7 +91,7 @@ export class WordPressProvider implements DeploymentProvider {
       workspaceId,
       provider: 'wordpress',
       isConnected: true,
-      externalId: userId.toString(),
+      externalId: user.id.toString(),
       externalName: user.name || user.username,
     }
   }
@@ -174,7 +173,7 @@ export class WordPressProvider implements DeploymentProvider {
       .select('workspace_id, metadata')
       .eq('campaign_id', campaignId)
       .eq('provider', 'wordpress')
-      .maybeSingle()
+      .single()
 
     if (!deployment?.metadata?.pageId) return null
 
@@ -297,7 +296,7 @@ export class WordPressProvider implements DeploymentProvider {
       .select('*')
       .eq('workspace_id', workspaceId)
       .eq('provider', 'wordpress')
-      .maybeSingle()
+      .single()
 
     if (!data) return null
 

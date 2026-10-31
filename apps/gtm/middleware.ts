@@ -61,6 +61,8 @@ export async function middleware(request: NextRequest) {
       '/api/setup/status',
       '/gate',
       '/api/gate',
+      '/manifest.webmanifest',
+      '/site.webmanifest',
     ]
     const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path))
     

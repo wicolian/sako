@@ -1,10 +1,7 @@
 /**
  * AI Rate Limiter with Circuit Breaker (Jan 2026)
  * 
- * import { Database } from '@/lib/supabase/types'
-
-type WorkspaceRow = Database['public']['Tables']['workspaces']['Row']
-Implements:
+ * Implements:
  * - Token bucket rate limiting per workspace
  * - Circuit breaker for failing providers
  * - Request queuing with timeouts
@@ -94,7 +91,7 @@ export async function checkRateLimit(
     .from('workspaces')
     .select('plan')
     .eq('id', workspaceId)
-    .maybeSingle();
+    .single();
 
   const plan = (workspace?.plan as keyof typeof DEFAULT_LIMITS) || 'free';
   const limits = DEFAULT_LIMITS[plan];

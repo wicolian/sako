@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getWorkspaceContext, handleWorkspaceError } from '@/lib/workspace'
 import { createServiceClient } from '@/lib/supabase/service'
-import { Database } from '@/lib/supabase/types'
-
-type ProviderConnectionRow = Database['public']['Tables']['provider_connections']['Row']
 
 export async function POST(request: NextRequest) {
   try {

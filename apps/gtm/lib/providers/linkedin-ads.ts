@@ -140,7 +140,7 @@ export class LinkedInAdsProvider implements DeploymentProvider {
         expires_at: expiresAt.toISOString(),
       }, { onConflict: 'workspace_id,provider' })
       .select()
-      .maybeSingle()
+      .single()
 
     if (error) throw error
 
@@ -387,7 +387,7 @@ export class LinkedInAdsProvider implements DeploymentProvider {
       .select('workspace_id, metadata')
       .eq('campaign_id', campaignId)
       .eq('provider', 'linkedin-ads')
-      .maybeSingle()
+      .single()
 
     if (!deployment?.metadata?.linkedinCampaignId) return null
 
@@ -438,7 +438,7 @@ export class LinkedInAdsProvider implements DeploymentProvider {
       .select('*')
       .eq('workspace_id', workspaceId)
       .eq('provider', 'linkedin-ads')
-      .maybeSingle()
+      .single()
 
     if (!data) return null
 

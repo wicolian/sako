@@ -2,9 +2,7 @@
  * Audit Logger
  * 
  * Centralized audit logging for ClaimsOS.
- * All changes to claims, evidence, policies, and approvals are tra
-type AuditLogRow = Database['public']['Tables']['audit_log']['Row']
-cked.
+ * All changes to claims, evidence, policies, and approvals are tracked.
  */
 
 import { createServiceClient } from '@/lib/supabase/service'

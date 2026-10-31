@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { BarChart3, TrendingUp, Users, MousePointerClick, RefreshCw, Loader2 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import type { Campaign } from '@/lib/supabase/types'
 
 interface PerformanceTabProps {
@@ -21,6 +22,8 @@ interface PerformanceResponse {
   campaignId: string
   capturedAt: string
   metrics: MetricItem[]
+  dataSource: 'hubspot_api' | 'estimated'
+  lastUpdated?: string
   notes?: Record<string, unknown>
 }
 
@@ -68,6 +71,7 @@ export function PerformanceTab({ campaign }: PerformanceTabProps) {
   }
 
   const isPublished = campaign.status === 'published' || campaign.status === 'running'
+  const isLiveData = performanceData?.dataSource === 'hubspot_api'
 
   if (loading) {
     return (
@@ -99,9 +103,14 @@ export function PerformanceTab({ campaign }: PerformanceTabProps) {
     <div className="p-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-lg font-semibold">Performance</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-semibold">Performance</h2>
+            <Badge variant={isLiveData ? 'default' : 'secondary'}>
+              {isLiveData ? 'Live' : 'Estimated'}
+            </Badge>
+          </div>
           <p className="text-sm text-muted-foreground">
-            Track how your campaign is performing
+            Track how your campaign is performing in HubSpot.
             {source && <span className="ml-2 text-xs">({source})</span>}
           </p>
         </div>
@@ -149,8 +158,8 @@ export function PerformanceTab({ campaign }: PerformanceTabProps) {
         <CardHeader>
           <CardTitle className="text-base">Performance Summary</CardTitle>
           <CardDescription>
-            {performanceData?.capturedAt
-              ? `Last updated: ${new Date(performanceData.capturedAt).toLocaleString()}`
+            {performanceData?.lastUpdated
+              ? `Last updated: ${new Date(performanceData.lastUpdated).toLocaleString()}`
               : 'Click "Refresh Data" to pull metrics from HubSpot'
             }
           </CardDescription>

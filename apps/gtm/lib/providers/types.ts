@@ -23,6 +23,8 @@ export type ProviderType =
   | 'google-ads' 
   | 'meta-ads' 
   | 'linkedin-ads'
+  // Social
+  | 'twitter'
   // Analytics
   | 'ga4' 
   | 'amplitude' 
@@ -153,6 +155,8 @@ export interface PerformanceMetrics {
   reach?: number
   frequency?: number
   conversionRate?: number
+  dataSource?: 'hubspot_api' | 'estimated'
+  lastUpdated?: string
 }
 
 export interface TextUpdate {

@@ -7,9 +7,6 @@ import type {
   DeployResult,
   PerformanceMetrics,
 } from './types'
-import { Database } from '@/lib/supabase/types'
-
-type ProviderConnectionRow = Database['public']['Tables']['provider_connections']['Row']
 
 export class KlaviyoProvider implements DeploymentProvider {
   id = 'klaviyo' as const
@@ -33,7 +30,7 @@ export class KlaviyoProvider implements DeploymentProvider {
       .select('id')
       .eq('workspace_id', workspaceId)
       .eq('provider', 'klaviyo')
-      .maybeSingle()
+      .single()
     return !!data
   }
 
@@ -51,7 +48,7 @@ export class KlaviyoProvider implements DeploymentProvider {
         access_token: code,
       })
       .select()
-      .maybeSingle()
+      .single()
 
     if (error) throw error
     return { id: data.id, workspaceId, provider: 'klaviyo', isConnected: true }

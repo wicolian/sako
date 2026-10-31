@@ -3,9 +3,7 @@
  * 
  * Semantic search for design templates using AI Gateway embeddings.
  * 
- * PUimport { Database } from '@/lib/supabase/types'
-
-RPOSE:
+ * PURPOSE:
  * - Find relevant design PATTERNS for AI generation
  * - Uses v2 schema with rich metadata (spatial, typography, color patterns)
  * - Templates are REFERENCE only - never exposed directly

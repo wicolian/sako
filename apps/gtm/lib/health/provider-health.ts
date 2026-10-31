@@ -1,10 +1,7 @@
 /**
  * Provider Health Monitoring (Phase 8.5)
  * 
- * Real-timimport { Database } from '@/lib/supabase/types'
-
-type WorkspaceRow = Database['public']['Tables']['workspaces']['Row']
-e status checks for all connected providers.
+ * Real-time status checks for all connected providers.
  */
 
 import { createServiceClient } from '@/lib/supabase/service'

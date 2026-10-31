@@ -297,7 +297,7 @@ export class MarketplaceManager {
         is_new: true,
       })
       .select()
-      .maybeSingle()
+      .single()
 
     if (error) {
       throw new Error(`Failed to submit template: ${error.message}`)

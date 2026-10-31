@@ -1,9 +1,7 @@
 /**
  * Workflow Compiler (Phase 4.3)
  * 
- * Visual workflow bimport { Database } from '@/lib/supabase/types'
-
-uilder execution engine.
+ * Visual workflow builder execution engine.
  * Compiles workflow definitions into executable sequences.
  */
 
@@ -258,7 +256,7 @@ export async function executeWorkflow(
     .select('*')
     .eq('id', workflowId)
     .eq('is_active', true)
-    .maybeSingle()
+    .single()
 
   if (fetchError || !workflow) {
     throw new Error('Workflow not found or inactive')
@@ -277,7 +275,7 @@ export async function executeWorkflow(
       started_at: new Date().toISOString(),
     })
     .select()
-    .maybeSingle()
+    .single()
 
   if (createError || !execution) {
     throw new Error('Failed to create execution record')
@@ -384,7 +382,7 @@ export async function getWorkflow(workflowId: string): Promise<WorkflowDefinitio
     .from('workflows')
     .select('*')
     .eq('id', workflowId)
-    .maybeSingle()
+    .single()
 
   if (error) {
     return null

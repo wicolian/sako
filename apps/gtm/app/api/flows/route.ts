@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { Database } from '@/lib/supabase/types'
-
-type FollowupFlowRow = Database['public']['Tables']['followup_flows']['Row']
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -40,7 +37,7 @@ export async function POST(request: NextRequest) {
       graph_json: body.graph_json || { nodes: [], edges: [] },
     })
     .select()
-    .maybeSingle()
+    .single()
   
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })

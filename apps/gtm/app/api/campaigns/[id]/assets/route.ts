@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getWorkspaceId } from '@/lib/workspace'
+import { resolveCampaignBrandId } from '@/lib/campaigns/brand-link'
 import {
   rowToAssetDocument,
   type AssetDocumentRow,
@@ -112,7 +113,7 @@ export async function POST(
   // Verify campaign belongs to workspace
   const { data: campaign, error: campaignError } = await supabase
     .from('campaigns')
-    .select('id, brand_id')
+    .select('id, constraints')
     .eq('id', campaignId)
     .eq('workspace_id', workspaceId)
     .single()
@@ -133,7 +134,7 @@ export async function POST(
   // Create canonical AssetDocument
   const doc = createAssetDocument({
     workspaceId,
-    brandId: input.brandId ?? (campaign as Record<string, unknown>).brand_id as string ?? '',
+    brandId: input.brandId ?? resolveCampaignBrandId(campaign as Record<string, unknown>) ?? '',
     campaignId,
     type: input.asset_type as AssetType,
     channel: (input.channel as Channel) ?? undefined,

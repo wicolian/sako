@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
@@ -51,9 +51,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { buildReviewSignals, recommendReviewActions } from "@/lib/planning/review-signals"
 import { GenerationPlanSchema, type ReviewActionId } from "@/lib/planning/types"
 
-// Import original tabs
+// Import tabs
 import { MessagesTab } from "./tabs/messages-tab"
-import { PageBuilderTab } from "./tabs/page-builder-tab"
+import { CampaignDesignTab } from "./tabs/campaign-design-tab"
 import { PublishTab } from "./tabs/publish-tab"
 
 const statusColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -61,7 +61,9 @@ const statusColors: Record<string, "default" | "secondary" | "destructive" | "ou
   ready: "outline",
   published: "default",
   running: "default",
+  generating: "outline",
   archived: "secondary",
+  failed: "destructive",
   escalated: "destructive",
 }
 
@@ -70,7 +72,9 @@ const statusLabels: Record<string, string> = {
   ready: "Ready to publish",
   published: "Published",
   running: "Running",
+  generating: "Generating",
   archived: "Archived",
+  failed: "Failed",
   escalated: "Escalated",
 }
 
@@ -125,12 +129,35 @@ export function CampaignDetail({
     assetType: "landing-page" | "social" | "email" | null
     action: ReviewActionId | null
   }>({ assetType: null, action: null })
+  const [linkedKitId, setLinkedKitId] = useState<string | null>(null)
+  const [landingDesignId, setLandingDesignId] = useState<string | null>(campaign.landing_design_id ?? null)
 
   const [editName, setEditName] = useState(campaign.name)
   const [editAudience, setEditAudience] = useState(campaign.audience ?? "")
   const [editGoal, setEditGoal] = useState(campaign.goal ?? "")
   const [editOffer, setEditOffer] = useState(campaign.offer ?? "")
   const [editCta, setEditCta] = useState(campaign.cta ?? "")
+
+  useEffect(() => {
+    let active = true
+
+    fetch(`/api/campaigns/${campaign.id}/kit`)
+      .then((response) => response.json())
+      .then((data: { kit?: { id?: string | null } | null }) => {
+        if (active) {
+          setLinkedKitId(data.kit?.id ?? null)
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setLinkedKitId(null)
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [campaign.id])
 
   const handleSave = async () => {
     setIsSaving(true)
@@ -180,9 +207,11 @@ export function CampaignDetail({
     fabricatedClaims: claims.filter(c => c.isFabricated).length,
   }
 
-  const landingPageContent = pageBlocks.length > 0
-    ? pageBlocks.map((block) => JSON.stringify(block.props)).join('\n\n')
-    : 'No landing page blocks generated yet.'
+  const landingPageContent = landingDesignId != null
+    ? 'Canonical landing page design linked in the visual builder.'
+    : pageBlocks.length > 0
+      ? pageBlocks.map((block) => JSON.stringify(block.props)).join('\n\n')
+      : 'No landing page generated yet.'
   const socialContent = messages.filter((message) => message.type !== 'supporting').map((message) => message.text).join('\n\n') || 'No social assets generated yet.'
   const emailContent = messages.filter((message) => message.type === 'supporting').map((message) => message.text).join('\n\n') || 'No email assets generated yet.'
   const complianceLabel = getComplianceHeadline(complianceSummary)
@@ -192,7 +221,8 @@ export function CampaignDetail({
       ? "bg-amber-500/10 border-amber-500/20 text-amber-500"
       : "bg-emerald-500/10 border-emerald-500/20 text-emerald-600"
   const generatedAssetCount = [
-    pageBlocks.length > 0,
+    // Landing page: has a linked design OR legacy blocks
+    landingDesignId != null || pageBlocks.length > 0,
     messages.some((message) => message.type !== 'supporting'),
     messages.some((message) => message.type === 'supporting'),
   ].filter(Boolean).length
@@ -278,6 +308,11 @@ export function CampaignDetail({
             </div>
             
             <div className="flex items-center gap-3">
+              {linkedKitId ? (
+                <Button variant="outline" asChild>
+                  <Link href={`/kit/${linkedKitId}`}>View Launch Kit</Link>
+                </Button>
+              ) : null}
               <ExportActions 
                 onExportMarkdownZip={() => {}}
                 onExportHtmlZip={() => {}}
@@ -438,9 +473,12 @@ export function CampaignDetail({
               )}
             </TabsContent>
 
-            {/* Other Legacy Tabs wrapped in proper scrolling containers */}
-            <TabsContent value="builder" className="h-full m-0 overflow-y-auto bg-muted/10">
-              <PageBuilderTab campaign={campaign} blocks={pageBlocks} />
+            {/* Landing Page — full EditorShell embedded in the tab */}
+            <TabsContent value="builder" className="h-full m-0 overflow-hidden">
+              <CampaignDesignTab
+                campaign={campaign}
+                onDesignLinked={setLandingDesignId}
+              />
             </TabsContent>
             
             <TabsContent value="publish" className="h-full m-0 overflow-y-auto bg-muted/10 p-6">

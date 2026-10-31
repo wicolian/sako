@@ -546,7 +546,7 @@ class SakoWebhookHandler {
         .select('metadata')
         .eq('workspace_id', workspaceId)
         .eq('provider', 'slack')
-        .maybeSingle()
+        .single()
 
       const channel = connection?.metadata?.defaultChannel
       if (!channel) return

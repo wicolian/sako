@@ -1,9 +1,7 @@
 /**
  * Claim Performance Learning Loop
  * 
- * Tracks claim performance metrics and providimport { Database } from '@/lib/supabase/types'
-
-es learning data
+ * Tracks claim performance metrics and provides learning data
  * to enhance AI prompt generation over time.
  */
 

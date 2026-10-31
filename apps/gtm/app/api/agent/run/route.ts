@@ -7,7 +7,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { runCampaignAgent } from '@/lib/agents/campaign-agent-v2';
 import { runMultiAgentOrchestrator } from '@/lib/agents/multi-agent';
@@ -19,14 +18,17 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now();
   
   try {
-    // Authenticate with Clerk
-    const { userId } = await auth();
+    const supabase = createServiceClient();
     
-    if (!userId) {
+    // Get user
+    const authHeader = request.headers.get('authorization');
+    const { data: { user } } = await supabase.auth.getUser(
+      authHeader?.replace('Bearer ', '')
+    );
+    
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
-    const supabase = createServiceClient();
     
     const body = await request.json();
     const { 

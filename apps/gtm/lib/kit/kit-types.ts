@@ -146,6 +146,7 @@ export interface DeckAsset {
 
 export interface LaunchKit {
   id: string
+  campaignId: string
   workspaceId: string
   brandId?: string
   

@@ -34,57 +34,6 @@ import { logAICall, calculateCost } from './tracing';
 export { MODEL_IDS, type ModelTier } from './openrouter';
 
 // ============================================================================
-// Provider Configuration - AI SDK v6
-// ============================================================================
-
-/**
- * Create OpenAI provider instance
- * Routes through AI Gateway when AI_GATEWAY_API_KEY is set
- */
-function getOpenAI() {
-  const apiKey = process.env.AI_GATEWAY_API_KEY || process.env.OPENAI_API_KEY;
-  
-  if (!apiKey) {
-    throw new Error(
-      'Missing AI API key. Set AI_GATEWAY_API_KEY (preferred) or OPENAI_API_KEY in .env.local'
-    );
-  }
-
-  // If using AI Gateway, configure the base URL
-  if (process.env.AI_GATEWAY_API_KEY) {
-    return createOpenAI({
-      apiKey: process.env.AI_GATEWAY_API_KEY,
-      baseURL: 'https://gateway.ai.cloudflare.com/v1/openai',
-    });
-  }
-
-  return createOpenAI({ apiKey });
-}
-
-/**
- * Create Anthropic provider instance
- */
-function getAnthropic() {
-  const apiKey = process.env.AI_GATEWAY_API_KEY || process.env.ANTHROPIC_API_KEY;
-  
-  if (!apiKey) {
-    throw new Error(
-      'Missing Anthropic API key. Set AI_GATEWAY_API_KEY (preferred) or ANTHROPIC_API_KEY in .env.local'
-    );
-  }
-
-  // If using AI Gateway, configure the base URL
-  if (process.env.AI_GATEWAY_API_KEY) {
-    return createAnthropic({
-      apiKey: process.env.AI_GATEWAY_API_KEY,
-      baseURL: 'https://gateway.ai.cloudflare.com/v1/anthropic',
-    });
-  }
-
-  return createAnthropic({ apiKey });
-}
-
-// ============================================================================
 // Model Configuration using AI SDK v6 with latest 2026 models
 // Per latest-models-only.mdc - Hard allowlist
 // ============================================================================
@@ -181,13 +130,20 @@ export type MarketingAngles = z.infer<typeof anglesSchema>;
 export type ClaimRewrites = z.infer<typeof rewriteSchema>;
 export type QuickValidation = z.infer<typeof quickValidationSchema>;
 
+export class StructuredGenerationRoutingError extends Error {
+  constructor(message = 'Structured generation is unavailable because no compatible AI provider endpoint accepted the requested schema output. Check OpenRouter routing/provider settings and try again.') {
+    super(message)
+    this.name = 'StructuredGenerationRoutingError'
+  }
+}
+
 // ============================================================================
 // Generation Functions
 // ============================================================================
 
 /**
  * Generate structured landing page content
- * Uses CREATIVE model (Claude Sonnet 4)
+ * Uses CREATIVE model (Claude Sonnet 4.5)
  */
 export async function generateLandingPageContent(
   prompt: string,
@@ -198,7 +154,7 @@ export async function generateLandingPageContent(
   });
 
   const result = await generateObject({
-    model: getModel('creative'),
+    model: MODELS.CREATIVE,
     schema: landingPageSchema,
     system: systemPrompt,
     prompt,
@@ -210,7 +166,7 @@ export async function generateLandingPageContent(
 
 /**
  * Generate marketing angles for a campaign
- * Uses CREATIVE model (Claude Sonnet 4) for maximum variety
+ * Uses CREATIVE model (Claude Sonnet 4.5) for maximum variety
  */
 export async function generateMarketingAngles(
   campaign: {
@@ -228,7 +184,7 @@ export async function generateMarketingAngles(
     : '';
 
   const result = await generateObject({
-    model: getModel('creative'),
+    model: MODELS.CREATIVE,
     schema: anglesSchema,
     system: buildAnglesPrompt({
       industry: campaign.industry,
@@ -252,7 +208,7 @@ Return angles that avoid generic launch language and feel grounded in the compan
 
 /**
  * Generate compliant rewrites for flagged claims
- * Uses STRUCTURED model (GPT-4o) for precise output
+ * Uses STRUCTURED model (GPT-5.2) for precise output
  */
 export async function generateCompliantRewrites(
   claims: Array<{
@@ -272,7 +228,7 @@ ${policyContext.forbiddenTerms?.length ? `Avoid these terms: ${policyContext.for
     : '';
 
   const result = await generateObject({
-    model: getModel('structured'),
+    model: MODELS.STRUCTURED,
     schema: rewriteSchema,
     system: `${buildClaimValidatorPrompt(policyContext?.mode || 'standard')}
 
@@ -295,7 +251,7 @@ ${claims.map((c, i) => `${i + 1}. "${c.text}"
 
 /**
  * Stream landing page HTML generation
- * Uses BALANCED model (GPT-4o) for reliable HTML output
+ * Uses BALANCED model (GPT-5.2) for reliable HTML output
  */
 export async function streamLandingPageHTML(
   content: LandingPageContent,
@@ -307,7 +263,7 @@ export async function streamLandingPageHTML(
     : '--primary: #9ae83e; --secondary: #1a1a1a;';
 
   const result = streamText({
-    model: getModel('balanced'),
+    model: MODELS.BALANCED,
     system: `You are an expert frontend developer creating modern, responsive landing pages.
 
 Requirements:
@@ -341,7 +297,7 @@ Return only the HTML code.`,
 
 /**
  * Quick text generation for simple prompts
- * Uses FAST model (GPT-4o) for speed and cost efficiency
+ * Uses FAST model (GPT-5.2-Chat) for speed and cost efficiency
  */
 export async function quickGenerate(
   prompt: string,
@@ -352,7 +308,7 @@ export async function quickGenerate(
   }
 ): Promise<string> {
   const { text } = await generateText({
-    model: getModel('fast'),
+    model: MODELS.FAST,
     system: options?.system,
     prompt,
   });
@@ -362,13 +318,13 @@ export async function quickGenerate(
 
 /**
  * Quick claim validation for real-time linting
- * Uses FAST model (GPT-4o) for sub-second response
+ * Uses FAST model (GPT-5.2-Chat) for sub-second response
  */
 export async function quickClaimCheck(
   claimText: string
 ): Promise<QuickValidation> {
   const { object } = await generateObject({
-    model: getModel('fast'),
+    model: MODELS.FAST,
     schema: quickValidationSchema,
     system: buildClaimValidatorPrompt('standard'),
     prompt: `Assess this marketing claim: "${claimText}"`,
@@ -380,7 +336,7 @@ export async function quickClaimCheck(
 
 /**
  * Generate email sequence content
- * Uses CREATIVE model (Claude Sonnet 4) for engaging copy
+ * Uses CREATIVE model (Claude Sonnet 4.5) for engaging copy
  */
 export async function generateEmailSequence(
   campaign: {
@@ -398,7 +354,7 @@ export async function generateEmailSequence(
   sendDelay: string;
 }>> {
   const { object } = await generateObject({
-    model: getModel('creative'),
+    model: MODELS.CREATIVE,
     schema: z.object({
       emails: z.array(z.object({
         subject: z.string().describe('Email subject line - compelling, not clickbait'),
@@ -441,13 +397,13 @@ Requirements:
 
 /**
  * Batch validate multiple claims efficiently
- * Uses FAST model (GPT-4o) with batch processing
+ * Uses FAST model (GPT-5.2-Chat) with batch processing
  */
 export async function batchValidateClaims(
   claims: string[]
 ): Promise<Array<QuickValidation & { text: string }>> {
   const { object } = await generateObject({
-    model: getModel('fast'),
+    model: MODELS.FAST,
     schema: z.object({
       validations: z.array(z.object({
         text: z.string(),
@@ -478,15 +434,33 @@ export async function generateStructuredOutput<T>(options: {
   system?: string;
   temperature?: number;
 }): Promise<T> {
-  const { object } = await generateObject({
-    model: getModel('structured'),
-    schema: options.schema,
-    system: options.system,
-    prompt: options.prompt,
-    temperature: options.temperature ?? 0.5,
-  });
+  try {
+    const { object } = await generateObject({
+      model: MODELS.STRUCTURED,
+      schema: options.schema,
+      system: options.system,
+      prompt: options.prompt,
+      temperature: options.temperature ?? 0.5,
+    });
 
-  return object as T;
+    return object as T;
+  } catch (error) {
+    if (isStructuredRoutingError(error)) {
+      throw new StructuredGenerationRoutingError();
+    }
+    throw error;
+  }
+}
+
+function isStructuredRoutingError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return (
+    error.message.includes('No endpoints found that can handle the requested parameters') ||
+    error.message.includes('provider routing')
+  );
 }
 
 /**
@@ -499,7 +473,7 @@ export async function streamTextContent(options: {
   onChunk?: (chunk: string) => void;
 }): Promise<string> {
   const result = streamText({
-    model: getModel('balanced'),
+    model: MODELS.BALANCED,
     system: options.system,
     prompt: options.prompt,
   });
@@ -540,7 +514,7 @@ export type GeneratedMessages = z.infer<typeof messagesSchema>;
 
 /**
  * Generate marketing messages for a campaign
- * Uses CREATIVE model (Claude Sonnet 4) for engaging copy
+ * Uses CREATIVE model (Claude Sonnet 4.5) for engaging copy
  */
 export async function generateMessages(
   audience: string,
@@ -564,7 +538,7 @@ export async function generateMessages(
     : '';
 
   const { object } = await generateObject({
-    model: getModel('creative'),
+    model: MODELS.CREATIVE,
     schema: messagesSchema,
     system: buildCopywriterPrompt({
       forbiddenPhrases: options?.forbiddenPhrases,
@@ -616,7 +590,7 @@ export type FullAngles = z.infer<typeof fullAnglesSchema>;
 
 /**
  * Generate marketing angles with trust scores
- * Uses CREATIVE model (Claude Sonnet 4) with evidence grounding
+ * Uses CREATIVE model (Claude Sonnet 4.5) with evidence grounding
  */
 export async function generateAngles(
   audience: string,
@@ -642,7 +616,7 @@ export async function generateAngles(
     : '';
 
   const { object } = await generateObject({
-    model: getModel('creative'),
+    model: MODELS.CREATIVE,
     schema: fullAnglesSchema,
     system: buildAnglesPrompt({
       industry: options?.industry,
@@ -705,7 +679,7 @@ export type PageBlocks = z.infer<typeof pageBlocksSchema>;
 
 /**
  * Generate landing page blocks structure
- * Uses STRUCTURED model (GPT-4o) for reliable JSON
+ * Uses STRUCTURED model (GPT-5.2) for reliable JSON
  */
 export async function generatePageBlocks(
   audience: string,
@@ -729,69 +703,123 @@ export async function generatePageBlocks(
     ? `\n\nSocial proof available:\n${options.evidence.filter(e => e.source_type === 'testimonial' || e.source_type === 'case_study').map(e => `- ${e.title}`).join('\n')}`
     : '';
 
-  const { object } = await generateObject({
-    model: getModel('structured'),
-    schema: pageBlocksSchema,
-    system: buildLandingPagePrompt({
-      forbiddenPhrases: options?.forbiddenPhrases,
-      brandVoice: options?.brandVoice,
-      evidence: options?.evidence,
-      pageGoal: options?.pageGoal === 'awareness' ? 'lead-gen' : options?.pageGoal,
-      audience,
-    }),
-    prompt: `Generate page blocks for:
+  const system = buildLandingPagePrompt({
+    forbiddenPhrases: options?.forbiddenPhrases,
+    brandVoice: options?.brandVoice,
+    evidence: options?.evidence,
+    pageGoal: options?.pageGoal === 'awareness' ? 'lead-gen' : options?.pageGoal,
+    audience,
+  })
+  const prompt = `Generate page blocks for:
 Audience: ${audience}
 Goal: ${goal}
 Offer: ${offer}
 CTA: ${cta}
 
 Key messages to incorporate:
-${messages.map(m => `- ${m}`).join('\n')}`,
-    temperature: 0.5,
-  });
+${messages.map(m => `- ${m}`).join('\n')}${performanceContext}${evidenceContext}`
 
-  return object as PageBlocks;
+  try {
+    return await generateStructuredOutput({
+      schema: pageBlocksSchema,
+      system,
+      prompt,
+      temperature: 0.5,
+    });
+  } catch (error) {
+    if (!(error instanceof StructuredGenerationRoutingError)) {
+      throw error
+    }
+
+    const fallbackModels = [MODELS.BALANCED, MODELS.FAST, MODELS.CREATIVE] as const
+    let lastError: unknown = error
+
+    for (const model of fallbackModels) {
+      try {
+        const fallback = await generateText({
+          model,
+          system: `${system}
+
+Return only valid JSON. Do not use markdown fences. The JSON must match this exact shape:
+{
+  "blocks": [
+    {
+      "type": "hero|features|testimonials|pricing|faq|cta|stats|comparison",
+      "headline": "string",
+      "subheadline": "string",
+      "content": "string",
+      "items": [{ "title": "string", "description": "string", "icon": "string" }],
+      "ctaText": "string",
+      "ctaUrl": "string",
+      "imageUrl": "string",
+      "testimonials": [{ "quote": "string", "author": "string", "role": "string", "company": "string" }],
+      "stats": [{ "value": "string", "label": "string" }]
+    }
+  ]
+}
+
+Use empty strings or empty arrays when a field is not needed.`,
+          prompt,
+        })
+
+        const cleaned = fallback.text.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '')
+        const parsed = JSON.parse(cleaned) as unknown
+        return pageBlocksSchema.parse(parsed)
+      } catch (fallbackError) {
+        if (isStructuredRoutingError(fallbackError)) {
+          lastError = fallbackError
+          continue
+        }
+        throw fallbackError
+      }
+    }
+
+    throw new StructuredGenerationRoutingError(
+      lastError instanceof Error ? lastError.message : undefined,
+    )
+  }
 }
 
 /**
  * Fetch performance data for the learning loop
- * Updated to use Neon database instead of Supabase
  */
 export async function fetchPerformanceForFeedback(
   campaignId: string,
-  db: { query: <T = Record<string, unknown>>(sql: string, params?: unknown[]) => Promise<{ data: T[] | null; error: Error | null }> }
+  supabase: ReturnType<typeof import('@/lib/supabase/service').createServiceClient>
 ): Promise<PerformanceData | null> {
   try {
     // Get campaign workspace
-    const { data: campaigns } = await db.query<{ workspace_id: string }>(
-      'SELECT workspace_id FROM campaigns WHERE id = $1',
-      [campaignId]
-    );
+    const { data: campaign } = await supabase
+      .from('campaigns')
+      .select('workspace_id')
+      .eq('id', campaignId)
+      .single();
 
-    if (!campaigns?.length) return null;
-    const workspaceId = campaigns[0].workspace_id;
+    if (!campaign) return null;
 
     // Get top performing messages from other campaigns
-    const { data: topMessages } = await db.query<{ text: string; ctr: number }>(
-      `SELECT text, ctr FROM messages 
-       WHERE workspace_id = $1 AND ctr IS NOT NULL 
-       ORDER BY ctr DESC LIMIT 5`,
-      [workspaceId]
-    );
+    const { data: topMessages } = await supabase
+      .from('messages')
+      .select('text, ctr')
+      .eq('workspace_id', campaign.workspace_id)
+      .not('ctr', 'is', null)
+      .order('ctr', { ascending: false })
+      .limit(5);
 
     // Get top performing angles
-    const { data: topAngles } = await db.query<{ name: string; conversion_rate: number }>(
-      `SELECT name, conversion_rate FROM angles 
-       WHERE workspace_id = $1 AND conversion_rate IS NOT NULL 
-       ORDER BY conversion_rate DESC LIMIT 5`,
-      [workspaceId]
-    );
+    const { data: topAngles } = await supabase
+      .from('angles')
+      .select('name, conversion_rate')
+      .eq('workspace_id', campaign.workspace_id)
+      .not('conversion_rate', 'is', null)
+      .order('conversion_rate', { ascending: false })
+      .limit(5);
 
     if (!topMessages?.length && !topAngles?.length) return null;
 
     return {
-      topMessages: (topMessages || []).map(m => ({ text: m.text, ctr: m.ctr || 0 })),
-      topAngles: (topAngles || []).map(a => ({ name: a.name, conversionRate: a.conversion_rate || 0 })),
+      topMessages: topMessages?.map(m => ({ text: m.text, ctr: m.ctr || 0 })),
+      topAngles: topAngles?.map(a => ({ name: a.name, conversionRate: a.conversion_rate || 0 })),
       insights: [
         topMessages?.length ? `Your audience responds well to: "${topMessages[0]?.text?.substring(0, 50)}..."` : '',
         topAngles?.length ? `Best performing angle: ${topAngles[0]?.name}` : '',
@@ -812,7 +840,7 @@ export async function fetchPerformanceForFeedback(
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
   const { embedding } = await embed({
-    model: getEmbeddingModel('small'),
+    model: MODELS.EMBEDDING_SMALL,
     value: text,
   });
   return embedding;
@@ -823,7 +851,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
  */
 export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
   const { embeddings } = await embedMany({
-    model: getEmbeddingModel('small'),
+    model: MODELS.EMBEDDING_SMALL,
     values: texts,
   });
   return embeddings;

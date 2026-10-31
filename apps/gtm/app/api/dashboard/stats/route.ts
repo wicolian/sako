@@ -5,46 +5,19 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import { createServiceClient } from '@/lib/supabase/service'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getWorkspaceIdWithFallback } from '@/lib/workspace'
 
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth()
+    const supabase = await createServerSupabaseClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    if (!userId) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const db = createServiceClient()
-    
-    let workspaceId: string
-    try {
-      workspaceId = getWorkspaceIdWithFallback(request)
-    } catch {
-      // Get from membership
-      const { data: membership } = await db
-        .from('workspace_members')
-        .select('workspace_id')
-        .eq('user_id', userId)
-        .single()
-      
-      if (!membership) {
-        return NextResponse.json({ 
-          campaigns: { total: 0, draft: 0, ready: 0, published: 0, running: 0 },
-          claims: { total: 0, approved: 0, needsProof: 0, blocked: 0, draft: 0, avgRiskScore: 0 },
-          evidence: { total: 0, tierA: 0, tierB: 0, tierC: 0 },
-          deployments: { total: 0, successful: 0, failed: 0, pending: 0 },
-          performance: { pageViews: 0, conversions: 0, conversionRate: 0, formSubmissions: 0 },
-          recentActivity: [],
-          complianceScore: 100,
-          healthScore: 0,
-          lastUpdated: new Date().toISOString(),
-        })
-      }
-      workspaceId = membership.workspace_id
-    }
+    const workspaceId = getWorkspaceIdWithFallback(request)
 
     // Fetch all stats in parallel
     const [
@@ -56,44 +29,50 @@ export async function GET(request: NextRequest) {
       performanceResult,
     ] = await Promise.all([
       // Campaign stats
-      db.from('campaigns')
-        .select('id, status')
+      supabase
+        .from('campaigns')
+        .select('id, status', { count: 'exact' })
         .eq('workspace_id', workspaceId),
       
       // Claims stats
-      db.from('claims')
-        .select('id, status, risk_score')
+      supabase
+        .from('claims')
+        .select('id, status, risk_score', { count: 'exact' })
         .eq('workspace_id', workspaceId),
       
       // Evidence stats
-      db.from('evidence')
-        .select('id, tier')
+      supabase
+        .from('evidence')
+        .select('id, tier', { count: 'exact' })
         .eq('workspace_id', workspaceId),
       
       // Deployment stats (last 30 days)
-      db.from('deployments')
+      supabase
+        .from('deployments')
         .select('id, status, created_at')
-        .eq('workspace_id', workspaceId),
+        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
       
       // Recent activity (last 7 days)
-      db.from('audit_log')
+      supabase
+        .from('audit_log')
         .select('id, action, entity_type, created_at')
         .eq('workspace_id', workspaceId)
+        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
         .order('created_at', { ascending: false })
         .limit(10),
       
       // Performance metrics
-      db.from('performance')
+      supabase
+        .from('performance')
         .select('metrics, captured_at')
-        .eq('workspace_id', workspaceId)
         .order('captured_at', { ascending: false })
         .limit(30),
     ])
 
     // Process campaign stats
-    const campaigns = (campaignsResult.data || []) as Array<{ id: string; status: string }>
+    const campaigns = campaignsResult.data || []
     const campaignStats = {
-      total: campaigns.length,
+      total: campaignsResult.count || 0,
       draft: campaigns.filter(c => c.status === 'draft').length,
       ready: campaigns.filter(c => c.status === 'ready').length,
       published: campaigns.filter(c => c.status === 'published').length,
@@ -101,9 +80,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Process claims stats
-    const claims = (claimsResult.data || []) as Array<{ id: string; status: string; risk_score: number | null }>
+    const claims = claimsResult.data || []
     const claimStats = {
-      total: claims.length,
+      total: claimsResult.count || 0,
       approved: claims.filter(c => c.status === 'approved').length,
       needsProof: claims.filter(c => c.status === 'needs_proof').length,
       blocked: claims.filter(c => c.status === 'blocked').length,
@@ -114,16 +93,16 @@ export async function GET(request: NextRequest) {
     }
 
     // Process evidence stats
-    const evidence = (evidenceResult.data || []) as Array<{ id: string; tier: string }>
+    const evidence = evidenceResult.data || []
     const evidenceStats = {
-      total: evidence.length,
+      total: evidenceResult.count || 0,
       tierA: evidence.filter(e => e.tier === 'A').length,
       tierB: evidence.filter(e => e.tier === 'B').length,
       tierC: evidence.filter(e => e.tier === 'C').length,
     }
 
     // Process deployment stats
-    const deployments = (deploymentsResult.data || []) as Array<{ id: string; status: string; created_at: string }>
+    const deployments = deploymentsResult.data || []
     const deploymentStats = {
       total: deployments.length,
       successful: deployments.filter(d => d.status === 'success').length,
@@ -132,13 +111,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Process performance metrics
-    const performanceData = (performanceResult.data || []) as Array<{ metrics: Record<string, number>; captured_at: string }>
-    const latestMetrics = performanceData[0]?.metrics || {}
+    const performanceData = performanceResult.data || []
+    const latestMetrics = performanceData[0]?.metrics as Record<string, number> | null
     const performanceStats = {
-      pageViews: latestMetrics.pageViews || 0,
-      conversions: latestMetrics.conversions || 0,
-      conversionRate: latestMetrics.conversionRate || 0,
-      formSubmissions: latestMetrics.formSubmissions || 0,
+      pageViews: latestMetrics?.pageViews || 0,
+      conversions: latestMetrics?.conversions || 0,
+      conversionRate: latestMetrics?.conversionRate || 0,
+      formSubmissions: latestMetrics?.formSubmissions || 0,
     }
 
     // Calculate compliance score

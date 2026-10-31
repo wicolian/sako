@@ -91,12 +91,12 @@ export class FigmaProvider implements DeploymentProvider {
         access_token_encrypted: encrypt(tokens.access_token),
         refresh_token_encrypted: encrypt(tokens.refresh_token),
         expires_at: expiresAt.toISOString(),
-        user_id: userId,
+        user_id: user.id,
         user_handle: user.handle,
         user_email: user.email,
       }, { onConflict: 'workspace_id' })
       .select()
-      .maybeSingle()
+      .single()
 
     if (error) {
       throw new Error('Failed to save Figma connection')
@@ -238,7 +238,7 @@ export class FigmaProvider implements DeploymentProvider {
       .from('figma_connections')
       .select('*')
       .eq('workspace_id', workspaceId)
-      .maybeSingle()
+      .single()
 
     if (!data) return null
 
@@ -256,7 +256,7 @@ export class FigmaProvider implements DeploymentProvider {
       .from('figma_connections')
       .select('access_token_encrypted')
       .limit(1)
-      .maybeSingle()
+      .single()
 
     if (!data?.access_token_encrypted) return null
     return decrypt(data.access_token_encrypted)

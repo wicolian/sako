@@ -5,8 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import { getWorkspaceIdWithFallback } from '@/lib/workspace'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import {
   createAudienceProfile,
   getWorkspaceAudiences,
@@ -19,13 +18,23 @@ import {
 } from '@/lib/audiences/audience-manager'
 
 export async function GET(request: NextRequest) {
-  const { userId } = await auth()
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  if (!userId) {
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const workspaceId = getWorkspaceIdWithFallback(request)
+  // Get workspace
+  const { data: member } = await supabase
+    .from('workspace_members')
+    .select('workspace_id')
+    .eq('user_id', user.id)
+    .single()
+
+  if (!member) {
+    return NextResponse.json({ error: 'No workspace' }, { status: 400 })
+  }
 
   const searchParams = request.nextUrl.searchParams
   const audienceId = searchParams.get('id')
@@ -35,18 +44,28 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ audience })
   }
 
-  const audiences = await getWorkspaceAudiences(workspaceId)
+  const audiences = await getWorkspaceAudiences(member.workspace_id)
   return NextResponse.json({ audiences })
 }
 
 export async function POST(request: NextRequest) {
-  const { userId } = await auth()
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  if (!userId) {
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const workspaceId = getWorkspaceIdWithFallback(request)
+  // Get workspace
+  const { data: member } = await supabase
+    .from('workspace_members')
+    .select('workspace_id')
+    .eq('user_id', user.id)
+    .single()
+
+  if (!member) {
+    return NextResponse.json({ error: 'No workspace' }, { status: 400 })
+  }
 
   const body = await request.json()
   const { action } = body
@@ -75,7 +94,7 @@ export async function POST(request: NextRequest) {
       if (!profile) {
         return NextResponse.json({ error: 'profile required' }, { status: 400 })
       }
-      const audience = await createAudienceProfile(workspaceId, profile)
+      const audience = await createAudienceProfile(member.workspace_id, profile)
       return NextResponse.json({ audience })
     }
 
@@ -84,7 +103,7 @@ export async function POST(request: NextRequest) {
       if (!audienceId) {
         return NextResponse.json({ error: 'audienceId required' }, { status: 400 })
       }
-      const success = await setDefaultAudience(workspaceId, audienceId)
+      const success = await setDefaultAudience(member.workspace_id, audienceId)
       return NextResponse.json({ success })
     }
 
@@ -94,9 +113,10 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const { userId } = await auth()
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  if (!userId) {
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -112,9 +132,10 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const { userId } = await auth()
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  if (!userId) {
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

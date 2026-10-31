@@ -2,9 +2,7 @@
  * Self-Improving RAG Learning System
  * 
  * Tracks generation outcomes, updates template quality scores,
- * and proimport { Database } from '@/lib/supabase/types'
-
-motes successful generations to the template library.
+ * and promotes successful generations to the template library.
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
@@ -61,7 +59,7 @@ export async function trackGeneration(record: GenerationRecord): Promise<string>
       cost_usd: record.costUsd,
     })
     .select('id')
-    .maybeSingle()
+    .single()
   
   if (error) {
     console.error('Failed to track generation:', error)
@@ -109,7 +107,7 @@ export async function recordOutcome(outcome: GenerationOutcome): Promise<void> {
     })
     .eq('id', outcome.generationId)
     .select('retrieved_template_ids')
-    .maybeSingle()
+    .single()
   
   if (updateError) {
     console.error('Failed to update generation:', updateError)
@@ -219,7 +217,7 @@ export async function analyzeAndPromoteWinners(minScore = 0.85, limit = 50): Pro
         .from('design_templates')
         .select('id')
         .eq('section_id', `learned-${winner.generation_id}`)
-        .maybeSingle()
+        .single()
       
       if (existing) continue // Already promoted
       
@@ -242,7 +240,7 @@ export async function analyzeAndPromoteWinners(minScore = 0.85, limit = 50): Pro
           quality_score: winner.acceptance_score,
         })
         .select('id')
-        .maybeSingle()
+        .single()
       
       if (insertError) {
         console.error('Failed to insert learned template:', insertError)

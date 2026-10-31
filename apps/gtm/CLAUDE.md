@@ -95,7 +95,7 @@ Model IDs must come from the allowlist in `.cursor/rules/latest-models-only.mdc`
 | Agents | `lib/agents/` | Multi-agent orchestration (campaign, research, compliance) |
 | URL Import | `lib/import/` | Extract brand, claims, design from URLs |
 | Templates | `lib/templates/` | Template RAG with pgvector semantic search |
-| Aura Editor | `components/editor/` | Visual website editor (Preview/Design/Code modes) |
+| Visual Editor | `components/editor/` | Visual website editor (Preview/Design/Code modes) |
 | Sako Escalation | `lib/sako/` | Human designer escalation workflow |
 | Billing | `lib/billing/` | Stripe subscriptions + AI credit wallet |
 

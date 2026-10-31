@@ -11,13 +11,13 @@ variable "services" {
     port  = number
   }))
   default = {
-    api      = { image = "ghcr.io/your-github-user/sako-api:latest", port = 3001 }
-    gtm      = { image = "ghcr.io/your-github-user/sako-gtm:latest", port = 3000 }
-    client   = { image = "ghcr.io/your-github-user/sako-client:latest", port = 80 }
-    studio   = { image = "ghcr.io/your-github-user/sako-studio:latest", port = 80 }
-    landing  = { image = "ghcr.io/your-github-user/sako-landing:latest", port = 3000 }
-    waitlist = { image = "ghcr.io/your-github-user/sako-waitlist:latest", port = 80 }
-    wall     = { image = "ghcr.io/your-github-user/sako-wall:latest", port = 3000 }
+    api      = { image = "ghcr.io/your-github-user/sako/api:latest", port = 3001 }
+    gtm      = { image = "ghcr.io/your-github-user/sako/gtm:latest", port = 3000 }
+    client   = { image = "ghcr.io/your-github-user/sako/client:latest", port = 80 }
+    studio   = { image = "ghcr.io/your-github-user/sako/studio:latest", port = 80 }
+    landing  = { image = "ghcr.io/your-github-user/sako/landing:latest", port = 3000 }
+    waitlist = { image = "ghcr.io/your-github-user/sako/waitlist:latest", port = 80 }
+    wall     = { image = "ghcr.io/your-github-user/sako/wall:latest", port = 3000 }
     n8n      = { image = "n8nio/n8n:latest", port = 5678 }
   }
 }

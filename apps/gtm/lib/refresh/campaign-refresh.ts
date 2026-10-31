@@ -5,14 +5,7 @@
  * 1. Re-researches evidence
  * 2. Updates stale statistics
  * 3. Re-validates claims
- * 4. Regenerates coimport { Database } from '@/lib/supabase/types'
-
-type EvidenceRow = Database['public']['Tables']['evidence']['Row']
-type CampaignRefreshRow = Database['public']['Tables']['campaign_refreshes']['Row']
-type MessageRow = Database['public']['Tables']['messages']['Row']
-type CampaignAssetRow = Database['public']['Tables']['campaign_assets']['Row']
-type MessageEvidenceRow = Database['public']['Tables']['message_evidence']['Row']
-py if needed
+ * 4. Regenerates copy if needed
  * 5. Creates diff preview for approval
  */
 

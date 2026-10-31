@@ -22,8 +22,6 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirectTo') || '/dashboard'
   const errorParam = searchParams.get('error')
-  
-  const { isLoaded, signIn, setActive } = useSignIn()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -34,31 +32,20 @@ function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!isLoaded) return
-    
     setLoading(true)
     setError(null)
 
     try {
-      const result = await signIn.create({
-        identifier: email,
-        password,
-      })
-
-      if (result.status === 'complete') {
-        await setActive({ session: result.createdSessionId })
-        router.push(redirectTo)
-        router.refresh()
-      } else {
-        // Handle other statuses like needs_second_factor
-        console.log('Sign in result:', result)
-        setError('Additional verification required')
+      const { error: authError } = await signInWithEmail(email, password)
+      if (authError) {
+        setError(authError.message)
         setLoading(false)
+        return
       }
-    } catch (err: unknown) {
-      const clerkError = err as { errors?: Array<{ message: string }> }
-      setError(clerkError.errors?.[0]?.message || 'Invalid email or password')
+      router.push(redirectTo)
+      router.refresh()
+    } catch {
+      setError('An unexpected error occurred')
       setLoading(false)
     }
   }

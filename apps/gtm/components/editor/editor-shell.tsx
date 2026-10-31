@@ -60,6 +60,8 @@ export type ViewportSize = 'desktop' | 'tablet' | 'mobile'
 
 interface EditorShellProps {
   initialDesign: WebsiteDesign
+  /** Override the root element height class. Defaults to "h-screen" for standalone use. Pass "h-full" when embedding inside a tab. */
+  className?: string
 }
 
 interface HistoryEntry {
@@ -67,11 +69,12 @@ interface HistoryEntry {
   timestamp: number
 }
 
-export function EditorShell({ initialDesign }: EditorShellProps) {
+export function EditorShell({ initialDesign, className }: EditorShellProps) {
   // Core state
   const [design, setDesign] = useState<WebsiteDesign>(initialDesign)
   const [mode, setMode] = useState<EditorMode>('design')
   const [viewport, setViewport] = useState<ViewportSize>('desktop')
+  const [previewEngine, setPreviewEngine] = useState<'html' | 'openui'>('html')
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null)
   const [leftPanelTab, setLeftPanelTab] = useState<'layers' | 'components'>('layers')
 
@@ -85,6 +88,14 @@ export function EditorShell({ initialDesign }: EditorShellProps) {
   const [publishDialogOpen, setPublishDialogOpen] = useState(false)
   const [workspaceId, setWorkspaceId] = useState<string | null>(null)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+
+  useEffect(() => {
+    setDesign(initialDesign)
+    setHistory([{ sections: initialDesign.sections, timestamp: Date.now() }])
+    setHistoryIndex(0)
+    setSelectedSectionId(null)
+    setHasUnsavedChanges(false)
+  }, [initialDesign])
 
   // Fetch workspace ID
   useEffect(() => {
@@ -112,26 +123,6 @@ export function EditorShell({ initialDesign }: EditorShellProps) {
       setHasUnsavedChanges(true)
     }
   }, [historyIndex])
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
-        e.preventDefault()
-        handleSave()
-      }
-      if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
-        e.preventDefault()
-        if (e.shiftKey) {
-          handleRedo()
-        } else {
-          handleUndo()
-        }
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [historyIndex, history])
 
   // Update sections with history
   const updateSections = useCallback((newSections: WebsiteSection[]) => {
@@ -161,7 +152,7 @@ export function EditorShell({ initialDesign }: EditorShellProps) {
   }, [historyIndex, history])
 
   // Save design
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!workspaceId) {
       toast.error('No workspace found')
       return
@@ -217,7 +208,27 @@ export function EditorShell({ initialDesign }: EditorShellProps) {
     } finally {
       setIsSaving(false)
     }
-  }
+  }, [design, workspaceId])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault()
+        void handleSave()
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+        e.preventDefault()
+        if (e.shiftKey) {
+          handleRedo()
+        } else {
+          handleUndo()
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleRedo, handleSave, handleUndo])
 
   // Add section
   const handleAddSection = async (type: SectionType) => {
@@ -300,7 +311,7 @@ export function EditorShell({ initialDesign }: EditorShellProps) {
 
   return (
     <TooltipProvider>
-      <div className="h-screen flex flex-col bg-background">
+      <div className={cn("h-screen flex flex-col bg-background", className)}>
         {/* Top Toolbar */}
         <div className="h-12 px-4 flex items-center justify-between bg-card border-b shrink-0">
           {/* Left: Design name */}
@@ -360,6 +371,29 @@ export function EditorShell({ initialDesign }: EditorShellProps) {
                 </Tooltip>
               ))}
             </div>
+
+            {/* OpenUI POC toggle — visible only in explicit dev/experimental mode.
+                Campaign-linked pages use CampaignBuilderShell which does not include this toggle. */}
+            {mode === 'preview' && process.env.NEXT_PUBLIC_OPENUI_DEV === 'true' && (
+              <div className="flex items-center bg-muted rounded-lg p-0.5">
+                <Button
+                  variant={previewEngine === 'html' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setPreviewEngine('html')}
+                >
+                  HTML
+                </Button>
+                <Button
+                  variant={previewEngine === 'openui' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setPreviewEngine('openui')}
+                >
+                  OpenUI POC
+                </Button>
+              </div>
+            )}
 
             <div className="w-px h-5 bg-border" />
 
@@ -507,6 +541,7 @@ export function EditorShell({ initialDesign }: EditorShellProps) {
               <PreviewMode
                 design={design}
                 viewport={viewport}
+                previewEngine={previewEngine}
               />
             )}
             {mode === 'design' && (
@@ -517,6 +552,8 @@ export function EditorShell({ initialDesign }: EditorShellProps) {
                 onSelectSection={setSelectedSectionId}
                 onUpdateSection={handleUpdateSection}
                 onReorderSections={handleReorderSections}
+                onDeleteSection={handleDeleteSection}
+                onDuplicateSection={handleDuplicateSection}
               />
             )}
             {mode === 'code' && (

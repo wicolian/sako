@@ -3,8 +3,7 @@
  */
 
 import { NextRequest } from 'next/server';
-import { c
-reateServiceClient } from './service';
+import { createServiceClient } from './service';
 
 /**
  * Get workspace ID from request with fallback to first available workspace
@@ -32,9 +31,9 @@ export async function getWorkspaceIdWithFallback(
       const { data: membership } = await supabase
         .from('workspace_members')
         .select('workspace_id')
-        .eq('user_id', userId)
+        .eq('user_id', user.id)
         .limit(1)
-        .maybeSingle();
+        .single();
       
       if (membership) {
         return membership.workspace_id;
@@ -62,7 +61,7 @@ export async function getUserIdFromRequest(
     authHeader.replace('Bearer ', '')
   );
   
-  return userId || null;
+  return user?.id || null;
 }
 
 /**
@@ -79,7 +78,7 @@ export async function verifyWorkspaceMembership(
     .select('id')
     .eq('user_id', userId)
     .eq('workspace_id', workspaceId)
-    .maybeSingle();
+    .single();
   
   return !!data;
 }
@@ -94,7 +93,7 @@ export async function getWorkspace(workspaceId: string) {
     .from('workspaces')
     .select('*')
     .eq('id', workspaceId)
-    .maybeSingle();
+    .single();
   
   if (error) {
     return null;

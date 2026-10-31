@@ -9,7 +9,7 @@
 import { readdir, readFile, writeFile } from 'fs/promises';
 import { join, relative } from 'path';
 
-const SPREADSHEET_ID = '1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ';
+const SPREADSHEET_ID = 'YOUR_GOOGLE_SHEET_ID';
 const SPREADSHEET_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit?usp=drivesdk`;
 
 // Sheet name to gid mapping (from user's actual spreadsheet)

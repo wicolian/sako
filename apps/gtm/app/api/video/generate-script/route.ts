@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       .select('*')
       .eq('id', campaignId)
       .eq('workspace_id', workspaceId)
-      .maybeSingle()
+      .single()
     
     if (campaignError || !campaign) {
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
         status: 'draft',
       })
       .select()
-      .maybeSingle()
+      .single()
     
     if (assetError) {
       console.error('Failed to save script asset:', assetError)

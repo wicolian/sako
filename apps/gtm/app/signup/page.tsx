@@ -29,14 +29,10 @@ export function SignUpPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [pendingVerification, setPendingVerification] = useState(false)
-  const [verificationCode, setVerificationCode] = useState('')
+  const [success, setSuccess] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!isLoaded) return
-    
     setLoading(true)
     setError(null)
 
@@ -47,10 +43,15 @@ export function SignUpPage() {
     }
 
     try {
-      // Split full name into first and last
-      const nameParts = fullName.trim().split(' ')
-      const firstName = nameParts[0] || ''
-      const lastName = nameParts.slice(1).join(' ') || ''
+      const { data, error: authError } = await signUpWithEmail(email, password, {
+        full_name: fullName,
+      })
+      
+      if (authError) {
+        setError(authError.message)
+        setLoading(false)
+        return
+      }
 
       // Check if email confirmation is required
       if (data.user && !data.session) {
@@ -84,36 +85,7 @@ export function SignUpPage() {
     }
   }
 
-  const handleVerification = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!isLoaded) return
-    
-    setLoading(true)
-    setError(null)
-
-    try {
-      const result = await signUp.attemptEmailAddressVerification({
-        code: verificationCode,
-      })
-
-      if (result.status === 'complete') {
-        await setActive({ session: result.createdSessionId })
-        router.push('/onboarding')
-        router.refresh()
-      } else {
-        console.log('Verification result:', result)
-        setError('Verification incomplete')
-        setLoading(false)
-      }
-    } catch (err: unknown) {
-      const clerkError = err as { errors?: Array<{ message: string }> }
-      setError(clerkError.errors?.[0]?.message || 'Invalid verification code')
-      setLoading(false)
-    }
-  }
-
-  if (pendingVerification) {
+  if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background text-foreground relative overflow-hidden p-6">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[600px] h-[400px] bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none" />

@@ -2,7 +2,7 @@
   "id": "company-enrichment",
   "name": "Company Enrichment from Website + Apollo",
   "meta": {
-    "instanceId": "f0a68da631efd4ed052a324b63ff90f7a844426af0398a68338f44245d1dd9e5"
+    "instanceId": ""
   },
   "nodes": [
     {
@@ -42,13 +42,13 @@
           "mode": "list",
           "value": 492604584,
           "cachedResultName": "qualified_leads",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=492604584"
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=492604584"
         },
         "documentId": {
           "__rl": true,
           "mode": "url",
-          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/",
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/",
           "cachedResultName": "Sako Marketing Automations"
         },
         "filters": {
@@ -271,13 +271,13 @@
           "mode": "list",
           "value": 492604584,
           "cachedResultName": "qualified_leads",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/edit#gid=492604584"
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=492604584"
         },
         "documentId": {
           "__rl": true,
           "mode": "url",
-          "value": "1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kuvMIZS5a7GYnHDlByL4LfkQf1kHbVxSmL8LogIjMgQ/",
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/",
           "cachedResultName": "Sako Marketing Automations"
         },
         "columnToMatchOn": "email",

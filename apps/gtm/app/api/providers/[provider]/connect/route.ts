@@ -23,7 +23,7 @@ export async function GET(
     const validProviders: ProviderType[] = [
       'hubspot', 'salesforce', 'marketo', 'activecampaign', 'mailchimp', 'klaviyo',
       'webflow', 'figma', 'framer', 'wordpress', 'shopify',
-      'google-ads', 'meta-ads', 'linkedin-ads',
+      'google-ads', 'meta-ads', 'linkedin-ads', 'twitter',
       'ga4', 'amplitude', 'mixpanel', 'segment',
       'slack', 'notion',
     ]

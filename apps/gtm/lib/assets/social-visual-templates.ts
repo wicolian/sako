@@ -17,6 +17,7 @@ import type { DesignArchetype } from '@/lib/design/archetype-selector'
 
 export const SOCIAL_DIMENSIONS = {
   linkedin: { width: 1200, height: 627 },
+  instagram: { width: 1080, height: 1080 },
   instagram_post: { width: 1080, height: 1080 },
   instagram_story: { width: 1080, height: 1920 },
   twitter: { width: 1200, height: 675 },

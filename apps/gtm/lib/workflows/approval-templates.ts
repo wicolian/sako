@@ -5,6 +5,7 @@
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { sendApprovalReminderEmail } from '@/lib/email'
 
 // ============================================================================
 // Types
@@ -443,7 +444,7 @@ export async function submitApproval(
   // Get current request
   const { data: request } = await supabase
     .from('approval_requests')
-    .select('*, approval_templates!inner(stages)')
+    .select('*, approval_templates!inner(stages, workspace_id)')
     .eq('id', requestId)
     .single()
   
@@ -514,6 +515,12 @@ export async function submitApproval(
           updated_at: new Date().toISOString(),
         })
         .eq('id', requestId)
+
+      await notifyNextStageApprovers(
+        request.approval_templates.workspace_id,
+        request.campaign_id,
+        templateStages[nextIndex]
+      )
     }
   } else {
     // Just update stages with new approval
@@ -527,6 +534,87 @@ export async function submitApproval(
   }
   
   return true
+}
+
+async function notifyNextStageApprovers(
+  workspaceId: string,
+  campaignId: string,
+  stage: ApprovalStage
+): Promise<void> {
+  const supabase = createServiceClient()
+  const workspaceRoles = mapApprovalRolesToWorkspaceRoles(stage.approverRoles)
+
+  let memberQuery = supabase
+    .from('workspace_members')
+    .select('user_id, role')
+    .eq('workspace_id', workspaceId)
+
+  if (workspaceRoles.length > 0) {
+    memberQuery = memberQuery.in('role', workspaceRoles)
+  }
+
+  const [{ data: members }, { data: campaign }] = await Promise.all([
+    memberQuery,
+    supabase
+      .from('campaigns')
+      .select('id, name')
+      .eq('id', campaignId)
+      .single(),
+  ])
+
+  const recipientIds = [...new Set((members || []).map((member) => member.user_id))]
+  if (recipientIds.length === 0 || !campaign?.id) {
+    return
+  }
+
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, email, full_name')
+    .in('id', recipientIds)
+
+  const recipients = (profiles || []).filter((profile) => Boolean(profile.email))
+  if (recipients.length === 0) {
+    return
+  }
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+
+  await sendApprovalReminderEmail({
+    to: recipients.map((recipient) => recipient.email),
+    campaignName: campaign.name,
+    stageName: stage.name,
+    approverNames: recipients.map((recipient) => recipient.full_name || recipient.email),
+    approvalUrl: `${appUrl}/campaigns/${campaign.id}`,
+  })
+}
+
+function mapApprovalRolesToWorkspaceRoles(roles: ApprovalRole[]): string[] {
+  const mapped = new Set<string>()
+
+  for (const role of roles) {
+    switch (role) {
+      case 'reviewer':
+        mapped.add('reviewer')
+        mapped.add('admin')
+        mapped.add('owner')
+        break
+      case 'manager':
+      case 'executive':
+      case 'legal':
+      case 'compliance':
+        mapped.add('admin')
+        mapped.add('owner')
+        break
+      case 'creator':
+        mapped.add('member')
+        mapped.add('reviewer')
+        mapped.add('admin')
+        mapped.add('owner')
+        break
+    }
+  }
+
+  return [...mapped]
 }
 
 /**

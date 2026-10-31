@@ -3,9 +3,6 @@ import { generateStructuredOutput } from '@/lib/ai/ai-sdk-client'
 import { z } from 'zod'
 import type { Campaign, PageBlock } from '@/lib/supabase/types'
 
-type CampaignRow = Database['public']['Tables']['campaigns']['Row']
-type PerformanceRow = Database['public']['Tables']['performance']['Row']
-
 export interface PerformancePrediction {
   predictedConversionRate: number
   confidenceLevel: 'low' | 'medium' | 'high'

@@ -2,9 +2,7 @@
  * Personalization Agent (Phase 1.6)
  * 
  * CRM integration agent for segment-specific content generation.
- * One of three named specialist agents (Optimization, Perimport { Database } from '@/lib/supabase/types'
-
-sonalization, Research).
+ * One of three named specialist agents (Optimization, Personalization, Research).
  */
 
 import { generateObject } from '@/lib/ai/langsmith-ai'

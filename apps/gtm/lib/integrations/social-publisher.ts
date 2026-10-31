@@ -10,6 +10,7 @@
 
 import { createServiceClient } from '@/lib/supabase/service'
 import type { AssetDocument } from '@/lib/assets/asset-document'
+import { TwitterProvider } from '@/lib/providers/twitter'
 
 // ============================================================================
 // Types
@@ -59,6 +60,10 @@ export async function publishToSocial(
     }
   }
 
+  if (request.platform === 'twitter') {
+    return publishToTwitter(request)
+  }
+
   // 2. Get provider connection
   const { data: connection } = await supabase
     .from('provider_connections')
@@ -81,8 +86,6 @@ export async function publishToSocial(
     switch (request.platform) {
       case 'linkedin':
         return await publishToLinkedIn(request, connection)
-      case 'twitter':
-        return await publishToTwitter(request, connection)
       default:
         return {
           platform: request.platform,
@@ -236,14 +239,16 @@ async function uploadLinkedInImage(
 }
 
 async function publishToTwitter(
-  request: PublishRequest,
-  connection: Record<string, unknown>
+  request: PublishRequest
 ): Promise<PublishResult> {
-  // Twitter/X publish is export-first for MVP
+  const provider = new TwitterProvider()
+  const result = await provider.publishSocial(request.content, request.workspaceId)
+
   return {
     platform: 'twitter',
-    status: 'failed',
-    error: 'Twitter/X direct publishing is coming soon. Please export and post manually.',
+    status: 'published',
+    postId: result.tweetId,
+    postUrl: result.url,
   }
 }
 

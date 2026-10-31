@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getWorkspaceId } from '@/lib/workspace'
-import { Database } from '@/lib/supabase/types'
-
-type HubspotConnectionRow = Database['public']['Tables']['hubspot_connections']['Row']
 
 export async function POST(request: NextRequest) {
   const supabase = createServiceClient()

@@ -82,7 +82,7 @@ export class MarketoProvider implements DeploymentProvider {
         expires_at: new Date(tokens.expiresAt).toISOString(),
       }, { onConflict: 'workspace_id,provider' })
       .select()
-      .maybeSingle()
+      .single()
 
     if (error) throw error
 
@@ -316,7 +316,7 @@ export class MarketoProvider implements DeploymentProvider {
       .select('workspace_id, metadata')
       .eq('campaign_id', campaignId)
       .eq('provider', 'marketo')
-      .maybeSingle()
+      .single()
 
     if (!deployment?.metadata?.formId && !deployment?.metadata?.pageId) return null
 
@@ -357,7 +357,7 @@ export class MarketoProvider implements DeploymentProvider {
       .select('*')
       .eq('workspace_id', workspaceId)
       .eq('provider', 'marketo')
-      .maybeSingle()
+      .single()
 
     if (!data) return null
 
