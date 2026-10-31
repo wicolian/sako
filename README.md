@@ -4,9 +4,9 @@
 
 # Sako
 
-### A design subscription with a GTM touch. The whole company, in one repo.
+### The open-source operating system for productized agencies.
 
-Landing page · waitlist · client portal · designer studio · billing API · GTM app · 44 automations<br/>
+Run your agency like a product: client portal · request queue · SLA clock · retainer billing · team studio · AI drafts · 44 automations · landing page<br/>
 One `docker compose up`. Deploy to AWS, GCP, Azure or Vercel with Terraform.
 
 <p>
@@ -19,11 +19,27 @@ One `docker compose up`. Deploy to AWS, GCP, Azure or Vercel with Terraform.
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-free%20under%20%24100K%20revenue-B6F36A" /></a>
 </p>
 
-[The story](#the-story) · [Playbooks](docs/playbooks/) · [Product docs](docs/product/) · [What you get](#what-you-get) · [Screens](#screens) · [Architecture](#architecture) · [Run it](#run-it-in-one-command) · [Self-host](#self-host-with-prebuilt-images) · [Deploy](#deploy-to-any-cloud) · [Configuration](#configuration) · [Known issues](#known-issues) · [Support](#support-and-hire-me) · [License](#license)
+[Use it for](#use-it-for) · [The story](#the-story) · [Playbooks](docs/playbooks/) · [Product docs](docs/product/) · [What you get](#what-you-get) · [Screens](#screens) · [Architecture](#architecture) · [Run it](#run-it-in-one-command) · [Self-host](#self-host-with-prebuilt-images) · [Deploy](#deploy-to-any-cloud) · [Configuration](#configuration) · [Known issues](#known-issues) · [Support](#support-and-hire-me) · [License](#license)
 
 </div>
 
 ---
+
+## Use it for
+
+Sako started as a design subscription. The software is not about design. It runs any agency or service
+business that sells monthly retainers instead of one-off projects:
+
+| If you run | Sako gives you |
+|---|---|
+| **An old-school agency** on email threads, WhatsApp and spreadsheets | One client portal, a request queue with limits on active work, and a clock clients can see |
+| **An AI-first service shop** (AI does the first draft, people do the last 20%) | Retainer billing, an SLA per request, AI drafts in the GTM app, and a review flow for the human pass |
+| **A video, dev, content or marketing studio** | The same flow: brief → queue → in progress → review → done, with revisions and approvals |
+| **A freelancer moving to retainers** | Pricing pages, Stripe subscriptions with pausing and credits, and a landing page to sell it |
+
+What makes it different from a project-management tool: clients pay a monthly fee, see a **queue**, get
+work back on a **clock**, and can **pause**. That is how a productized service is sold, and it is all
+built in.
 
 ## The story
 
@@ -666,6 +682,13 @@ For agencies and studios making **$100K a year or more**. You get:
 - Updates and security fixes for the length of the license
 - Priority help with issues
 - Optional paid setup: I deploy it on your cloud, connect your Stripe, Clerk and Slack, and import your workflows
+
+| Plan | For | Price |
+|---|---|---|
+| **Free** | Under $100K revenue, individuals, non-profits, schools | $0 |
+| **Agency** | $100K to $1M revenue | **$1,500 / year** or $149 / month |
+| **Studio** | Over $1M revenue | **$4,500 / year**, includes priority help |
+| **Setup** (optional) | Anyone | **From $1,500** one-time: deployed on your cloud, Stripe, Clerk and Slack connected, workflows imported |
 
 **Get one:** [contact@kelashik.com](mailto:contact@kelashik.com) · [kelashik.com](https://kelashik.com)
 
