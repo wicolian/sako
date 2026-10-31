@@ -23,7 +23,7 @@
     "@iconify/react": "^5.2.0",
     "@prisma/client": "^6.2.0",
     "stripe": "^17.5.0",
-    "jose": "^5.9.6",
+    "jose": "^6.2.13",
     "iron-session": "^8.0.4"
   },
   "devDependencies": {
