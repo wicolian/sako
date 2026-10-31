@@ -19,7 +19,7 @@ One `docker compose up`. Deploy to AWS, GCP, Azure or Vercel with Terraform.
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Sako%20Source-B6F36A" /></a>
 </p>
 
-[The story](#the-story) · [What you get](#what-you-get) · [Screens](#screens) · [Architecture](#architecture) · [Run it](#run-it-in-one-command) · [Self-host](#self-host-with-prebuilt-images) · [Deploy](#deploy-to-any-cloud) · [Configuration](#configuration) · [Known issues](#known-issues) · [Support](#support-and-hire-me) · [License](#license)
+[The story](#the-story) · [Playbooks](docs/playbooks/) · [What you get](#what-you-get) · [Screens](#screens) · [Architecture](#architecture) · [Run it](#run-it-in-one-command) · [Self-host](#self-host-with-prebuilt-images) · [Deploy](#deploy-to-any-cloud) · [Configuration](#configuration) · [Known issues](#known-issues) · [Support](#support-and-hire-me) · [License](#license)
 
 </div>
 
@@ -46,7 +46,17 @@ work into campaigns, outbound and PR.
 - **Koushik** ([@wicolian](https://github.com/wicolian)) was the product and GTM person. He built every
   line of this software, and ran **1 HR person and 1 growth hacker**.
 
-Almost 3 months of building with no funding and no backup.
+### Timeline
+
+| | |
+|---|---|
+| **End of 2024** | Started. Launch video: [docs/story/launch-video.md](docs/story/launch-video.md) |
+| **Jan to Aug 2025** | Building and selling. **No revenue for 9 months** |
+| **Sep 2025** | First revenue, then about $7k a month with 10–40% growth |
+| **~Apr 2026** | Sold the clients, closed |
+| **Oct 2026** | Open-sourced: software, automations and [playbooks](docs/playbooks/) |
+
+The software took almost 3 months to build, with no funding and no backup.
 
 Then we learned that the hard part was not the software. It was distribution, and the design-agency model
 did not grow the way we wanted. When the agency side stops working, there is no point in keeping the
