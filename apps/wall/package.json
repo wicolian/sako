@@ -21,7 +21,7 @@
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.6.1",
     "@iconify/react": "^5.2.0",
-    "@prisma/client": "^6.2.0",
+    "@prisma/client": "^6.19.3",
     "stripe": "^17.5.0",
     "jose": "^5.9.6",
     "iron-session": "^8.0.4"
