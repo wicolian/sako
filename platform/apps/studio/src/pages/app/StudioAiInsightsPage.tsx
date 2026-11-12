@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { fetchStudioAiSummary, fetchStudioAiEstimates } from '../../lib/api';
 import { StudioAiSummary, StudioAiEstimate } from '../../lib/types';
 import { Icon } from '../../components/Icon';
@@ -7,18 +7,88 @@ export const StudioAiInsightsPage: React.FC = () => {
     const [summary, setSummary] = useState<StudioAiSummary | null>(null);
     const [estimates, setEstimates] = useState<StudioAiEstimate[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
+    const load = useCallback(() => {
+        setLoading(true);
+        setError(null);
         Promise.all([fetchStudioAiSummary(), fetchStudioAiEstimates()])
             .then(([s, e]) => {
                 setSummary(s);
                 setEstimates(e);
             })
-            .catch(err => console.error('Failed to load AI insights', err))
+            .catch(err => {
+                console.error('Failed to load AI insights', err);
+                setError('Check that the API is running and reachable, then try again.');
+            })
             .finally(() => setLoading(false));
     }, []);
 
-    if (loading) return <div className="p-8">Loading AI Insights...</div>;
+    useEffect(() => {
+        load();
+    }, [load]);
+
+    if (loading) {
+        return (
+            <div className="p-8 max-w-7xl mx-auto space-y-8">
+                <h1 className="text-2xl font-bold">AI Readiness Insights</h1>
+                <div
+                    className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800"
+                    role="status"
+                >
+                    <p className="text-sm text-zinc-500">Loading AI Insights...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="p-8 max-w-7xl mx-auto space-y-8">
+                <h1 className="text-2xl font-bold">AI Readiness Insights</h1>
+                <div
+                    className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800"
+                    role="alert"
+                >
+                    <h3 className="text-lg font-semibold">AI insights unavailable</h3>
+                    <p className="text-sm text-zinc-500 mt-2">
+                        The AI insights could not be loaded. {error}
+                    </p>
+                    <button
+                        type="button"
+                        onClick={load}
+                        className="mt-4 px-4 py-2 text-sm font-medium rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                    >
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    const hasData = summary !== null && (summary.totalTasks > 0 || estimates.length > 0);
+
+    if (!hasData) {
+        return (
+            <div className="p-8 max-w-7xl mx-auto space-y-8">
+                <h1 className="text-2xl font-bold">AI Readiness Insights</h1>
+                <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                    <h3 className="text-lg font-semibold">No AI insights yet</h3>
+                    <p className="text-sm text-zinc-500 mt-2">
+                        This page summarises tasks from the last 30 days and the AI estimates
+                        recorded when work is submitted for estimation. Once tasks have been
+                        created and estimated, structured-brief adoption, revision counts and
+                        estimator accuracy will appear here.
+                    </p>
+                    <p className="text-sm text-zinc-500 mt-2">
+                        Estimates come from the AI estimator on the API. Without an
+                        OPENAI_API_KEY configured there, it answers with a standard fallback
+                        estimate instead of a model-generated one.
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -38,7 +108,11 @@ export const StudioAiInsightsPage: React.FC = () => {
                 </div>
                 <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800">
                     <h3 className="text-sm font-medium text-zinc-500">Estimator Accuracy</h3>
-                    <p className="text-3xl font-bold mt-2">{summary?.estimatorStats.averageAbsoluteErrorHours.toFixed(1)}h</p>
+                    <p className="text-3xl font-bold mt-2">
+                        {summary?.estimatorStats.sampleSize
+                            ? `${summary.estimatorStats.averageAbsoluteErrorHours.toFixed(1)}h`
+                            : '—'}
+                    </p>
                     <p className="text-sm text-zinc-400 mt-1">avg absolute error (sample: {summary?.estimatorStats.sampleSize})</p>
                 </div>
             </div>
