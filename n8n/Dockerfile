@@ -11,7 +11,7 @@ RUN apk add --no-cache curl && \
     chmod +x /tmp/caddy
 
 # Stage 2: n8n + Caddy
-FROM n8nio/n8n:2.46.3
+FROM n8nio/n8n:2.47.3
 COPY --from=caddy-downloader /tmp/caddy /usr/local/bin/caddy
 USER root
 COPY Caddyfile /etc/caddy/Caddyfile
